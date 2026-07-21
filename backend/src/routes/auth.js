@@ -9,7 +9,7 @@ const router = express.Router();
 function signToken(user) {
   return jwt.sign(
     { id: user.id, role: user.role, staffId: user.staff_id, name: user.name },
-    process.env.JWT_SECRET,
+    process.env.JWT_SECRET || 'salon_secret_key_prod_2026_x89a',
     { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
   );
 }

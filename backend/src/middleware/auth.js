@@ -7,7 +7,7 @@ function authenticate(req, res, next) {
   }
   const token = header.split(' ')[1];
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const payload = jwt.verify(token, process.env.JWT_SECRET || 'salon_secret_key_prod_2026_x89a');
     req.user = payload; // { id, role, staffId, name }
     next();
   } catch (err) {
