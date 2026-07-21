@@ -1,0 +1,15 @@
+{
+  "name": "salon-management-system",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "npm run build --prefix frontend",
+    "start": "node backend/src/index.js",
+    "seed": "node backend/src/seed.js",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend"
+  },
+  "dependencies": {
+    "lucide-react": "^1.25.0"
+  }
+}
