@@ -6,7 +6,7 @@
     "node": "20.x"
   },
   "scripts": {
-    "build": "npm install --prefix backend && npm install --include=dev --prefix frontend && npm run build --prefix frontend",
+    "build": "npm install --prefix backend && npm rebuild sqlite3 --prefix backend --build-from-source && npm install --include=dev --prefix frontend && npm run build --prefix frontend",
     "start": "node backend/src/index.js",
     "seed": "node backend/src/seed.js",
     "dev:backend": "npm run dev --prefix backend",
