@@ -85,6 +85,8 @@ export default function Appointments() {
     try {
       await client.post('/appointments', formData);
       showSuccess('Appointment booked successfully!');
+      window.dispatchEvent(new CustomEvent('appointment_updated'));
+      window.dispatchEvent(new CustomEvent('dashboard_updated'));
       setIsModalOpen(false);
       fetchData();
     } catch (err) {
@@ -96,6 +98,8 @@ export default function Appointments() {
     try {
       await client.put(`/appointments/${id}`, { status: newStatus });
       showSuccess(`Appointment marked as ${newStatus}`);
+      window.dispatchEvent(new CustomEvent('appointment_updated'));
+      window.dispatchEvent(new CustomEvent('dashboard_updated'));
       fetchData();
     } catch (err) {
       showError('Failed to update status');

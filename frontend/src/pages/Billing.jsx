@@ -165,6 +165,8 @@ export default function Billing() {
       });
 
       showSuccess(`Invoice ${res.data.invoice_number} created successfully`);
+      window.dispatchEvent(new CustomEvent('billing_updated'));
+      window.dispatchEvent(new CustomEvent('dashboard_updated'));
       setIsPOSOpen(false);
       setItems([]);
       fetchBillingData();

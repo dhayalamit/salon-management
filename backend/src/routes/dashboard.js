@@ -21,16 +21,31 @@ router.get('/stats', authenticate, async (req, res) => {
 
     const [todayRev, todayAppts, todayCusts, pendingPay, staffPres, lowStock] = await Promise.all([
       db.query(
-        `SELECT COALESCE(SUM(total), 0) AS revenue FROM invoices WHERE created_at::date = $1::date`,
+        `SELECT COALESCE(SUM(total), 0) AS revenue
+         FROM invoices
+         WHERE (substr(created_at, 1, 10) = $1 OR created_at::date = $1::date)
+           AND (payment_method IS NULL OR (LOWER(payment_method) != 'cancelled' AND LOWER(payment_method) != 'draft'))`,
         [today]
       ),
-      db.query(`SELECT COUNT(*) AS count FROM appointments WHERE appointment_date::date = $1::date`, [today]),
       db.query(
-        `SELECT COUNT(DISTINCT customer_id) AS count FROM invoices WHERE created_at::date = $1::date AND customer_id IS NOT NULL`,
+        `SELECT COUNT(*) AS count
+         FROM appointments
+         WHERE (appointment_date = $1 OR substr(appointment_date, 1, 10) = $1)
+           AND LOWER(status) IN ('booked', 'confirmed', 'completed', 'in_progress')`,
         [today]
       ),
-      db.query(`SELECT COALESCE(SUM(total), 0) AS pending FROM invoices WHERE payment_method = 'pending'`),
-      db.query(`SELECT COUNT(*) AS count FROM attendance WHERE date::date = $1::date AND status = 'present'`, [today]),
+      db.query(
+        `SELECT COUNT(DISTINCT customer_id) AS count
+         FROM invoices
+         WHERE (substr(created_at, 1, 10) = $1 OR created_at::date = $1::date)
+           AND customer_id IS NOT NULL`,
+        [today]
+      ),
+      db.query(`SELECT COALESCE(SUM(total), 0) AS pending FROM invoices WHERE LOWER(payment_method) = 'pending'`),
+      db.query(
+        `SELECT COUNT(*) AS count FROM attendance WHERE (date = $1 OR substr(date, 1, 10) = $1) AND LOWER(status) = 'present'`,
+        [today]
+      ),
       db.query(`SELECT COUNT(*) AS count FROM products WHERE stock_quantity <= low_stock_threshold`),
     ]);
 

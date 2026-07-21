@@ -7,16 +7,18 @@ const router = express.Router();
 // GET /api/staff
 router.get('/', authenticate, async (req, res) => {
   try {
+    const today = new Date().toLocaleDateString('en-CA');
     const { rows } = await db.query(
       `SELECT s.*,
-              COALESCE(att.today_status, 'absent') AS today_status
+              COALESCE(att.today_status, 'not_marked') AS today_status
        FROM staff s
        LEFT JOIN (
          SELECT staff_id, status AS today_status
          FROM attendance
-         WHERE date = CURRENT_DATE OR date = date('now')
+         WHERE date = $1 OR substr(date, 1, 10) = $1
        ) att ON att.staff_id = s.id
-       ORDER BY s.created_at DESC`
+       ORDER BY s.created_at DESC`,
+      [today]
     );
     res.json(rows);
   } catch (err) {

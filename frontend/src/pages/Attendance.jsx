@@ -69,6 +69,8 @@ export default function Attendance() {
 
       await client.post('/attendance/bulk', { date: selectedDate, records });
       window.dispatchEvent(new CustomEvent('attendance_updated'));
+      window.dispatchEvent(new CustomEvent('staff_updated'));
+      window.dispatchEvent(new CustomEvent('dashboard_updated'));
       showSuccess(`Attendance saved for ${selectedDate}`);
     } catch (err) {
       showError('Failed to save attendance');

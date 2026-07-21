@@ -132,13 +132,16 @@ export default function Staff() {
     {
       header: "Today's Status",
       render: (row) => {
-        const st = (row.today_status || 'absent').toLowerCase();
-        let badgeClass = 'bg-red-100 text-red-700 border-red-200';
-        let label = 'Absent';
+        const st = (row.today_status || 'not_marked').toLowerCase();
+        let badgeClass = 'bg-gray-100 text-gray-700 border-gray-200';
+        let label = 'Not Marked';
 
         if (st === 'present') {
           badgeClass = 'bg-emerald-100 text-emerald-700 border-emerald-200';
           label = 'Present';
+        } else if (st === 'absent') {
+          badgeClass = 'bg-red-100 text-red-700 border-red-200';
+          label = 'Absent';
         } else if (st === 'half_day') {
           badgeClass = 'bg-amber-100 text-amber-700 border-amber-200';
           label = 'Half Day';
