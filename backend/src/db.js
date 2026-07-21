@@ -229,17 +229,25 @@ function initSQLiteTables() {
       CREATE TABLE IF NOT EXISTS settings (
         id INTEGER PRIMARY KEY CHECK (id = 1),
         salon_name TEXT DEFAULT 'TRIO THE POSH',
+        tagline TEXT DEFAULT 'Redefining Beauty & Elegance',
         logo_url TEXT,
         address TEXT,
         phone TEXT,
+        email TEXT,
         gst_number TEXT,
-        default_gst_percent REAL DEFAULT 0
+        default_gst_percent REAL DEFAULT 0,
+        business_hours TEXT
       )
     `);
 
+    // Ensure columns exist if table was already created
+    ['tagline', 'email', 'business_hours'].forEach((col) => {
+      sqliteDb.run(`ALTER TABLE settings ADD COLUMN ${col} TEXT`, () => {});
+    });
+
     sqliteDb.run(`
-      INSERT OR IGNORE INTO settings (id, salon_name, address, phone, gst_number, default_gst_percent)
-      VALUES (1, 'TRIO THE POSH', '123 Luxury Avenue, Beverly Hills', '+1 800-POSH-SALON', 'GSTIN29AAACT1234F1Z5', 18)
+      INSERT OR IGNORE INTO settings (id, salon_name, tagline, address, phone, email, gst_number, default_gst_percent)
+      VALUES (1, 'TRIO THE POSH', 'Redefining Beauty & Elegance', '123 Luxury Avenue, Beverly Hills', '+1 800-POSH-SALON', 'info@triotheposh.com', 'GSTIN29AAACT1234F1Z5', 18)
     `);
 
     // Seed default admin if missing

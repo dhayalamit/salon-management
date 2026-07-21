@@ -30,21 +30,32 @@ router.get('/', authenticate, async (req, res) => {
 // PUT /api/settings
 router.put('/', authenticate, async (req, res) => {
   try {
-    const { salon_name, tagline, logo_url, address, phone, email, gst_number, default_gst_percent } = req.body;
+    const { salon_name, tagline, logo_url, address, phone, email, gst_number, default_gst_percent, business_hours } = req.body;
     await db.query(
       `UPDATE settings SET
-         salon_name = COALESCE($1, salon_name),
-         tagline = COALESCE($2, tagline),
-         logo_url = COALESCE($3, logo_url),
-         address = COALESCE($4, address),
-         phone = COALESCE($5, phone),
-         email = COALESCE($6, email),
-         gst_number = COALESCE($7, gst_number),
-         default_gst_percent = COALESCE($8, default_gst_percent)
+         salon_name = $1,
+         tagline = $2,
+         logo_url = $3,
+         address = $4,
+         phone = $5,
+         email = $6,
+         gst_number = $7,
+         default_gst_percent = $8,
+         business_hours = $9
        WHERE id = 1`,
-      [salon_name, tagline, logo_url, address, phone, email, gst_number, default_gst_percent]
+      [
+        salon_name || 'TRIO THE POSH',
+        tagline || '',
+        logo_url || '/logo.png',
+        address || '',
+        phone || '',
+        email || '',
+        gst_number || '',
+        Number(default_gst_percent || 0),
+        business_hours || '',
+      ]
     );
-    res.json({ message: 'Settings updated successfully' });
+    res.json({ message: 'Salon settings updated successfully' });
   } catch (err) {
     console.error('Update settings error:', err);
     res.status(500).json({ error: 'Failed to update settings' });

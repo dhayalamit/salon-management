@@ -321,17 +321,17 @@ export default function StaffSalary() {
               </button>
             )}
 
-            {/* Pay Remaining Salary Button */}
+            {/* Pay Salary / Pay Remaining Salary Button */}
             {rem > 0 ? (
               <button
                 onClick={() => openPayModal(row)}
-                className="px-3 py-1.5 rounded-full bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-700 transition-all shadow-xs"
+                className="px-3 py-1.5 rounded-full bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-700 transition-all shadow-xs flex items-center gap-1"
               >
-                Pay Remaining
+                💰 {adv > 0 || Number(row.salary_paid || 0) > 0 ? 'Pay Remaining Salary' : 'Pay Salary'}
               </button>
             ) : (
-              <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold text-xs flex items-center gap-1 border border-emerald-200">
-                <Check size={12} /> Salary Settled
+              <span className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center gap-1 border border-emerald-300">
+                <Check size={14} /> Paid
               </span>
             )}
 
@@ -618,7 +618,7 @@ export default function StaffSalary() {
       <Modal
         isOpen={isPayModalOpen}
         onClose={() => setIsPayModalOpen(false)}
-        title={`Pay Remaining Salary — ${selectedRecord?.staff_name}`}
+        title={`${Number(selectedRecord?.advance_paid || 0) > 0 || Number(selectedRecord?.salary_paid || 0) > 0 ? 'Pay Remaining Salary' : 'Pay Salary'} — ${selectedRecord?.staff_name}`}
       >
         <div className="space-y-4">
           <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 space-y-1">

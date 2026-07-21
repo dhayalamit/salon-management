@@ -124,14 +124,6 @@ export default function Services() {
       ),
     },
     {
-      header: 'Price (₹)',
-      render: (row) => (
-        <span className="font-display text-base font-bold text-dark">
-          ₹{Number(row.price).toLocaleString('en-IN')}
-        </span>
-      ),
-    },
-    {
       header: 'Actions',
       render: (row) => (
         <div className="flex items-center gap-2">
