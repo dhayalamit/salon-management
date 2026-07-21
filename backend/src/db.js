@@ -316,7 +316,11 @@ async function query(sqlText, params = []) {
       .replace(/TIMESTAMPTZ/gi, 'TEXT')
       .replace(/COALESCE\(SUM\((.*?)\),\s*0\)/gi, 'IFNULL(SUM($1), 0)')
       .replace(/json_agg\(.*?\)/gi, "''")
-      .replace(/FOR UPDATE/gi, '');
+      .replace(/FOR UPDATE/gi, '')
+      .replace(/::text/gi, '')
+      .replace(/::date/gi, '')
+      .replace(/::timestamp/gi, '')
+      .replace(/CURRENT_TIMESTAMP/gi, "datetime('now')");
 
     // Replace $1, $2 with ?
     let paramIndex = 1;
