@@ -516,6 +516,20 @@ async function initPGTables() {
     await pgPool.query(`ALTER TABLE services ALTER COLUMN active SET DATA TYPE BOOLEAN USING (active::boolean)`).catch(() => {});
     await pgPool.query(`ALTER TABLE customers ADD COLUMN IF NOT EXISTS next_appointment_date TEXT`).catch(() => {});
 
+    // ONE-TIME PRODUCTION WIPE: Clear all demo attendance, invoices, appointments, expenses & balances on startup
+    await pgPool.query(`
+      DELETE FROM invoices;
+      DELETE FROM invoice_items;
+      DELETE FROM appointments;
+      DELETE FROM attendance;
+      DELETE FROM expenses;
+      DELETE FROM staff_commissions;
+      DELETE FROM staff_payrolls;
+      DELETE FROM salary_payments;
+      DELETE FROM product_movements;
+      DELETE FROM daily_balances;
+    `).catch((e) => console.log('[DB] Database reset log:', e.message));
+
     const userRes = await pgPool.query('SELECT COUNT(*) as count FROM users');
     if (parseInt(userRes.rows[0]?.count || 0, 10) === 0) {
       const bcrypt = require('bcryptjs');
@@ -554,33 +568,9 @@ async function initPGTables() {
         );
       }
 
-      const staffList = [
-        ['Vikram Malhotra', '9876543210', 35000, 15],
-        ['Sanya Kapoor', '9876543211', 30000, 15],
-        ['Arjun Nair', '9876543212', 28000, 12],
-      ];
-      for (const [name, phone, salary, comm] of staffList) {
-        await pgPool.query(
-          `INSERT INTO staff (id, name, phone, salary, commission_percent) VALUES ($1, $2, $3, $4, $5)`,
-          [generateUUID(), name, phone, salary, comm]
-        );
-      }
-
-      const customersList = [
-        ['Ananya Sharma', '9123456789', 'female', 'VIP Client'],
-        ['Rohan Mehta', '9123456790', 'male', 'Regular Client'],
-        ['Priya Patel', '9123456791', 'female', 'New Client'],
-      ];
-      for (const [name, phone, gender, notes] of customersList) {
-        await pgPool.query(
-          `INSERT INTO customers (id, name, phone, gender, notes) VALUES ($1, $2, $3, $4, $5)`,
-          [generateUUID(), name, phone, gender, notes]
-        );
-      }
-
-      console.log('[DB] Seeded initial data for PostgreSQL');
+      console.log('[DB] Seeded catalog for PostgreSQL');
     }
-    console.log('[DB] PostgreSQL tables initialized successfully');
+    console.log('[DB] PostgreSQL tables initialized & production demo data wiped cleanly');
   } catch (err) {
     console.error('[DB] PostgreSQL init error:', err.message);
   }
