@@ -114,4 +114,33 @@ router.put('/profile', authenticate, async (req, res) => {
   }
 });
 
+// POST /api/settings/reset-data — Complete system data reset
+router.post('/reset-data', authenticate, async (req, res) => {
+  try {
+    await db.query('DELETE FROM invoices');
+    await db.query('DELETE FROM invoice_items');
+    await db.query('DELETE FROM appointments');
+    await db.query('DELETE FROM attendance');
+    await db.query('DELETE FROM customers');
+    await db.query('DELETE FROM expenses');
+    await db.query('DELETE FROM staff_commissions');
+    await db.query('DELETE FROM staff_payrolls');
+    await db.query('DELETE FROM salary_payments');
+    await db.query('DELETE FROM product_movements');
+    await db.query('DELETE FROM daily_balances');
+
+    // Reset product stock quantities
+    await db.query('UPDATE products SET stock_quantity = 25 WHERE name LIKE \'%Shampoo%\' OR name LIKE \'%Luxe%\'');
+    await db.query('UPDATE products SET stock_quantity = 15 WHERE name LIKE \'%Serum%\' OR name LIKE \'%Keratin%\'');
+    await db.query('UPDATE products SET stock_quantity = 30 WHERE name LIKE \'%Wax%\' OR name LIKE \'%Styling%\'');
+    await db.query('UPDATE products SET stock_quantity = 20 WHERE name LIKE \'%Mask%\' OR name LIKE \'%Face%\'');
+    await db.query('UPDATE products SET stock_quantity = 10 WHERE name LIKE \'%Elixir%\' OR name LIKE \'%Beard%\'');
+
+    res.json({ message: 'All salon transaction & demo data has been reset successfully.' });
+  } catch (err) {
+    console.error('Reset data error:', err);
+    res.status(500).json({ error: 'Failed to reset system data' });
+  }
+});
+
 module.exports = router;
