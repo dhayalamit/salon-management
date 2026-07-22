@@ -521,19 +521,21 @@ export default function Billing() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-dark/70 mb-1.5">Payment Method</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {['cash', 'upi', 'card'].map((method) => (
+                <div className="grid grid-cols-4 gap-2">
+                  {['cash', 'upi', 'card', 'pending'].map((method) => (
                     <button
                       key={method}
                       type="button"
                       onClick={() => setPaymentMethod(method)}
                       className={`py-2 rounded-xl text-xs font-semibold uppercase transition-all ${
                         paymentMethod === method
-                          ? 'bg-[#D4AF37] text-white shadow-sm'
+                          ? method === 'pending'
+                            ? 'bg-amber-600 text-white shadow-sm font-bold'
+                            : 'bg-[#D4AF37] text-white shadow-sm font-bold'
                           : 'bg-[#F4F0E6] text-dark/70 border border-[#E8DFCF]'
                       }`}
                     >
-                      {method}
+                      {method === 'pending' ? '⌛ PENDING' : method}
                     </button>
                   ))}
                 </div>

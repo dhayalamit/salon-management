@@ -24,17 +24,13 @@ router.get('/stats', authenticate, async (req, res) => {
     const currentYear = d.getFullYear();
     const currentMonthIndex = d.getMonth();
 
-    // Run queries with individual error catching so no single query breaks the entire response
     const todayRevQuery = db.query(
       `SELECT COALESCE(SUM(total), 0) AS revenue
        FROM invoices
        WHERE (created_at::text LIKE $1 || '%' OR created_at::text LIKE $2 || '%' OR created_at::text LIKE $3 || '%')
          AND (payment_method IS NULL OR (LOWER(payment_method) != 'cancelled' AND LOWER(payment_method) != 'draft' AND LOWER(payment_method) != 'pending'))`,
       [d1, d2, d3]
-    ).catch((err) => {
-      console.error('todayRev error:', err.message);
-      return { rows: [{ revenue: 0 }] };
-    });
+    ).catch(() => ({ rows: [{ revenue: 0 }] }));
 
     const todayCashQuery = db.query(
       `SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS count
@@ -42,10 +38,7 @@ router.get('/stats', authenticate, async (req, res) => {
        WHERE (created_at::text LIKE $1 || '%' OR created_at::text LIKE $2 || '%' OR created_at::text LIKE $3 || '%')
          AND (LOWER(COALESCE(payment_method, 'cash')) = 'cash' OR LOWER(payment_method) LIKE '%cash%')`,
       [d1, d2, d3]
-    ).catch((err) => {
-      console.error('todayCash error:', err.message);
-      return { rows: [{ total: 0, count: 0 }] };
-    });
+    ).catch(() => ({ rows: [{ total: 0, count: 0 }] }));
 
     const todayOnlineQuery = db.query(
       `SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS count
@@ -56,10 +49,7 @@ router.get('/stats', authenticate, async (req, res) => {
          AND LOWER(COALESCE(payment_method, '')) != 'pending'
          AND LOWER(COALESCE(payment_method, '')) != 'cancelled'`,
       [d1, d2, d3]
-    ).catch((err) => {
-      console.error('todayOnline error:', err.message);
-      return { rows: [{ total: 0, count: 0 }] };
-    });
+    ).catch(() => ({ rows: [{ total: 0, count: 0 }] }));
 
     const todayApptsQuery = db.query(
       `SELECT COUNT(*) AS count
@@ -67,10 +57,7 @@ router.get('/stats', authenticate, async (req, res) => {
        WHERE (appointment_date::text LIKE $1 || '%' OR appointment_date::text LIKE $2 || '%' OR appointment_date::text LIKE $3 || '%')
          AND LOWER(status) IN ('booked', 'confirmed', 'completed', 'in_progress', 'started')`,
       [d1, d2, d3]
-    ).catch((err) => {
-      console.error('todayAppts error:', err.message);
-      return { rows: [{ count: 0 }] };
-    });
+    ).catch(() => ({ rows: [{ count: 0 }] }));
 
     const todayCustsQuery = db.query(
       `SELECT COUNT(DISTINCT customer_id) AS count
@@ -78,10 +65,7 @@ router.get('/stats', authenticate, async (req, res) => {
        WHERE (created_at::text LIKE $1 || '%' OR created_at::text LIKE $2 || '%' OR created_at::text LIKE $3 || '%')
          AND customer_id IS NOT NULL`,
       [d1, d2, d3]
-    ).catch((err) => {
-      console.error('todayCusts error:', err.message);
-      return { rows: [{ count: 0 }] };
-    });
+    ).catch(() => ({ rows: [{ count: 0 }] }));
 
     const pendingPayQuery = db.query(
       `SELECT COALESCE(SUM(total), 0) AS pending FROM invoices WHERE LOWER(payment_method) = 'pending'`
@@ -132,6 +116,16 @@ router.get('/stats', authenticate, async (req, res) => {
       [d1, d2, d3]
     ).catch(() => ({ rows: [] }));
 
+    const todayExpensesQuery = db.query(
+      `SELECT COALESCE(SUM(amount), 0) AS total FROM expenses WHERE (expense_date::text LIKE $1 || '%' OR expense_date::text LIKE $2 || '%' OR expense_date::text LIKE $3 || '%')`,
+      [d1, d2, d3]
+    ).catch(() => ({ rows: [{ total: 0 }] }));
+
+    const dailyBalanceQuery = db.query(
+      `SELECT * FROM daily_balances WHERE (date LIKE $1 || '%' OR date LIKE $2 || '%' OR date LIKE $3 || '%') ORDER BY created_at DESC LIMIT 1`,
+      [d1, d2, d3]
+    ).catch(() => ({ rows: [] }));
+
     const [
       todayRev,
       todayCash,
@@ -145,6 +139,8 @@ router.get('/stats', authenticate, async (req, res) => {
       todayAppointments,
       lowStockItems,
       todayStaff,
+      todayExpenses,
+      dailyBalance,
     ] = await Promise.all([
       todayRevQuery,
       todayCashQuery,
@@ -158,12 +154,23 @@ router.get('/stats', authenticate, async (req, res) => {
       todayAppointmentsQuery,
       lowStockItemsQuery,
       todayStaffQuery,
+      todayExpensesQuery,
+      dailyBalanceQuery,
     ]);
 
     const cashAmount = Number(todayCash.rows[0]?.total || 0);
     const cashCount = Number(todayCash.rows[0]?.count || 0);
     const onlineAmount = Number(todayOnline.rows[0]?.total || 0);
     const onlineCount = Number(todayOnline.rows[0]?.count || 0);
+    const totalRevenue = Number(todayRev.rows[0]?.revenue || (cashAmount + onlineAmount));
+    const totalExpenses = Number(todayExpenses.rows[0]?.total || 0);
+
+    const balanceRecord = dailyBalance.rows[0] || {};
+    const openingBalance = Number(balanceRecord.opening_balance || 0);
+    // Calculated closing balance = opening + today revenue - today expenses (or manually overridden if stored)
+    const closingBalance = balanceRecord.closing_balance !== undefined && balanceRecord.closing_balance !== null && balanceRecord.closing_balance !== 0
+      ? Number(balanceRecord.closing_balance)
+      : Math.max(0, openingBalance + totalRevenue - totalExpenses);
 
     // Calculate actual monthly revenue trend
     const monthlyRevenueTrend = [];
@@ -206,11 +213,15 @@ router.get('/stats', authenticate, async (req, res) => {
     ).catch(() => ({ rows: [] }));
 
     res.json({
-      todayRevenue: Number(todayRev.rows[0]?.revenue || (cashAmount + onlineAmount)),
+      todayRevenue: totalRevenue,
       todayCashRevenue: cashAmount,
       todayCashCount: cashCount,
       todayOnlineRevenue: onlineAmount,
       todayOnlineCount: onlineCount,
+      todayExpenses: totalExpenses,
+      todayOpeningBalance: openingBalance,
+      todayClosingBalance: closingBalance,
+      todayBalanceNotes: balanceRecord.notes || '',
       todayAppointments: Number(todayAppts.rows[0]?.count || 0),
       todayCustomers: Number(todayCusts.rows[0]?.count || 0),
       pendingPayments: Number(pendingPay.rows[0]?.pending || 0),
@@ -227,6 +238,34 @@ router.get('/stats', authenticate, async (req, res) => {
   } catch (err) {
     console.error('Fetch dashboard stats error:', err);
     res.status(500).json({ error: 'Failed to fetch dashboard stats' });
+  }
+});
+
+// POST /api/dashboard/balance — Save or update Opening & Closing Balance for today
+router.post('/balance', authenticate, async (req, res) => {
+  try {
+    const { openingBalance, closingBalance, notes } = req.body;
+    const [d1] = getTodayDateStrings();
+
+    const existing = await db.query('SELECT id FROM daily_balances WHERE date = $1', [d1]);
+
+    if (existing.rows && existing.rows.length > 0) {
+      const { rows } = await db.query(
+        `UPDATE daily_balances SET opening_balance = $1, closing_balance = $2, notes = $3 WHERE date = $4 RETURNING *`,
+        [Number(openingBalance || 0), Number(closingBalance || 0), notes || null, d1]
+      );
+      return res.json(rows[0] || { date: d1, opening_balance: openingBalance, closing_balance: closingBalance });
+    } else {
+      const id = db.generateUUID();
+      const { rows } = await db.query(
+        `INSERT INTO daily_balances (id, date, opening_balance, closing_balance, notes) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+        [id, d1, Number(openingBalance || 0), Number(closingBalance || 0), notes || null]
+      );
+      return res.status(201).json(rows[0] || { id, date: d1, opening_balance: openingBalance, closing_balance: closingBalance });
+    }
+  } catch (err) {
+    console.error('Save daily balance error:', err);
+    res.status(500).json({ error: 'Failed to save daily balance' });
   }
 });
 

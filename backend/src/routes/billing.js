@@ -23,8 +23,8 @@ router.get('/', authenticate, async (req, res) => {
     const { rows } = await db.query(
       `SELECT i.*, c.name AS customer_name, c.phone AS customer_phone, s.name AS staff_name
        FROM invoices i
-       LEFT JOIN customers c ON c.id = i.customer_id
-       LEFT JOIN staff s ON s.id = i.staff_id
+       LEFT JOIN customers c ON c.id::text = i.customer_id::text
+       LEFT JOIN staff s ON s.id::text = i.staff_id::text
        ORDER BY i.created_at DESC LIMIT 200`
     );
     res.json(rows);
@@ -40,8 +40,8 @@ router.get('/:id', authenticate, async (req, res) => {
     const invoiceQ = await db.query(
       `SELECT i.*, c.name AS customer_name, c.phone AS customer_phone, c.notes AS customer_notes, s.name AS staff_name
        FROM invoices i
-       LEFT JOIN customers c ON c.id = i.customer_id
-       LEFT JOIN staff s ON s.id = i.staff_id
+       LEFT JOIN customers c ON c.id::text = i.customer_id::text
+       LEFT JOIN staff s ON s.id::text = i.staff_id::text
        WHERE i.id = $1`,
       [req.params.id]
     );
@@ -49,7 +49,7 @@ router.get('/:id', authenticate, async (req, res) => {
     const itemsQ = await db.query(
       `SELECT ii.*, s.name AS staff_name
        FROM invoice_items ii
-       LEFT JOIN staff s ON s.id = ii.staff_id
+       LEFT JOIN staff s ON s.id::text = ii.staff_id::text
        WHERE ii.invoice_id = $1`,
       [req.params.id]
     );
@@ -57,6 +57,25 @@ router.get('/:id', authenticate, async (req, res) => {
   } catch (err) {
     console.error('Fetch invoice details error:', err);
     res.status(500).json({ error: 'Failed to fetch invoice details' });
+  }
+});
+
+// PUT /api/billing/:id/payment — Settle payment method for pending invoice
+router.put('/:id/payment', authenticate, async (req, res) => {
+  try {
+    const { paymentMethod } = req.body;
+    if (!paymentMethod) return res.status(400).json({ error: 'Payment method is required' });
+
+    const { rows } = await db.query(
+      `UPDATE invoices SET payment_method = $1 WHERE id = $2 RETURNING *`,
+      [paymentMethod, req.params.id]
+    );
+
+    if (!rows[0]) return res.status(404).json({ error: 'Invoice not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Update invoice payment error:', err);
+    res.status(500).json({ error: 'Failed to update payment method' });
   }
 });
 
@@ -181,41 +200,45 @@ router.post('/', authenticate, async (req, res) => {
               qtySold,
               stockBefore,
               stockAfter,
-              req.user?.name || 'Admin',
+              req.user?.name || 'Staff',
             ]
           );
         }
       }
+
+      // Record staff commission if service line item
+      if (item.type === 'service' && itemStaffId && item.commissionAmount > 0) {
+        const commId = db.generateUUID();
+        await db.query(
+          `INSERT INTO staff_commissions
+            (id, staff_id, customer_id, service_name, commission_type, commission_rate, base_amount, commission_amount, status, date)
+           VALUES ($1,$2,$3,$4,'percent',$5,$6,$7,'Pending',CURRENT_DATE)`,
+          [
+            commId,
+            itemStaffId,
+            customerId || null,
+            item.name,
+            item.commissionPercent || 0,
+            item.lineTotal,
+            item.commissionAmount,
+          ]
+        );
+      }
     }
 
-    const createdInvoice = invoiceQ.rows[0] || {
-      id: invoiceId,
-      invoice_number: invoiceNumber,
-      customer_id: customerId,
-      staff_id: staffId,
-      subtotal,
-      discount: billDiscount,
-      gst_percent: gstPct,
-      gst_amount: gstAmount,
-      total,
-      payment_method: paymentMethod || 'cash',
-      created_at: new Date().toISOString(),
-    };
-
-    res.status(201).json({ ...createdInvoice, items: computedItems });
+    res.status(201).json(invoiceQ.rows[0]);
   } catch (err) {
     console.error('Create invoice error:', err);
-    res.status(500).json({ error: err.message || 'Failed to create invoice' });
+    res.status(500).json({ error: 'Failed to create tax invoice' });
   }
 });
 
-// DELETE /api/billing/:id — Cancel/Delete invoice & restore product inventory stock
+// DELETE /api/billing/:id — Cancel Invoice & Restore Stock
 router.delete('/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
-
-    const invQ = await db.query('SELECT * FROM invoices WHERE id = $1', [id]);
-    const invoice = invQ.rows[0];
+    const invoiceQ = await db.query('SELECT * FROM invoices WHERE id = $1', [id]);
+    const invoice = invoiceQ.rows[0];
     if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
 
     // Fetch product items to restore stock

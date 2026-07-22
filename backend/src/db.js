@@ -239,6 +239,17 @@ async function initSQLiteTables() {
     `);
 
     sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS daily_balances (
+        id TEXT PRIMARY KEY,
+        date TEXT UNIQUE NOT NULL,
+        opening_balance REAL DEFAULT 0,
+        closing_balance REAL DEFAULT 0,
+        notes TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+    `);
+
+    sqliteDb.run(`
       CREATE TABLE IF NOT EXISTS settings (
         id INTEGER PRIMARY KEY CHECK (id = 1),
         salon_name TEXT DEFAULT 'TRIO THE POSH',
@@ -476,6 +487,14 @@ async function initPGTables() {
         expense_date TEXT NOT NULL DEFAULT CURRENT_DATE,
         note TEXT
       );
+      CREATE TABLE IF NOT EXISTS daily_balances (
+        id TEXT PRIMARY KEY,
+        date TEXT UNIQUE NOT NULL,
+        opening_balance REAL DEFAULT 0,
+        closing_balance REAL DEFAULT 0,
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
       CREATE TABLE IF NOT EXISTS settings (
         id INTEGER PRIMARY KEY CHECK (id = 1),
         salon_name TEXT DEFAULT 'TRIO THE POSH',
@@ -576,10 +595,7 @@ async function query(sqlText, params = []) {
     let text = sqlText
       .replace(/CURRENT_DATE/gi, "to_char(CURRENT_DATE, 'YYYY-MM-DD')")
       .replace(/active = true/gi, "(active::text IN ('true', '1') OR active IS NULL)")
-      .replace(/active = false/gi, "(active::text IN ('false', '0'))")
-      .replace(/substr\(created_at, 1, 10\)/gi, "to_char(created_at, 'YYYY-MM-DD')")
-      .replace(/substr\(appointment_date, 1, 10\)/gi, "to_char(appointment_date::date, 'YYYY-MM-DD')")
-      .replace(/substr\(date, 1, 10\)/gi, "date");
+      .replace(/active = false/gi, "(active::text IN ('false', '0'))");
     return await pgPool.query(text, params);
   }
 

@@ -25,14 +25,29 @@ import {
   BarChart3,
   Settings as SettingsIcon,
   LayoutGrid,
+  Edit3,
+  CheckCircle,
+  PiggyBank,
+  Landmark,
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Modal from '../components/ui/Modal.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { showSuccess, showError } = useToast();
+
   const [stats, setStats] = useState({
     todayRevenue: 0,
+    todayCashRevenue: 0,
+    todayCashCount: 0,
+    todayOnlineRevenue: 0,
+    todayOnlineCount: 0,
+    todayExpenses: 0,
+    todayOpeningBalance: 0,
+    todayClosingBalance: 0,
+    todayBalanceNotes: '',
     todayAppointments: 0,
     todayCustomers: 0,
     pendingPayments: 0,
@@ -42,15 +57,25 @@ export default function Dashboard() {
     todayAppointmentsList: [],
     lowStockProductsList: [],
     todayStaffPresentList: [],
-    todayPaymentMethods: [],
     monthlyRevenueTrend: [],
     recentInvoices: [],
     upcomingAppointments: [],
   });
   const [loading, setLoading] = useState(true);
 
-  // Active Popup Modal state: null | 'revenue' | 'appointments' | 'customers' | 'pending' | 'staff' | 'low_stock'
+  // Active Popup Modal state: null | 'revenue' | 'appointments' | 'customers' | 'pending' | 'staff' | 'low_stock' | 'balance'
   const [activeModal, setActiveModal] = useState(null);
+
+  // Daily Balance Form State
+  const [balanceForm, setBalanceForm] = useState({
+    openingBalance: '',
+    closingBalance: '',
+    notes: '',
+  });
+
+  // Pending Payment Settlement State
+  const [settleInvoice, setSettleInvoice] = useState(null);
+  const [settleMethod, setSettleMethod] = useState('cash');
 
   useEffect(() => {
     fetchStats();
@@ -75,10 +100,42 @@ export default function Dashboard() {
     try {
       const res = await client.get('/dashboard/stats');
       setStats(res.data);
+      setBalanceForm({
+        openingBalance: res.data.todayOpeningBalance || 0,
+        closingBalance: res.data.todayClosingBalance || 0,
+        notes: res.data.todayBalanceNotes || '',
+      });
     } catch (err) {
       console.error('Failed to fetch dashboard stats', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveDailyBalance = async (e) => {
+    e.preventDefault();
+    try {
+      await client.post('/dashboard/balance', balanceForm);
+      showSuccess('Daily register balance updated successfully');
+      setActiveModal(null);
+      fetchStats();
+    } catch (err) {
+      showError('Failed to update daily balance');
+    }
+  };
+
+  const handleSettlePendingPayment = async (e) => {
+    e.preventDefault();
+    if (!settleInvoice) return;
+    try {
+      await client.put(`/billing/${settleInvoice.id}/payment`, { paymentMethod: settleMethod });
+      showSuccess(`Payment collected via ${settleMethod.toUpperCase()} successfully`);
+      setSettleInvoice(null);
+      window.dispatchEvent(new CustomEvent('billing_updated'));
+      window.dispatchEvent(new CustomEvent('dashboard_updated'));
+      fetchStats();
+    } catch (err) {
+      showError('Failed to settle pending payment');
     }
   };
 
@@ -111,6 +168,8 @@ export default function Dashboard() {
     { title: 'Settings', icon: SettingsIcon, route: '/settings', color: 'bg-slate-100 text-slate-700', border: 'border-slate-300', desc: 'Salon Branding' },
   ];
 
+  const pendingInvoicesList = stats.todayInvoicesList.filter((inv) => (inv.payment_method || '').toLowerCase() === 'pending');
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -131,23 +190,70 @@ export default function Dashboard() {
             <h1 className="font-display text-xl sm:text-3xl font-bold text-dark tracking-tight">
               Salon Command Center
             </h1>
-            <p className="text-xs text-dark/50 mt-0.5">Direct 1-tap mobile access to all salon modules & live metrics</p>
+            <p className="text-xs text-dark/50 mt-0.5">Real-time salon metrics, daily balances & instant module shortcuts</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
           <button
+            onClick={() => setActiveModal('balance')}
+            className="px-4 py-2.5 rounded-full bg-[#F4F0E6] border border-[#E8DFCF] text-dark font-semibold text-xs hover:bg-white transition-all flex items-center justify-center gap-2"
+          >
+            <Edit3 size={15} className="text-[#D4AF37]" /> Daily Register Balances
+          </button>
+          <button
             onClick={() => navigate('/billing')}
-            className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-md flex items-center justify-center gap-2"
+            className="px-4 sm:px-5 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-md flex items-center justify-center gap-2"
           >
             <Receipt size={16} /> POS Terminal
           </button>
-          <button
-            onClick={() => navigate('/appointments')}
-            className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 rounded-full bg-white border border-[#E8DFCF] text-dark font-semibold text-xs hover:bg-[#F4F0E6] transition-all flex items-center justify-center gap-2"
-          >
-            <Calendar size={16} /> Bookings
-          </button>
+        </div>
+      </div>
+
+      {/* Register Opening & Closing Balances Banner Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Opening Balance Card */}
+        <div
+          onClick={() => setActiveModal('balance')}
+          className="glass-card p-4 sm:p-5 flex items-center justify-between border-l-4 border-l-blue-500 cursor-pointer hover:border-blue-400 transition-all group"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 shrink-0">
+              <Landmark size={22} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-dark/50 uppercase tracking-wider">Today's Opening Balance</p>
+              <h3 className="font-display text-2xl font-bold text-dark mt-0.5">
+                ₹{Number(stats.todayOpeningBalance || 0).toLocaleString('en-IN')}
+              </h3>
+              <p className="text-[10px] text-blue-600 mt-0.5 font-medium">Cash float in register at start of day</p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-[#D4AF37] bg-white px-3 py-1.5 rounded-full border border-[#E8DFCF] shadow-xs group-hover:bg-[#D4AF37] group-hover:text-white transition-all">
+            Edit →
+          </span>
+        </div>
+
+        {/* Estimated Closing Balance Card */}
+        <div
+          onClick={() => setActiveModal('balance')}
+          className="glass-card p-4 sm:p-5 flex items-center justify-between border-l-4 border-l-emerald-500 cursor-pointer hover:border-emerald-400 transition-all group"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-600 shrink-0">
+              <PiggyBank size={22} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-dark/50 uppercase tracking-wider">Today's Closing Balance</p>
+              <h3 className="font-display text-2xl font-bold text-emerald-700 mt-0.5">
+                ₹{Number(stats.todayClosingBalance || 0).toLocaleString('en-IN')}
+              </h3>
+              <p className="text-[10px] text-emerald-600 mt-0.5 font-medium">Opening + Revenue (₹{stats.todayRevenue}) - Expenses (₹{stats.todayExpenses})</p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+            Manage →
+          </span>
         </div>
       </div>
 
@@ -232,6 +338,11 @@ export default function Dashboard() {
             <div className="p-2 sm:p-2.5 rounded-2xl bg-amber-50 text-amber-600">
               <DollarSign size={18} />
             </div>
+            {stats.pendingPayments > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">
+                Action
+              </span>
+            )}
           </div>
           <div className="mt-3 sm:mt-4">
             <p className="text-[11px] sm:text-xs font-medium text-dark/50 flex items-center justify-between">
@@ -322,7 +433,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Main Section: Chart & Quick Actions */}
+      {/* Main Section: Chart & Quick Operations */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: Revenue Chart */}
         <div className="lg:col-span-2 glass-card p-4 sm:p-6 flex flex-col justify-between">
@@ -420,81 +531,76 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Bottom Section: Recent Invoices & Upcoming Appointments */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Invoices */}
-        <div className="glass-card p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-lg font-bold text-dark">Recent Billing Activity</h3>
-            <button onClick={() => navigate('/billing')} className="text-xs font-semibold text-[#D4AF37] hover:underline">
-              View All
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {stats.recentInvoices.length === 0 ? (
-              <p className="text-xs text-dark/40 py-6 text-center italic">No recent billing activity</p>
-            ) : (
-              stats.recentInvoices.map((inv) => (
-                <div key={inv.id} className="flex items-center justify-between p-3 rounded-2xl bg-[#F4F0E6]/50 border border-[#E8DFCF]">
-                  <div>
-                    <p className="text-xs font-bold text-dark">{inv.invoice_number}</p>
-                    <p className="text-[11px] text-dark/50">{inv.customer_name || 'Walk-in Customer'}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-display text-sm font-bold text-[#D4AF37]">₹{Number(inv.total).toLocaleString('en-IN')}</p>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
-                      {inv.payment_method || 'Cash'}
-                    </span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Upcoming Appointments */}
-        <div className="glass-card p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-lg font-bold text-dark">Upcoming Bookings</h3>
-            <button onClick={() => navigate('/appointments')} className="text-xs font-semibold text-[#D4AF37] hover:underline">
-              View Schedule
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {stats.upcomingAppointments.length === 0 ? (
-              <p className="text-xs text-dark/40 py-6 text-center italic">No upcoming appointments booked</p>
-            ) : (
-              stats.upcomingAppointments.map((app) => (
-                <div key={app.id} className="flex items-center justify-between p-3 rounded-2xl bg-[#F4F0E6]/50 border border-[#E8DFCF]">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-white text-[#D4AF37] border border-[#E8DFCF]">
-                      <Clock size={16} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-dark">{app.customer_name || 'Client'}</p>
-                      <p className="text-[11px] text-dark/50">{app.service_name || 'Service'} • {app.appointment_time}</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-semibold text-dark/70 bg-white px-2.5 py-1 rounded-full border border-[#E8DFCF]">
-                    {app.staff_name || 'Any Staff'}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* ======================= POPUP MODALS FOR STAT CARDS ======================= */}
+
+      {/* 0. Manage Daily Register Balances Modal */}
+      <Modal isOpen={activeModal === 'balance'} onClose={() => setActiveModal(null)} title="Manage Daily Register Balances">
+        <form onSubmit={handleSaveDailyBalance} className="space-y-4 text-xs">
+          <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200">
+            <h4 className="font-bold text-blue-900 text-sm">Opening & Closing Cash Register Float</h4>
+            <p className="text-blue-700 text-[11px] mt-0.5">Admin can set the opening cash float for today and manage closing balance records.</p>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-dark/70 mb-1">Today's Opening Cash Balance (₹)</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={balanceForm.openingBalance}
+              onChange={(e) => setBalanceForm({ ...balanceForm, openingBalance: e.target.value })}
+              placeholder="e.g. 5000"
+              className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark text-sm focus:outline-none focus:border-[#D4AF37]"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold text-dark/70 mb-1">Target / Overridden Closing Cash Balance (₹)</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={balanceForm.closingBalance}
+              onChange={(e) => setBalanceForm({ ...balanceForm, closingBalance: e.target.value })}
+              placeholder="Leave 0 for automatic calculation"
+              className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark text-sm focus:outline-none focus:border-[#D4AF37]"
+            />
+            <p className="text-[10px] text-dark/40 mt-1">Calculated default: Opening (₹{balanceForm.openingBalance || 0}) + Revenue (₹{stats.todayRevenue}) - Expenses (₹{stats.todayExpenses}) = ₹{Math.max(0, Number(balanceForm.openingBalance || 0) + stats.todayRevenue - stats.todayExpenses)}</p>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-dark/70 mb-1">Register Audit Notes (Optional)</label>
+            <textarea
+              rows={2}
+              value={balanceForm.notes}
+              onChange={(e) => setBalanceForm({ ...balanceForm, notes: e.target.value })}
+              placeholder="Add cash drawer notes, discrepancies or register remarks..."
+              className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark text-xs focus:outline-none focus:border-[#D4AF37]"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-[#E8DFCF]">
+            <button
+              type="button"
+              onClick={() => setActiveModal(null)}
+              className="px-4 py-2 rounded-full border border-[#E8DFCF] text-dark/70 font-semibold hover:bg-[#F4F0E6]"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 rounded-full bg-[#D4AF37] text-white font-semibold hover:bg-[#C59F2E] flex items-center gap-1.5"
+            >
+              <CheckCircle size={15} /> Save Register Balance
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* 1. Today's Revenue Details Modal */}
       <Modal isOpen={activeModal === 'revenue'} onClose={() => setActiveModal(null)} title="Today's Revenue Breakdown">
         <div className="space-y-6">
-          {/* Revenue Breakdown Cards: Cash, Online, Total */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {/* Cash Revenue Card */}
             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex flex-col justify-between">
               <div>
                 <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">💵 Cash Revenue</span>
@@ -503,7 +609,6 @@ export default function Dashboard() {
               <p className="text-[11px] text-emerald-600 mt-2 font-medium">{stats.todayCashCount || 0} Cash Payments Today</p>
             </div>
 
-            {/* Online Revenue Card */}
             <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 flex flex-col justify-between">
               <div>
                 <span className="text-xs font-bold text-blue-800 uppercase tracking-wider">📱 Online / UPI / Card</span>
@@ -512,7 +617,6 @@ export default function Dashboard() {
               <p className="text-[11px] text-blue-600 mt-2 font-medium">{stats.todayOnlineCount || 0} Online Payments Today</p>
             </div>
 
-            {/* Total Revenue Card */}
             <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 flex flex-col justify-between">
               <div>
                 <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">💰 Total Revenue</span>
@@ -522,7 +626,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Today's Paid Invoices List */}
           <div>
             <h4 className="text-xs font-bold text-dark/70 uppercase tracking-wider mb-3">Today's Transactions List ({stats.todayInvoicesList.length})</h4>
             <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
@@ -531,6 +634,7 @@ export default function Dashboard() {
               ) : (
                 stats.todayInvoicesList.map((inv) => {
                   const isCash = (inv.payment_method || 'cash').toLowerCase().includes('cash');
+                  const isPending = (inv.payment_method || '').toLowerCase() === 'pending';
                   return (
                     <div key={inv.id} className="p-3 rounded-2xl bg-white border border-[#E8DFCF] flex items-center justify-between text-xs">
                       <div>
@@ -542,12 +646,14 @@ export default function Dashboard() {
                         <p className="font-display font-bold text-emerald-700 text-sm">₹{Number(inv.total).toLocaleString('en-IN')}</p>
                         <span
                           className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                            isCash
+                            isPending
+                              ? 'bg-amber-100 text-amber-800 border-amber-300'
+                              : isCash
                               ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
                               : 'bg-blue-100 text-blue-800 border-blue-200'
                           }`}
                         >
-                          {isCash ? '💵 Cash' : '📱 Online'}
+                          {isPending ? '⌛ Pending' : isCash ? '💵 Cash' : '📱 Online'}
                         </span>
                       </div>
                     </div>
@@ -650,26 +756,95 @@ export default function Dashboard() {
         </div>
       </Modal>
 
-      {/* 4. Pending Payments Modal */}
-      <Modal isOpen={activeModal === 'pending'} onClose={() => setActiveModal(null)} title="Pending Payments Overview">
+      {/* 4. Pending Payments Modal & Collect Settlement */}
+      <Modal isOpen={activeModal === 'pending'} onClose={() => setActiveModal(null)} title="Pending Payments & Collection">
         <div className="space-y-4">
-          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200">
-            <p className="text-xs font-semibold text-amber-800 uppercase tracking-wider">Total Pending Collection</p>
-            <h4 className="font-display text-2xl font-bold text-amber-700 mt-1">₹{stats.pendingPayments.toLocaleString('en-IN')}</h4>
-          </div>
-          <p className="text-xs text-dark/60">Manage pending balances and collect payment via the POS Terminal.</p>
-          <div className="flex justify-end pt-2">
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-amber-800 uppercase tracking-wider">Total Pending Collection</p>
+              <h4 className="font-display text-2xl font-bold text-amber-700 mt-1">₹{stats.pendingPayments.toLocaleString('en-IN')}</h4>
+            </div>
             <button
               onClick={() => {
                 setActiveModal(null);
                 navigate('/billing');
               }}
-              className="px-5 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] flex items-center gap-2"
+              className="px-4 py-2 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] flex items-center gap-1.5 shadow-sm"
             >
-              <Receipt size={16} /> Open POS Billing
+              <Receipt size={14} /> Open POS Terminal
             </button>
           </div>
+
+          {/* List of Pending Invoices */}
+          <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+            {pendingInvoicesList.length === 0 ? (
+              <p className="text-xs text-emerald-700 py-8 text-center font-semibold">🎉 All payments are up-to-date! No pending balances.</p>
+            ) : (
+              pendingInvoicesList.map((inv) => (
+                <div key={inv.id} className="p-3.5 rounded-2xl bg-white border border-amber-200 flex items-center justify-between text-xs">
+                  <div>
+                    <p className="font-bold text-dark text-sm">{inv.invoice_number}</p>
+                    <p className="text-xs text-dark/70 font-semibold">{inv.customer_name || 'Walk-in Client'} {inv.customer_phone ? `(${inv.customer_phone})` : ''}</p>
+                    <p className="text-[10px] text-dark/40">Stylist: {inv.staff_name || 'Staff'}</p>
+                  </div>
+                  <div className="text-right flex flex-col items-end gap-1">
+                    <span className="font-display font-bold text-amber-700 text-base">₹{Number(inv.total).toLocaleString('en-IN')}</span>
+                    <button
+                      onClick={() => setSettleInvoice(inv)}
+                      className="px-3 py-1 rounded-full bg-amber-600 text-white font-bold text-[11px] hover:bg-amber-700 transition-colors shadow-xs"
+                    >
+                      Collect Payment →
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
+      </Modal>
+
+      {/* Settle Pending Payment Modal */}
+      <Modal isOpen={!!settleInvoice} onClose={() => setSettleInvoice(null)} title={`Collect Payment — ${settleInvoice?.invoice_number}`}>
+        <form onSubmit={handleSettlePendingPayment} className="space-y-4 text-xs">
+          <div className="p-3.5 rounded-2xl bg-[#F4F0E6] border border-[#E8DFCF]">
+            <p className="text-dark/60">Client: <span className="font-bold text-dark">{settleInvoice?.customer_name || 'Walk-in Client'}</span></p>
+            <p className="text-dark/60 mt-0.5">Amount to Collect: <span className="font-display font-bold text-emerald-700 text-lg">₹{Number(settleInvoice?.total || 0).toLocaleString('en-IN')}</span></p>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-dark/70 mb-2">Select Received Payment Method</label>
+            <div className="grid grid-cols-3 gap-2">
+              {['cash', 'upi', 'card'].map((pm) => (
+                <button
+                  key={pm}
+                  type="button"
+                  onClick={() => setSettleMethod(pm)}
+                  className={`py-2.5 rounded-xl font-bold uppercase transition-all ${
+                    settleMethod === pm ? 'bg-[#D4AF37] text-white shadow-md' : 'bg-[#F4F0E6] text-dark/70 border border-[#E8DFCF]'
+                  }`}
+                >
+                  {pm}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-[#E8DFCF]">
+            <button
+              type="button"
+              onClick={() => setSettleInvoice(null)}
+              className="px-4 py-2 rounded-full border border-[#E8DFCF] text-dark/70 font-semibold hover:bg-[#F4F0E6]"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 rounded-full bg-emerald-600 text-white font-semibold hover:bg-emerald-700 flex items-center gap-1.5"
+            >
+              <CheckCircle size={15} /> Confirm Payment Collection
+            </button>
+          </div>
+        </form>
       </Modal>
 
       {/* 5. Staff Present Modal */}
