@@ -7,7 +7,7 @@ const router = express.Router();
 // GET /api/services
 router.get('/', authenticate, async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT * FROM services WHERE active = true ORDER BY name ASC');
+    const { rows } = await db.query("SELECT * FROM services WHERE active::text IN ('true', '1') OR active IS NULL ORDER BY name ASC");
     res.json(rows);
   } catch (err) {
     console.error('Fetch services error:', err);

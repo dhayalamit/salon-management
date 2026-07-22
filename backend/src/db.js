@@ -574,8 +574,8 @@ async function query(sqlText, params = []) {
   if (mode === 'pg') {
     let text = sqlText
       .replace(/CURRENT_DATE/gi, "to_char(CURRENT_DATE, 'YYYY-MM-DD')")
-      .replace(/active = true/gi, "(active = true OR active = true)")
-      .replace(/active = false/gi, "(active = false OR active = false)")
+      .replace(/active = true/gi, "(active::text IN ('true', '1') OR active IS NULL)")
+      .replace(/active = false/gi, "(active::text IN ('false', '0'))")
       .replace(/substr\(created_at, 1, 10\)/gi, "to_char(created_at, 'YYYY-MM-DD')")
       .replace(/substr\(appointment_date, 1, 10\)/gi, "to_char(appointment_date::date, 'YYYY-MM-DD')")
       .replace(/substr\(date, 1, 10\)/gi, "date");
