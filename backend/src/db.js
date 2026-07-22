@@ -118,6 +118,22 @@ function initSQLiteTables() {
     `);
 
     sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS product_movements (
+        id TEXT PRIMARY KEY,
+        product_id TEXT NOT NULL,
+        product_name TEXT NOT NULL,
+        invoice_id TEXT,
+        invoice_number TEXT,
+        type TEXT NOT NULL DEFAULT 'sale',
+        quantity INTEGER NOT NULL,
+        stock_before INTEGER NOT NULL,
+        stock_after INTEGER NOT NULL,
+        sold_by TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+    `);
+
+    sqliteDb.run(`
       CREATE TABLE IF NOT EXISTS appointments (
         id TEXT PRIMARY KEY,
         customer_id TEXT,
@@ -310,7 +326,199 @@ function initSQLiteTables() {
   });
 }
 
+async function initPGTables() {
+  if (mode !== 'pg') return;
+  try {
+    await pgPool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'staff',
+        staff_id TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS staff (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        phone TEXT,
+        photo_url TEXT,
+        joining_date DATE DEFAULT CURRENT_DATE,
+        salary REAL DEFAULT 0,
+        commission_percent REAL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'active',
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS attendance (
+        id TEXT PRIMARY KEY,
+        staff_id TEXT NOT NULL,
+        date TEXT NOT NULL,
+        status TEXT NOT NULL,
+        note TEXT,
+        UNIQUE (staff_id, date)
+      );
+      CREATE TABLE IF NOT EXISTS customers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        phone TEXT UNIQUE,
+        gender TEXT,
+        birthday TEXT,
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS services (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        price REAL NOT NULL,
+        duration_minutes INTEGER DEFAULT 30,
+        commission_percent REAL DEFAULT 0,
+        active INTEGER DEFAULT 1
+      );
+      CREATE TABLE IF NOT EXISTS products (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        category TEXT,
+        purchase_price REAL DEFAULT 0,
+        selling_price REAL NOT NULL,
+        stock_quantity INTEGER DEFAULT 0,
+        low_stock_threshold INTEGER DEFAULT 5
+      );
+      CREATE TABLE IF NOT EXISTS product_movements (
+        id TEXT PRIMARY KEY,
+        product_id TEXT NOT NULL,
+        product_name TEXT NOT NULL,
+        invoice_id TEXT,
+        invoice_number TEXT,
+        type TEXT NOT NULL DEFAULT 'sale',
+        quantity INTEGER NOT NULL,
+        stock_before INTEGER NOT NULL,
+        stock_after INTEGER NOT NULL,
+        sold_by TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS appointments (
+        id TEXT PRIMARY KEY,
+        customer_id TEXT,
+        staff_id TEXT,
+        service_id TEXT,
+        appointment_date TEXT NOT NULL,
+        appointment_time TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'booked',
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS invoices (
+        id TEXT PRIMARY KEY,
+        invoice_number TEXT UNIQUE NOT NULL,
+        customer_id TEXT,
+        staff_id TEXT,
+        subtotal REAL NOT NULL DEFAULT 0,
+        discount REAL NOT NULL DEFAULT 0,
+        gst_percent REAL DEFAULT 0,
+        gst_amount REAL DEFAULT 0,
+        total REAL NOT NULL DEFAULT 0,
+        payment_method TEXT,
+        commission_amount REAL DEFAULT 0,
+        next_appointment_date TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS invoice_items (
+        id TEXT PRIMARY KEY,
+        invoice_id TEXT NOT NULL,
+        item_type TEXT NOT NULL,
+        service_id TEXT,
+        product_id TEXT,
+        staff_id TEXT,
+        name TEXT NOT NULL,
+        quantity INTEGER NOT NULL DEFAULT 1,
+        unit_price REAL NOT NULL,
+        discount REAL NOT NULL DEFAULT 0,
+        commission_percent REAL DEFAULT 0,
+        commission_amount REAL DEFAULT 0,
+        line_total REAL NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS salary_payments (
+        id TEXT PRIMARY KEY,
+        payroll_id TEXT,
+        staff_id TEXT NOT NULL,
+        payment_date TEXT NOT NULL DEFAULT CURRENT_DATE,
+        amount REAL NOT NULL,
+        payment_mode TEXT,
+        payment_type TEXT DEFAULT 'salary',
+        month_covered TEXT,
+        note TEXT
+      );
+      CREATE TABLE IF NOT EXISTS staff_payrolls (
+        id TEXT PRIMARY KEY,
+        staff_id TEXT NOT NULL,
+        year_month TEXT NOT NULL,
+        monthly_salary REAL NOT NULL DEFAULT 0,
+        advance_paid REAL NOT NULL DEFAULT 0,
+        salary_paid REAL NOT NULL DEFAULT 0,
+        remaining_salary REAL NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'Pending',
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(staff_id, year_month)
+      );
+      CREATE TABLE IF NOT EXISTS staff_commissions (
+        id TEXT PRIMARY KEY,
+        staff_id TEXT NOT NULL,
+        customer_id TEXT,
+        service_name TEXT,
+        commission_type TEXT NOT NULL DEFAULT 'percent',
+        commission_rate REAL DEFAULT 0,
+        base_amount REAL DEFAULT 0,
+        commission_amount REAL NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'Pending',
+        payment_date TEXT,
+        paid_by TEXT,
+        date TEXT NOT NULL DEFAULT CURRENT_DATE,
+        remarks TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS expenses (
+        id TEXT PRIMARY KEY,
+        category TEXT NOT NULL,
+        amount REAL NOT NULL,
+        expense_date TEXT NOT NULL DEFAULT CURRENT_DATE,
+        note TEXT
+      );
+      CREATE TABLE IF NOT EXISTS settings (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        salon_name TEXT DEFAULT 'TRIO THE POSH',
+        tagline TEXT DEFAULT 'Redefining Beauty & Elegance',
+        logo_url TEXT,
+        address TEXT,
+        phone TEXT,
+        email TEXT,
+        gst_number TEXT,
+        default_gst_percent REAL DEFAULT 0,
+        business_hours TEXT
+      );
+      INSERT INTO settings (id, salon_name, tagline, address, phone, email, gst_number, default_gst_percent)
+      VALUES (1, 'TRIO THE POSH', 'Redefining Beauty & Elegance', '123 Luxury Avenue, Beverly Hills', '+1 800-POSH-SALON', 'info@triotheposh.com', 'GSTIN29AAACT1234F1Z5', 18)
+      ON CONFLICT (id) DO NOTHING;
+    `);
+
+    const userRes = await pgPool.query('SELECT COUNT(*) as count FROM users');
+    if (parseInt(userRes.rows[0]?.count || 0, 10) === 0) {
+      const bcrypt = require('bcryptjs');
+      const hash = bcrypt.hashSync('admin123', 10);
+      await pgPool.query(
+        `INSERT INTO users (id, name, email, password_hash, role) VALUES ($1, $2, $3, $4, $5)`,
+        [generateUUID(), 'TRIO POSH Admin', 'admin@salon.com', hash, 'admin']
+      );
+      console.log('[DB] Seeded initial admin user for PostgreSQL');
+    }
+    console.log('[DB] PostgreSQL tables initialized successfully');
+  } catch (err) {
+    console.error('[DB] PostgreSQL init error:', err.message);
+  }
+}
+
 initSQLiteTables();
+initPGTables();
 
 // Polyfill query method for unified SQL execution across postgres / sqlite
 async function query(sqlText, params = []) {

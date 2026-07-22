@@ -15,17 +15,14 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-// GET /api/products/movements — stock sales history
+// GET /api/products/movements — stock sales & movement history log
 router.get('/movements', authenticate, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT ii.*, i.invoice_number, i.created_at, c.name AS customer_name
-       FROM invoice_items ii
-       JOIN invoices i ON i.id = ii.invoice_id
-       LEFT JOIN customers c ON c.id = i.customer_id
-       WHERE ii.item_type = 'product'
-       ORDER BY i.created_at DESC
-       LIMIT 50`
+      `SELECT pm.*, pm.product_name AS name, pm.created_at
+       FROM product_movements pm
+       ORDER BY pm.created_at DESC
+       LIMIT 100`
     );
     res.json(rows);
   } catch (err) {
@@ -56,6 +53,17 @@ router.post('/', authenticate, async (req, res) => {
         Number(lowStockThreshold || 5),
       ]
     );
+
+    // Record initial stock creation movement
+    const movementId = db.generateUUID();
+    const initialQty = Number(stockQuantity || 0);
+    await db.query(
+      `INSERT INTO product_movements
+        (id, product_id, product_name, invoice_id, invoice_number, type, quantity, stock_before, stock_after, sold_by)
+       VALUES ($1,$2,$3,NULL,NULL,'initial_stock',$4,0,$4,$5)`,
+      [movementId, id, name, initialQty, req.user?.name || 'Admin']
+    );
+
     res.status(201).json(rows[0] || { id, name, selling_price: sellingPrice });
   } catch (err) {
     console.error('Create product error:', err);
@@ -67,6 +75,11 @@ router.post('/', authenticate, async (req, res) => {
 router.put('/:id', authenticate, async (req, res) => {
   try {
     const { name, category, purchasePrice, sellingPrice, stockQuantity, lowStockThreshold } = req.body;
+    
+    // Fetch product before update to check stock change
+    const prodQ = await db.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
+    const oldProd = prodQ.rows[0];
+
     const { rows } = await db.query(
       `UPDATE products SET name = COALESCE($1,name), category = COALESCE($2,category),
          purchase_price = COALESCE($3,purchase_price), selling_price = COALESCE($4,selling_price),
@@ -74,6 +87,19 @@ router.put('/:id', authenticate, async (req, res) => {
        WHERE id = $7 RETURNING *`,
       [name, category, purchasePrice, sellingPrice, stockQuantity, lowStockThreshold, req.params.id]
     );
+
+    if (oldProd && stockQuantity !== undefined && Number(stockQuantity) !== Number(oldProd.stock_quantity)) {
+      const movementId = db.generateUUID();
+      const newStock = Number(stockQuantity);
+      const oldStock = Number(oldProd.stock_quantity);
+      await db.query(
+        `INSERT INTO product_movements
+          (id, product_id, product_name, invoice_id, invoice_number, type, quantity, stock_before, stock_after, sold_by)
+         VALUES ($1,$2,$3,NULL,NULL,'adjustment',$4,$5,$6,$7)`,
+        [movementId, req.params.id, name || oldProd.name, newStock - oldStock, oldStock, newStock, req.user?.name || 'Admin']
+      );
+    }
+
     res.json(rows[0] || { id: req.params.id, name, selling_price: sellingPrice });
   } catch (err) {
     console.error('Update product error:', err);
@@ -84,6 +110,7 @@ router.put('/:id', authenticate, async (req, res) => {
 // DELETE /api/products/:id
 router.delete('/:id', authenticate, async (req, res) => {
   try {
+    await db.query('DELETE FROM product_movements WHERE product_id = $1', [req.params.id]);
     await db.query('DELETE FROM products WHERE id = $1', [req.params.id]);
     res.status(204).end();
   } catch (err) {

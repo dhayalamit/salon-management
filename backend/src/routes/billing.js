@@ -23,8 +23,8 @@ router.get('/', authenticate, async (req, res) => {
     const { rows } = await db.query(
       `SELECT i.*, c.name AS customer_name, c.phone AS customer_phone, s.name AS staff_name
        FROM invoices i
-       LEFT JOIN customers c ON c.id::text = i.customer_id::text
-       LEFT JOIN staff s ON s.id::text = i.staff_id::text
+       LEFT JOIN customers c ON c.id = i.customer_id
+       LEFT JOIN staff s ON s.id = i.staff_id
        ORDER BY i.created_at DESC LIMIT 200`
     );
     res.json(rows);
@@ -40,17 +40,17 @@ router.get('/:id', authenticate, async (req, res) => {
     const invoiceQ = await db.query(
       `SELECT i.*, c.name AS customer_name, c.phone AS customer_phone, c.notes AS customer_notes, s.name AS staff_name
        FROM invoices i
-       LEFT JOIN customers c ON c.id::text = i.customer_id::text
-       LEFT JOIN staff s ON s.id::text = i.staff_id::text
-       WHERE i.id::text = $1::text`,
+       LEFT JOIN customers c ON c.id = i.customer_id
+       LEFT JOIN staff s ON s.id = i.staff_id
+       WHERE i.id = $1`,
       [req.params.id]
     );
     if (!invoiceQ.rows[0]) return res.status(404).json({ error: 'Invoice not found' });
     const itemsQ = await db.query(
       `SELECT ii.*, s.name AS staff_name
        FROM invoice_items ii
-       LEFT JOIN staff s ON s.id::text = ii.staff_id::text
-       WHERE ii.invoice_id::text = $1::text`,
+       LEFT JOIN staff s ON s.id = ii.staff_id
+       WHERE ii.invoice_id = $1`,
       [req.params.id]
     );
     res.json({ ...invoiceQ.rows[0], items: itemsQ.rows || [] });
@@ -60,7 +60,7 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 });
 
-// POST /api/billing
+// POST /api/billing — Create Invoice & Deduct Product Stock
 router.post('/', authenticate, async (req, res) => {
   try {
     const { customerId, staffId, gstPercent, discount, paymentMethod, nextAppointmentDate, items } = req.body;
@@ -68,6 +68,24 @@ router.post('/', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'At least one item is required' });
     }
 
+    // Step 1: Pre-verify product stock availability to prevent negative inventory
+    for (const item of items) {
+      if (item.type === 'product' && item.id) {
+        const prodQ = await db.query('SELECT * FROM products WHERE id = $1', [item.id]);
+        const prod = prodQ.rows[0];
+        const requestedQty = Number(item.quantity || 1);
+        if (prod) {
+          const currentStock = Number(prod.stock_quantity || 0);
+          if (currentStock < requestedQty) {
+            return res.status(400).json({
+              error: `Insufficient stock for "${prod.name}". Only ${currentStock} in stock.`,
+            });
+          }
+        }
+      }
+    }
+
+    // Step 2: Compute invoice totals
     let subtotal = 0;
     let totalCommission = 0;
     const computedItems = items.map((item) => {
@@ -89,6 +107,7 @@ router.post('/', authenticate, async (req, res) => {
     const invoiceNumber = await nextInvoiceNumber();
     const invoiceId = db.generateUUID();
 
+    // Step 3: Insert Invoice
     const invoiceQ = await db.query(
       `INSERT INTO invoices
         (id, invoice_number, customer_id, staff_id, subtotal, discount, gst_percent, gst_amount, total,
@@ -110,6 +129,7 @@ router.post('/', authenticate, async (req, res) => {
       ]
     );
 
+    // Step 4: Insert Line Items & Deduct Product Stock + Log Movements
     for (const item of computedItems) {
       const itemId = db.generateUUID();
       const itemStaffId = item.type === 'service' ? (item.staffId || staffId || null) : null;
@@ -136,12 +156,35 @@ router.post('/', authenticate, async (req, res) => {
         ]
       );
 
-      // Decrement product stock if product
+      // Decrement product stock & record stock movement log
       if (item.type === 'product' && item.id) {
-        await db.query(
-          `UPDATE products SET stock_quantity = CASE WHEN stock_quantity - $1 > 0 THEN stock_quantity - $1 ELSE 0 END WHERE id::text = $2::text`,
-          [item.quantity || 1, item.id]
-        );
+        const prodQ = await db.query('SELECT * FROM products WHERE id = $1', [item.id]);
+        const prod = prodQ.rows[0];
+        if (prod) {
+          const stockBefore = Number(prod.stock_quantity || 0);
+          const qtySold = Number(item.quantity || 1);
+          const stockAfter = Math.max(0, stockBefore - qtySold);
+
+          await db.query(`UPDATE products SET stock_quantity = $1 WHERE id = $2`, [stockAfter, item.id]);
+
+          const movementId = db.generateUUID();
+          await db.query(
+            `INSERT INTO product_movements
+              (id, product_id, product_name, invoice_id, invoice_number, type, quantity, stock_before, stock_after, sold_by)
+             VALUES ($1,$2,$3,$4,$5,'sale',$6,$7,$8,$9)`,
+            [
+              movementId,
+              item.id,
+              prod.name,
+              invoiceId,
+              invoiceNumber,
+              qtySold,
+              stockBefore,
+              stockAfter,
+              req.user?.name || 'Admin',
+            ]
+          );
+        }
       }
     }
 
@@ -163,6 +206,63 @@ router.post('/', authenticate, async (req, res) => {
   } catch (err) {
     console.error('Create invoice error:', err);
     res.status(500).json({ error: err.message || 'Failed to create invoice' });
+  }
+});
+
+// DELETE /api/billing/:id — Cancel/Delete invoice & restore product inventory stock
+router.delete('/:id', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const invQ = await db.query('SELECT * FROM invoices WHERE id = $1', [id]);
+    const invoice = invQ.rows[0];
+    if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+    // Fetch product items to restore stock
+    const itemsQ = await db.query(
+      `SELECT * FROM invoice_items WHERE invoice_id = $1 AND item_type = 'product'`,
+      [id]
+    );
+
+    for (const item of (itemsQ.rows || [])) {
+      if (item.product_id) {
+        const prodQ = await db.query('SELECT * FROM products WHERE id = $1', [item.product_id]);
+        const prod = prodQ.rows[0];
+        if (prod) {
+          const stockBefore = Number(prod.stock_quantity || 0);
+          const qtyRestored = Number(item.quantity || 1);
+          const stockAfter = stockBefore + qtyRestored;
+
+          await db.query('UPDATE products SET stock_quantity = $1 WHERE id = $2', [stockAfter, item.product_id]);
+
+          const movementId = db.generateUUID();
+          await db.query(
+            `INSERT INTO product_movements
+              (id, product_id, product_name, invoice_id, invoice_number, type, quantity, stock_before, stock_after, sold_by)
+             VALUES ($1,$2,$3,$4,$5,'cancellation',$6,$7,$8,$9)`,
+            [
+              movementId,
+              item.product_id,
+              prod.name,
+              invoice.id,
+              invoice.invoice_number,
+              qtyRestored,
+              stockBefore,
+              stockAfter,
+              req.user?.name || 'Admin',
+            ]
+          );
+        }
+      }
+    }
+
+    await db.query('DELETE FROM invoice_items WHERE invoice_id = $1', [id]);
+    await db.query('DELETE FROM invoices WHERE id = $1', [id]);
+
+    res.json({ message: 'Invoice cancelled and product stock restored successfully' });
+  } catch (err) {
+    console.error('Delete invoice error:', err);
+    res.status(500).json({ error: 'Failed to delete invoice and restore stock' });
   }
 });
 
