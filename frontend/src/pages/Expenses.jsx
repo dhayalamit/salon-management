@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import client from '../api/client';
-import { Wallet, Plus, Trash2, Calendar, DollarSign, Tag, CreditCard, Smartphone, CheckCircle } from 'lucide-react';
+import { Wallet, Plus, Trash2, Calendar, DollarSign, Tag, Settings, CheckCircle } from 'lucide-react';
 import Table from '../components/ui/Table.jsx';
 import Modal from '../components/ui/Modal.jsx';
 import { useToast } from '../context/ToastContext.jsx';
@@ -21,16 +21,16 @@ export default function Expenses() {
     'Marketing',
     'Stationery',
     'Miscellaneous',
-    'Other (Custom)',
+    'Other',
   ]);
+  const [customCategories, setCustomCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Modal State
+  // Record Expense Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
-    title: '',
     category: 'Electricity',
     amount: '',
     expenseDate: getTodayDateString(),
@@ -38,8 +38,8 @@ export default function Expenses() {
     note: '',
   });
 
-  // Custom Category State
-  const [isCustomCategoryModal, setIsCustomCategoryModal] = useState(false);
+  // Custom Category Manage Modal State
+  const [isManageCategoryModal, setIsManageCategoryModal] = useState(false);
   const [customCategoryName, setCustomCategoryName] = useState('');
 
   useEffect(() => {
@@ -50,8 +50,9 @@ export default function Expenses() {
   const fetchCategories = async () => {
     try {
       const res = await client.get('/expenses/categories');
-      if (res.data && res.data.length > 0) {
-        setCategories(res.data);
+      if (res.data) {
+        setCategories(res.data.categories || []);
+        setCustomCategories(res.data.customCategories || []);
       }
     } catch (err) {
       console.error('Failed to load categories', err);
@@ -81,7 +82,6 @@ export default function Expenses() {
       showSuccess('Expense recorded successfully');
       setIsModalOpen(false);
       setFormData({
-        title: '',
         category: categories[0] || 'Electricity',
         amount: '',
         expenseDate: getTodayDateString(),
@@ -102,12 +102,22 @@ export default function Expenses() {
     try {
       const res = await client.post('/expenses/categories', { name: customCategoryName.trim() });
       showSuccess(`Custom category "${res.data.name}" added`);
-      setCategories((prev) => Array.from(new Set([...prev, res.data.name])));
-      setFormData((prev) => ({ ...prev, category: res.data.name }));
-      setIsCustomCategoryModal(false);
       setCustomCategoryName('');
+      fetchCategories();
+      setFormData((prev) => ({ ...prev, category: res.data.name }));
     } catch (err) {
       showError('Failed to add custom category');
+    }
+  };
+
+  const handleDeleteCustomCategory = async (catName) => {
+    if (!window.confirm(`Delete custom category "${catName}"?`)) return;
+    try {
+      await client.delete(`/expenses/categories/${encodeURIComponent(catName)}`);
+      showSuccess(`Category "${catName}" removed`);
+      fetchCategories();
+    } catch (err) {
+      showError('Failed to remove custom category');
     }
   };
 
@@ -125,7 +135,6 @@ export default function Expenses() {
 
   const filteredExpenses = expenses.filter(
     (ex) =>
-      (ex.title || '').toLowerCase().includes(search.toLowerCase()) ||
       ex.category.toLowerCase().includes(search.toLowerCase()) ||
       (ex.note || '').toLowerCase().includes(search.toLowerCase())
   );
@@ -137,17 +146,15 @@ export default function Expenses() {
 
   const columns = [
     {
-      header: 'Title & Category',
+      header: 'Expense Category',
       render: (row) => (
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-2xl bg-amber-50 text-amber-700 shrink-0">
             <Wallet size={18} />
           </div>
           <div>
-            <p className="font-bold text-dark">{row.title || `${row.category} Expense`}</p>
-            <span className="inline-block px-2 py-0.5 rounded-full text-[10px] uppercase font-bold bg-[#F4F0E6] text-dark/70 border border-[#E8DFCF] mt-0.5">
-              {row.category}
-            </span>
+            <p className="font-bold text-dark text-sm">{row.category}</p>
+            <span className="text-[10px] text-dark/40 font-semibold block">Salon Expense</span>
           </div>
         </div>
       ),
@@ -156,7 +163,7 @@ export default function Expenses() {
       header: 'Payment Method & Date',
       render: (row) => (
         <div>
-          <span className="text-xs text-dark/80 font-semibold block capitalize">
+          <span className="text-xs text-dark/80 font-bold block uppercase">
             💳 {row.payment_method || 'cash'}
           </span>
           <span className="text-[11px] text-dark/50 flex items-center gap-1 mt-0.5">
@@ -188,6 +195,7 @@ export default function Expenses() {
         <button
           onClick={() => handleDeleteExpense(row.id)}
           className="p-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-colors"
+          title="Delete Expense"
         >
           <Trash2 size={16} />
         </button>
@@ -201,7 +209,7 @@ export default function Expenses() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold text-dark">Salon Expenses</h1>
-          <p className="text-xs text-dark/50">Track operational costs, utilities, rent, supplies, snacks & custom expenses</p>
+          <p className="text-xs text-dark/50">Track operational costs, utilities, rent, tea/snacks & custom categories</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -211,6 +219,13 @@ export default function Expenses() {
               ₹{totalExpenseSum.toLocaleString('en-IN')}
             </span>
           </div>
+
+          <button
+            onClick={() => setIsManageCategoryModal(true)}
+            className="px-4 py-2.5 rounded-full bg-white border border-[#E8DFCF] text-dark font-semibold text-xs hover:bg-[#F4F0E6] transition-all flex items-center gap-1.5"
+          >
+            <Settings size={15} className="text-[#D4AF37]" /> Manage Categories
+          </button>
 
           <button
             onClick={() => setIsModalOpen(true)}
@@ -227,7 +242,7 @@ export default function Expenses() {
         loading={loading}
         searchQuery={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search expense title, category, or note..."
+        searchPlaceholder="Search expense category or note..."
         primaryAction={{
           label: 'Record New Expense',
           icon: Plus,
@@ -246,25 +261,17 @@ export default function Expenses() {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Record New Expense">
         <form onSubmit={handleCreateExpense} className="space-y-4 text-xs">
           <div>
-            <label className="block font-semibold text-dark/70 mb-1">Expense Title / Reason</label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="e.g. Water Can - 2, Electricity Bill, Staff Tea"
-              className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark focus:outline-none focus:border-[#D4AF37]"
-            />
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1.5">
               <label className="font-semibold text-dark/70">Category *</label>
               <button
                 type="button"
-                onClick={() => setIsCustomCategoryModal(true)}
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setIsManageCategoryModal(true);
+                }}
                 className="text-[11px] font-bold text-[#D4AF37] hover:underline"
               >
-                + Add Custom Category
+                + Add / Manage Categories
               </button>
             </div>
             <select
@@ -328,12 +335,12 @@ export default function Expenses() {
           </div>
 
           <div>
-            <label className="block font-semibold text-dark/70 mb-1">Expense Notes (Optional)</label>
+            <label className="block font-semibold text-dark/70 mb-1">Expense Notes / Remarks (Optional)</label>
             <textarea
               rows={2}
               value={formData.note}
               onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-              placeholder="e.g. Paid for tea 50+100+30+20, water cans, gloves..."
+              placeholder="e.g. Water cans - 2, Tea 50+100+30+20, gloves..."
               className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark focus:outline-none focus:border-[#D4AF37]"
             />
           </div>
@@ -356,37 +363,68 @@ export default function Expenses() {
         </form>
       </Modal>
 
-      {/* Add Custom Category Modal */}
-      <Modal isOpen={isCustomCategoryModal} onClose={() => setIsCustomCategoryModal(false)} title="Add Custom Category">
-        <form onSubmit={handleAddCustomCategory} className="space-y-4 text-xs">
-          <div>
-            <label className="block font-semibold text-dark/70 mb-1">New Category Name</label>
+      {/* Add / Manage Expense Categories Modal */}
+      <Modal isOpen={isManageCategoryModal} onClose={() => setIsManageCategoryModal(false)} title="Manage Expense Categories">
+        <div className="space-y-4 text-xs">
+          {/* Add Category Input Form */}
+          <form onSubmit={handleAddCustomCategory} className="flex gap-2">
             <input
               type="text"
               required
               value={customCategoryName}
               onChange={(e) => setCustomCategoryName(e.target.value)}
-              placeholder="e.g. Generator Fuel, Sanitation, Vendor Advance"
-              className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark focus:outline-none focus:border-[#D4AF37]"
+              placeholder="Add new custom category (e.g. Generator Fuel)..."
+              className="flex-1 px-3.5 py-2 bg-white border border-[#E8DFCF] rounded-xl text-dark focus:outline-none focus:border-[#D4AF37]"
             />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2 border-t border-[#E8DFCF]">
-            <button
-              type="button"
-              onClick={() => setIsCustomCategoryModal(false)}
-              className="px-4 py-2 rounded-full border border-[#E8DFCF] text-dark/70 font-semibold hover:bg-[#F4F0E6]"
-            >
-              Cancel
-            </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-full bg-[#D4AF37] text-white font-semibold hover:bg-[#C59F2E]"
+              className="px-4 py-2 rounded-xl bg-[#D4AF37] text-white font-bold hover:bg-[#C59F2E] shrink-0"
             >
-              Add Category
+              + Add
+            </button>
+          </form>
+
+          {/* Existing Categories List with Delete option for custom categories */}
+          <div className="space-y-2">
+            <h4 className="font-bold text-dark border-b border-[#E8DFCF] pb-1">All Active Categories</h4>
+            <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+              {categories.map((cat) => {
+                const isCustom = customCategories.includes(cat);
+                return (
+                  <div
+                    key={cat}
+                    className="flex items-center justify-between py-2 px-3 rounded-xl bg-[#F4F0E6]/50 border border-[#E8DFCF]"
+                  >
+                    <span className="font-semibold text-dark">
+                      {cat} {isCustom && <span className="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-bold ml-2">Custom</span>}
+                    </span>
+                    {isCustom ? (
+                      <button
+                        onClick={() => handleDeleteCustomCategory(cat)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                        title="Remove Custom Category"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-dark/40 font-medium">Standard</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2 border-t border-[#E8DFCF]">
+            <button
+              type="button"
+              onClick={() => setIsManageCategoryModal(false)}
+              className="px-5 py-2 rounded-full bg-[#D4AF37] text-white font-semibold"
+            >
+              Done
             </button>
           </div>
-        </form>
+        </div>
       </Modal>
     </div>
   );

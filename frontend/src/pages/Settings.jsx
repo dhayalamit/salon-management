@@ -1,46 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import client from '../api/client';
-import { useAuth } from '../context/AuthContext.jsx';
-import { Settings as SettingsIcon, Store, Lock, Save, User, FileText, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Settings as SettingsIcon, Save, Key, User, Sparkles } from 'lucide-react';
 import { useToast } from '../context/ToastContext.jsx';
-import Modal from '../components/ui/Modal.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
 export default function Settings() {
   const { showSuccess, showError } = useToast();
-  const { user } = useAuth();
-
-  const [profileData, setProfileData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-  });
+  const { user, setUser } = useAuth();
 
   const [settings, setSettings] = useState({
     salon_name: 'TRIO THE POSH',
     tagline: 'Redefining Beauty & Elegance',
-    address: 'Piprali Road, Near MBA Chai Wala, Sikar - 332001',
-    phone: '+91 98765 43210',
+    logo_url: '',
+    address: '123 Luxury Avenue, Beverly Hills',
+    phone: '+1 800-POSH-SALON',
     email: 'info@triotheposh.com',
-    gst_number: 'GSTIN08AAACT1234F1Z5',
-    default_gst_percent: 0,
-    logo_url: '/logo.png',
+    gst_number: 'GSTIN29AAACT1234F1Z5',
+    default_gst_percent: 18,
   });
 
+  const [loading, setLoading] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  // User Profile state
+  const [profileData, setProfileData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // Password state
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
-
-  const [loading, setLoading] = useState(true);
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [savingSettings, setSavingSettings] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
-  const [resettingData, setResettingData] = useState(false);
-  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   useEffect(() => {
     fetchSettings();
-    fetchProfile();
   }, []);
 
   const fetchSettings = async () => {
@@ -55,52 +53,31 @@ export default function Settings() {
     }
   };
 
-  const fetchProfile = async () => {
+  const handleSaveSettings = async (e) => {
+    e.preventDefault();
     try {
-      const res = await client.get('/auth/me');
-      if (res.data) {
-        setProfileData({
-          name: res.data.name || '',
-          email: res.data.email || '',
-        });
-      }
+      setSavingSettings(true);
+      const res = await client.post('/settings', settings);
+      showSuccess('Salon settings updated successfully');
+      setSettings(res.data);
     } catch (err) {
-      console.error('Failed to load profile details', err);
+      showError('Failed to update salon settings');
+    } fontally: {
+      setSavingSettings(false);
     }
   };
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
-    if (!profileData.name || !profileData.email) {
-      return showError('Name and Email address are required');
-    }
-
     try {
       setSavingProfile(true);
-      const res = await client.put('/settings/profile', profileData);
-      showSuccess(res.data.message || 'Administrator profile updated successfully');
-      const stored = localStorage.getItem('salon_user');
-      if (stored) {
-        const u = JSON.parse(stored);
-        localStorage.setItem('salon_user', JSON.stringify({ ...u, name: profileData.name, email: profileData.email }));
-      }
+      const res = await client.put('/auth/profile', profileData);
+      showSuccess('Profile updated successfully');
+      if (setUser) setUser(res.data);
     } catch (err) {
-      showError(err.response?.data?.error || 'Failed to update administrator profile');
+      showError(err.response?.data?.error || 'Failed to update profile');
     } finally {
       setSavingProfile(false);
-    }
-  };
-
-  const handleSaveSettings = async (e) => {
-    e.preventDefault();
-    try {
-      setSavingSettings(true);
-      await client.put('/settings', settings);
-      showSuccess('Salon information saved successfully and updated across all modules!');
-    } catch (err) {
-      showError('Failed to save salon information');
-    } finally {
-      setSavingSettings(false);
     }
   };
 
@@ -109,14 +86,17 @@ export default function Settings() {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       return showError('New passwords do not match');
     }
+    if (passwordData.newPassword.length < 6) {
+      return showError('Password must be at least 6 characters');
+    }
 
     try {
       setChangingPassword(true);
-      await client.post('/settings/change-password', {
+      await client.put('/auth/password', {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword,
       });
-      showSuccess('Password updated successfully!');
+      showSuccess('Password updated successfully');
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
       showError(err.response?.data?.error || 'Failed to change password');
@@ -125,47 +105,33 @@ export default function Settings() {
     }
   };
 
-  const handleResetAllData = async () => {
-    try {
-      setResettingData(true);
-      await client.post('/settings/reset-data');
-      showSuccess('All salon data, invoices, appointments & balances reset to 0 successfully!');
-      setIsResetModalOpen(false);
-      window.dispatchEvent(new CustomEvent('dashboard_updated'));
-      window.dispatchEvent(new CustomEvent('billing_updated'));
-      window.dispatchEvent(new CustomEvent('customers_updated'));
-      window.dispatchEvent(new CustomEvent('products_updated'));
-      window.dispatchEvent(new CustomEvent('attendance_updated'));
-      window.dispatchEvent(new CustomEvent('appointment_updated'));
-    } catch (err) {
-      showError('Failed to reset system data');
-    } finally {
-      setResettingData(false);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center text-xs text-dark/50 italic">
+        Loading salon configuration...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-3 glass-card p-6 border border-[#E8DFCF]">
-        <div className="p-3 rounded-2xl bg-[#D4AF37]/10 text-[#D4AF37]">
-          <SettingsIcon size={24} />
-        </div>
-        <div>
-          <h1 className="font-display text-2xl font-bold text-dark">Salon & System Settings</h1>
-          <p className="text-xs text-dark/50 mt-0.5">Manage salon branding, profile details, passwords & system data</p>
-        </div>
+      <div>
+        <h1 className="font-display text-2xl font-bold text-dark flex items-center gap-2">
+          <SettingsIcon size={24} className="text-[#D4AF37]" /> System Settings
+        </h1>
+        <p className="text-xs text-dark/50">Configure salon branding, GST details, admin profile, and security</p>
       </div>
 
       {/* 1. Salon Branding & Information */}
       <div className="glass-card p-6 border border-[#E8DFCF] space-y-6">
         <div className="flex items-center gap-3 border-b border-[#E8DFCF] pb-4">
-          <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
-            <Store size={18} />
+          <div className="p-2 rounded-xl bg-[#D4AF37]/10 text-[#D4AF37]">
+            <Sparkles size={18} />
           </div>
           <div>
-            <h3 className="font-display text-lg font-bold text-dark">Salon Branding & General Details</h3>
-            <p className="text-xs text-dark/50">Details printed on tax invoices and receipts</p>
+            <h3 className="font-display text-lg font-bold text-dark">Salon Branding & Contact Info</h3>
+            <p className="text-xs text-dark/50">Appears on printed POS invoices and headers</p>
           </div>
         </div>
 
@@ -187,7 +153,6 @@ export default function Settings() {
                 type="text"
                 value={settings.tagline}
                 onChange={(e) => setSettings({ ...settings, tagline: e.target.value })}
-                placeholder="e.g. Redefining Beauty & Elegance"
                 className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
@@ -195,7 +160,7 @@ export default function Settings() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-dark/70 mb-1.5">Contact Phone Number</label>
+              <label className="block text-xs font-semibold text-dark/70 mb-1.5">Primary Contact Phone</label>
               <input
                 type="text"
                 value={settings.phone}
@@ -300,27 +265,27 @@ export default function Settings() {
             <button
               type="submit"
               disabled={savingProfile}
-              className="px-6 py-2.5 rounded-full bg-dark text-white font-semibold text-xs hover:bg-dark/80 transition-all shadow-md flex items-center gap-2"
+              className="px-6 py-2.5 rounded-full bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition-all shadow-md"
             >
-              <Save size={14} /> {savingProfile ? 'Saving...' : 'Update Administrator Profile'}
+              {savingProfile ? 'Updating...' : 'Update Profile'}
             </button>
           </div>
         </form>
       </div>
 
-      {/* 3. Password Security */}
+      {/* 3. Security & Password */}
       <div className="glass-card p-6 border border-[#E8DFCF] space-y-6">
         <div className="flex items-center gap-3 border-b border-[#E8DFCF] pb-4">
-          <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
-            <Lock size={18} />
+          <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
+            <Key size={18} />
           </div>
           <div>
             <h3 className="font-display text-lg font-bold text-dark">Security & Password</h3>
-            <p className="text-xs text-dark/50">Update your administrator password for future logins</p>
+            <p className="text-xs text-dark/50">Change your login password</p>
           </div>
         </div>
 
-        <form onSubmit={handleChangePassword} className="space-y-4 max-w-lg">
+        <form onSubmit={handleChangePassword} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-dark/70 mb-1.5">Current Password *</label>
             <input
@@ -328,12 +293,11 @@ export default function Settings() {
               required
               value={passwordData.currentPassword}
               onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-              placeholder="Enter current password"
               className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-dark/70 mb-1.5">New Password *</label>
               <input
@@ -341,7 +305,7 @@ export default function Settings() {
                 required
                 value={passwordData.newPassword}
                 onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                placeholder="Enter new password"
+                placeholder="At least 6 characters"
                 className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
@@ -369,66 +333,6 @@ export default function Settings() {
           </div>
         </form>
       </div>
-
-      {/* 4. Complete System Reset Section */}
-      <div className="glass-card p-6 border border-red-200 bg-red-50/30 space-y-4">
-        <div className="flex items-center gap-3 border-b border-red-200 pb-3">
-          <div className="p-2 rounded-xl bg-red-100 text-red-600">
-            <RefreshCw size={18} />
-          </div>
-          <div>
-            <h3 className="font-display text-lg font-bold text-red-900">Reset All Salon System Data</h3>
-            <p className="text-xs text-red-700">Clear all transactions, invoices, appointments, customers & register balances to start fresh</p>
-          </div>
-        </div>
-
-        <p className="text-xs text-dark/70">
-          Clicking this will delete all created test invoices, appointments, customers, attendance records, and register balances. Master catalog services, products, staff, and admin accounts will remain intact.
-        </p>
-
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={() => setIsResetModalOpen(true)}
-            className="px-5 py-2.5 rounded-full bg-red-600 text-white font-semibold text-xs hover:bg-red-700 transition-all shadow-md flex items-center gap-2"
-          >
-            <Trash2 size={16} /> Reset All Data to 0
-          </button>
-        </div>
-      </div>
-
-      {/* Reset Confirmation Modal */}
-      <Modal isOpen={isResetModalOpen} onClose={() => setIsResetModalOpen(null)} title="Confirm Complete Data Reset">
-        <div className="space-y-4 text-xs">
-          <div className="p-4 rounded-2xl bg-red-50 border border-red-200 flex items-start gap-3">
-            <AlertTriangle size={24} className="text-red-600 shrink-0 mt-0.5" />
-            <div>
-              <h4 className="font-bold text-red-900 text-sm">Are you sure you want to reset all data?</h4>
-              <p className="text-red-700 text-xs mt-1">
-                This action will delete all invoices, appointments, customer records, attendance history, and register balances. All Dashboard stat cards will reset to ₹0!
-              </p>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2 border-t border-[#E8DFCF]">
-            <button
-              type="button"
-              onClick={() => setIsResetModalOpen(false)}
-              className="px-4 py-2 rounded-full border border-[#E8DFCF] text-dark/70 font-semibold hover:bg-[#F4F0E6]"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={resettingData}
-              onClick={handleResetAllData}
-              className="px-5 py-2 rounded-full bg-red-600 text-white font-semibold hover:bg-red-700 flex items-center gap-1.5 shadow-md"
-            >
-              <Trash2 size={15} /> {resettingData ? 'Resetting Data...' : 'Yes, Reset All Data'}
-            </button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }

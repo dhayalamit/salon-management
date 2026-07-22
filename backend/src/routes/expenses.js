@@ -15,7 +15,7 @@ const STANDARD_CATEGORIES = [
   'Marketing',
   'Stationery',
   'Miscellaneous',
-  'Other (Custom)',
+  'Other',
 ];
 
 // GET /api/expenses/categories — Get standard + custom expense categories
@@ -24,10 +24,10 @@ router.get('/categories', authenticate, async (req, res) => {
     const { rows } = await db.query('SELECT name FROM custom_expense_categories ORDER BY name ASC').catch(() => ({ rows: [] }));
     const customNames = (rows || []).map((r) => r.name);
     const all = Array.from(new Set([...STANDARD_CATEGORIES, ...customNames]));
-    res.json(all);
+    res.json({ categories: all, customCategories: customNames });
   } catch (err) {
     console.error('Fetch categories error:', err);
-    res.json(STANDARD_CATEGORIES);
+    res.json({ categories: STANDARD_CATEGORIES, customCategories: [] });
   }
 });
 
@@ -52,29 +52,41 @@ router.post('/categories', authenticate, async (req, res) => {
   }
 });
 
-// GET /api/expenses
+// DELETE /api/expenses/categories/:name — Remove custom category
+router.delete('/categories/:name', authenticate, async (req, res) => {
+  try {
+    const categoryName = decodeURIComponent(req.params.name);
+    await db.query('DELETE FROM custom_expense_categories WHERE name = $1', [categoryName]);
+    res.status(204).end();
+  } catch (err) {
+    console.error('Delete custom category error:', err);
+    res.status(500).json({ error: 'Failed to delete custom category' });
+  }
+});
+
+// GET /api/expenses — Safe PostgreSQL query without created_at column error
 router.get('/', authenticate, async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT * FROM expenses ORDER BY expense_date DESC, created_at DESC');
-    res.json(rows);
+    const { rows } = await db.query('SELECT * FROM expenses ORDER BY expense_date DESC');
+    res.json(rows || []);
   } catch (err) {
     console.error('Fetch expenses error:', err);
     res.status(500).json({ error: 'Failed to fetch expenses' });
   }
 });
 
-// POST /api/expenses
+// POST /api/expenses — Simple expense creation (No Title field needed)
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { title, category, amount, expenseDate, paymentMethod, note } = req.body;
+    const { category, amount, expenseDate, paymentMethod, note } = req.body;
     if (!category || amount === undefined) {
       return res.status(400).json({ error: 'Category and amount are required' });
     }
 
     const id = db.generateUUID();
     const date = expenseDate || new Date().toISOString().slice(0, 10);
-    const expTitle = title || `${category} Expense`;
     const pMethod = paymentMethod || 'cash';
+    const expTitle = category;
 
     const { rows } = await db.query(
       `INSERT INTO expenses (id, title, category, amount, expense_date, payment_method, note)
