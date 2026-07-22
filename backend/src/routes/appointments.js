@@ -71,12 +71,12 @@ router.post('/', authenticate, async (req, res) => {
 
 router.put('/:id', authenticate, async (req, res) => {
   try {
-    const { status, appointmentDate, appointmentTime, staffId, serviceId } = req.body;
+    const { status, appointmentDate, appointmentTime, staffId, serviceId, customerId } = req.body;
     const { rows } = await db.query(
       `UPDATE appointments SET status = COALESCE($1,status), appointment_date = COALESCE($2,appointment_date),
          appointment_time = COALESCE($3,appointment_time), staff_id = COALESCE($4,staff_id),
-         service_id = COALESCE($5,service_id) WHERE id = $6 RETURNING *`,
-      [status, appointmentDate, appointmentTime, staffId, serviceId, req.params.id]
+         service_id = COALESCE($5,service_id), customer_id = COALESCE($6,customer_id) WHERE id = $7 RETURNING *`,
+      [status, appointmentDate, appointmentTime, staffId, serviceId, customerId, req.params.id]
     );
     res.json(rows[0] || { id: req.params.id, status, appointmentDate, appointmentTime });
   } catch (err) {

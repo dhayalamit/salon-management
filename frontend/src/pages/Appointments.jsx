@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import client from '../api/client';
-import { Calendar as CalendarIcon, Clock, Plus, Filter, Search, CheckCircle, XCircle, UserCheck, AlertCircle, UserPlus } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, Filter, Search, CheckCircle, XCircle, UserCheck, AlertCircle, UserPlus, Edit3, Trash2 } from 'lucide-react';
 import Table from '../components/ui/Table.jsx';
 import Modal from '../components/ui/Modal.jsx';
+import ConfirmModal from '../components/ui/ConfirmModal.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { getTodayDateString } from '../utils/dateUtils.js';
 
@@ -26,14 +27,19 @@ export default function Appointments() {
   const [showQuickAddCust, setShowQuickAddCust] = useState(false);
   const [quickCustData, setQuickCustData] = useState({ name: '', phone: '' });
 
-  // Modal State
+  // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+
   const [formData, setFormData] = useState({
     customerId: '',
     serviceId: '',
     staffId: '',
     appointmentDate: getTodayDateString(),
     appointmentTime: '10:00',
+    status: 'booked',
   });
 
   useEffect(() => {
@@ -97,12 +103,55 @@ export default function Appointments() {
   const handleUpdateStatus = async (id, newStatus) => {
     try {
       await client.put(`/appointments/${id}`, { status: newStatus });
-      showSuccess(`Appointment marked as ${newStatus}`);
+      showSuccess(`Appointment marked as ${newStatus.replace('_', ' ')}`);
       window.dispatchEvent(new CustomEvent('appointment_updated'));
       window.dispatchEvent(new CustomEvent('dashboard_updated'));
       fetchData();
     } catch (err) {
       showError('Failed to update status');
+    }
+  };
+
+  const openEditModal = (app) => {
+    setSelectedAppointment(app);
+    setFormData({
+      customerId: app.customer_id || '',
+      serviceId: app.service_id || '',
+      staffId: app.staff_id || '',
+      appointmentDate: app.appointment_date ? app.appointment_date.split('T')[0] : getTodayDateString(),
+      appointmentTime: app.appointment_time || '10:00',
+      status: app.status || 'booked',
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateAppointment = async (e) => {
+    e.preventDefault();
+    if (!selectedAppointment) return;
+
+    try {
+      await client.put(`/appointments/${selectedAppointment.id}`, formData);
+      showSuccess('Appointment updated successfully!');
+      window.dispatchEvent(new CustomEvent('appointment_updated'));
+      window.dispatchEvent(new CustomEvent('dashboard_updated'));
+      setIsEditModalOpen(false);
+      fetchData();
+    } catch (err) {
+      showError('Failed to update appointment');
+    }
+  };
+
+  const confirmDeleteAppointment = async () => {
+    if (!deleteConfirmId) return;
+    try {
+      await client.delete(`/appointments/${deleteConfirmId}`);
+      showSuccess('Appointment deleted successfully');
+      window.dispatchEvent(new CustomEvent('appointment_updated'));
+      window.dispatchEvent(new CustomEvent('dashboard_updated'));
+      setDeleteConfirmId(null);
+      fetchData();
+    } catch (err) {
+      showError('Failed to delete appointment');
     }
   };
 
@@ -180,38 +229,62 @@ export default function Appointments() {
       header: 'Actions',
       render: (row) => (
         <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Quick Status Action Buttons */}
           {row.status === 'booked' && (
             <button
               onClick={() => handleUpdateStatus(row.id, 'in_progress')}
               className="px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 font-semibold text-xs hover:bg-purple-600 hover:text-white transition-colors"
+              title="Start Appointment Service"
             >
               Start
             </button>
           )}
+
           {(row.status === 'booked' || row.status === 'in_progress') && (
             <button
               onClick={() => handleUpdateStatus(row.id, 'completed')}
               className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold text-xs hover:bg-emerald-600 hover:text-white transition-colors"
+              title="Mark Service Completed"
             >
               Complete
             </button>
           )}
+
+          {(row.status === 'completed' || row.status === 'cancelled' || row.status === 'no_show') && (
+            <button
+              onClick={() => handleUpdateStatus(row.id, 'booked')}
+              className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold text-xs hover:bg-blue-600 hover:text-white transition-colors"
+              title="Reopen Booking"
+            >
+              Reopen
+            </button>
+          )}
+
           {row.status !== 'completed' && row.status !== 'cancelled' && (
             <button
               onClick={() => handleUpdateStatus(row.id, 'cancelled')}
               className="px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-semibold text-xs hover:bg-red-600 hover:text-white transition-colors"
+              title="Cancel Appointment"
             >
               Cancel
             </button>
           )}
-          {row.status === 'booked' && (
-            <button
-              onClick={() => handleUpdateStatus(row.id, 'no_show')}
-              className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-semibold text-xs hover:bg-amber-600 hover:text-white transition-colors"
-            >
-              No Show
-            </button>
-          )}
+
+          {/* Always Available Edit & Delete Actions */}
+          <button
+            onClick={() => openEditModal(row)}
+            className="p-1.5 rounded-xl bg-[#F4F0E6] text-dark/70 hover:bg-dark hover:text-white transition-colors"
+            title="Edit Appointment"
+          >
+            <Edit3 size={16} />
+          </button>
+          <button
+            onClick={() => setDeleteConfirmId(row.id)}
+            className="p-1.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-colors"
+            title="Delete Appointment"
+          >
+            <Trash2 size={16} />
+          </button>
         </div>
       ),
     },
@@ -219,19 +292,19 @@ export default function Appointments() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold text-dark">Appointments Schedule</h1>
           <p className="text-xs text-dark/50">Manage luxury salon bookings, slot calendar, and status</p>
         </div>
 
-        {/* View Mode Toggle */}
-        <div className="flex items-center gap-2 p-1 rounded-full bg-white/70 border border-[#E8DFCF] shadow-sm">
+        {/* View Toggle */}
+        <div className="flex items-center p-1 bg-white border border-[#E8DFCF] rounded-full shadow-xs">
           <button
             onClick={() => setViewMode('list')}
             className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-              viewMode === 'list' ? 'bg-[#D4AF37] text-white shadow-sm' : 'text-dark/60 hover:text-dark'
+              viewMode === 'list' ? 'bg-[#D4AF37] text-white shadow-sm' : 'text-dark/70 hover:text-dark'
             }`}
           >
             List View
@@ -239,7 +312,7 @@ export default function Appointments() {
           <button
             onClick={() => setViewMode('calendar')}
             className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-              viewMode === 'calendar' ? 'bg-[#D4AF37] text-white shadow-sm' : 'text-dark/60 hover:text-dark'
+              viewMode === 'calendar' ? 'bg-[#D4AF37] text-white shadow-sm' : 'text-dark/70 hover:text-dark'
             }`}
           >
             Time Slots
@@ -267,12 +340,24 @@ export default function Appointments() {
           >
             <option value="all">All Statuses</option>
             <option value="booked">Booked</option>
+            <option value="in_progress">In Progress</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
+            <option value="no_show">No Show</option>
           </select>
 
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setFormData({
+                customerId: '',
+                serviceId: '',
+                staffId: '',
+                appointmentDate: selectedDate || getTodayDateString(),
+                appointmentTime: '10:00',
+                status: 'booked',
+              });
+              setIsModalOpen(true);
+            }}
             className="px-5 py-2 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-md shrink-0 flex items-center gap-2"
           >
             <Plus size={16} /> New Booking
@@ -322,10 +407,19 @@ export default function Appointments() {
                   ) : (
                     <div className="space-y-2 mt-2">
                       {apptsInSlot.map((app) => (
-                        <div key={app.id} className="p-2.5 rounded-xl bg-white border border-[#E8DFCF] shadow-xs">
-                          <p className="font-semibold text-xs text-dark">{app.customer_name || 'Walk-in'}</p>
-                          <p className="text-[11px] text-[#D4AF37]">{app.service_name}</p>
-                          <p className="text-[10px] text-dark/50">Stylist: {app.staff_name || 'Unassigned'}</p>
+                        <div key={app.id} className="p-2.5 rounded-xl bg-white border border-[#E8DFCF] shadow-xs flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-xs text-dark">{app.customer_name || 'Walk-in'}</p>
+                            <p className="text-[11px] text-[#D4AF37]">{app.service_name}</p>
+                            <p className="text-[10px] text-dark/50">Stylist: {app.staff_name || 'Unassigned'}</p>
+                          </div>
+                          <button
+                            onClick={() => openEditModal(app)}
+                            className="p-1.5 rounded-lg bg-[#F4F0E6] text-dark/70 hover:bg-dark hover:text-white transition-colors"
+                            title="Edit Booking"
+                          >
+                            <Edit3 size={14} />
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -377,18 +471,18 @@ export default function Appointments() {
                 </button>
               </div>
             ) : (
-                <select
-                  value={formData.customerId}
-                  onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
-                >
-                  <option value="">-- Choose Existing Client --</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.phone || 'No phone'})
-                    </option>
-                  ))}
-                </select>
+              <select
+                value={formData.customerId}
+                onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
+              >
+                <option value="">-- Choose Existing Client --</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.phone || 'No phone'})
+                  </option>
+                ))}
+              </select>
             )}
           </div>
 
@@ -469,6 +563,124 @@ export default function Appointments() {
           </div>
         </form>
       </Modal>
+
+      {/* Edit Appointment Modal */}
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Appointment Booking">
+        <form onSubmit={handleUpdateAppointment} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-dark/70 mb-1.5">Select Client</label>
+            <select
+              value={formData.customerId}
+              onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
+            >
+              <option value="">-- Select Client --</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.phone || 'No phone'})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-dark/70 mb-1.5">Select Service</label>
+            <select
+              value={formData.serviceId}
+              onChange={(e) => setFormData({ ...formData, serviceId: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
+            >
+              <option value="">-- Select Service --</option>
+              {services.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} — ₹{s.price} ({s.duration_minutes || 30} mins)
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-dark/70 mb-1.5">Assigned Stylist</label>
+            <select
+              value={formData.staffId}
+              onChange={(e) => setFormData({ ...formData, staffId: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
+            >
+              <option value="">-- Any Available Stylist --</option>
+              {staff.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {st.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-dark/70 mb-1.5">Appointment Date</label>
+              <input
+                type="date"
+                required
+                value={formData.appointmentDate}
+                onChange={(e) => setFormData({ ...formData, appointmentDate: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-dark/70 mb-1.5">Time Slot</label>
+              <input
+                type="time"
+                required
+                value={formData.appointmentTime}
+                onChange={(e) => setFormData({ ...formData, appointmentTime: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-dark/70 mb-1.5">Booking Status</label>
+            <select
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none font-semibold"
+            >
+              <option value="booked">Booked (Upcoming)</option>
+              <option value="in_progress">In Progress (Started)</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="no_show">No Show</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-[#E8DFCF]">
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(false)}
+              className="px-5 py-2.5 rounded-full border border-[#E8DFCF] text-xs font-semibold text-dark hover:bg-[#F4F0E6]"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E]"
+            >
+              Update Appointment
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Appointment Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteConfirmId)}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={confirmDeleteAppointment}
+        title="⚠️ Delete Appointment"
+        message="Are you sure you want to delete this appointment booking? This action cannot be undone."
+        confirmText="Delete Appointment"
+        variant="danger"
+      />
     </div>
   );
 }
