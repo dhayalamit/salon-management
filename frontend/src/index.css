@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Calistoga&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,14 +6,23 @@
 
 @layer base {
   html, body {
-    background-color: #F6F4EE;
+    background-color: #FAFAFA;
     background-image: 
-      radial-gradient(at 0% 0%, rgba(212, 175, 55, 0.05) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(197, 159, 46, 0.04) 0px, transparent 50%);
-    color: #1D1D1F;
+      radial-gradient(at 0% 0%, rgba(0, 82, 255, 0.03) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(77, 124, 255, 0.03) 0px, transparent 50%);
+    color: #0F172A;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: 'Calistoga', Georgia, serif;
+    font-weight: 400;
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
   }
 
   /* Hide number input spinner controls globally across all browsers */
@@ -29,62 +38,102 @@
   }
 }
 
-/* Premium Apple Glassmorphism Utility Classes (Original Default Theme) */
+/* Minimalist Modern Glassmorphism & Elevation System */
 .glass-card {
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(232, 223, 207, 0.75);
-  border-radius: 24px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.04), inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
+  border: 1px solid #E2E8F0;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px 0 rgba(15, 23, 42, 0.04);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-card-hover:hover {
   transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 12px 40px 0 rgba(212, 175, 55, 0.12), inset 0 1px 1px 0 rgba(255, 255, 255, 1);
-  border-color: rgba(212, 175, 55, 0.45);
+  background: #FFFFFF;
+  box-shadow: 0 12px 30px 0 rgba(0, 82, 255, 0.12);
+  border-color: rgba(0, 82, 255, 0.3);
 }
 
 .glass-modal {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(30px) saturate(200%);
   -webkit-backdrop-filter: blur(30px) saturate(200%);
-  border: 1px solid rgba(232, 223, 207, 0.9);
-  border-radius: 28px;
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 1);
+  border: 1px solid #E2E8F0;
+  border-radius: 24px;
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.15);
 }
 
 .shadow-luxury {
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
-.gold-gradient-bg {
-  background: linear-gradient(135deg, #D4AF37 0%, #B89228 100%);
+/* Signature Electric Blue Gradient Fills & Text */
+.gold-gradient-bg, .btn-accent {
+  background: linear-gradient(135deg, #0052FF 0%, #4D7CFF 100%);
+  color: #FFFFFF;
+  transition: all 0.2s ease-out;
 }
 
-.gold-text-gradient {
-  background: linear-gradient(135deg, #D4AF37 0%, #9B751A 100%);
+.btn-accent:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0, 82, 255, 0.35);
+  filter: brightness(108%);
+}
+
+.btn-accent:active {
+  transform: scale(0.98);
+}
+
+.gradient-text, .gold-text-gradient {
+  background: linear-gradient(135deg, #0052FF 0%, #4D7CFF 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-/* Custom scrollbars */
+/* Minimalist Modern Section Badge */
+.section-badge {
+  display: inline-flex;
+  items-center: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 82, 255, 0.25);
+  background: rgba(0, 82, 255, 0.05);
+  padding: 0.375rem 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.125em;
+  color: #0052FF;
+}
+
+/* Inverted Dark Section Background & Dot Pattern */
+.bg-inverted {
+  background-color: #0F172A;
+  color: #FFFFFF;
+}
+
+.bg-dot-pattern {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(232, 223, 207, 0.8);
+  background: #CBD5E1;
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #D4AF37;
+  background: #0052FF;
 }
 
 /* Print styles for tax invoice */

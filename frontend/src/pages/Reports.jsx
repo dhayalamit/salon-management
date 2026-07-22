@@ -127,30 +127,31 @@ export default function Reports() {
   return (
     <div className="space-y-6">
       {/* Header Banner & Month/Year Selectors */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 glass-card p-6 border border-[#E8DFCF]">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 glass-card p-6 border border-[#E2E8F0]">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-widest bg-[#D4AF37] text-white">
-              Business Intelligence
+            <span className="section-badge py-0.5 px-3 text-[10px]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#0052FF] animate-pulse" />
+              BUSINESS INTELLIGENCE
             </span>
           </div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-dark tracking-tight">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#0F172A] tracking-tight">
             Monthly Reports & Historical Analytics
           </h1>
-          <p className="text-xs text-dark/50 mt-1">
+          <p className="text-xs text-[#64748B] mt-1">
             Month-by-month financial performance, growth trends, service breakdown, and payroll records
           </p>
         </div>
 
         {/* Month & Year Selectors Bar */}
-        <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-2xl border border-[#E8DFCF] shadow-xs">
+        <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-2xl border border-[#E2E8F0] shadow-xs">
           {/* Select Month */}
           <div>
-            <label className="block text-[9px] font-bold uppercase text-dark/40 px-1">Select Month</label>
+            <label className="block text-[9px] font-mono font-bold uppercase text-[#64748B] px-1">Select Month</label>
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(Number(e.target.value))}
-              className="px-3 py-1.5 rounded-xl bg-[#F4F0E6] text-xs font-bold text-dark focus:outline-none cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-[#F1F5F9] text-xs font-bold text-[#0F172A] focus:outline-none cursor-pointer border border-[#E2E8F0]"
             >
               {MONTH_NAMES.map((mName, idx) => (
                 <option key={mName} value={idx + 1}>
@@ -162,11 +163,11 @@ export default function Reports() {
 
           {/* Select Year */}
           <div>
-            <label className="block text-[9px] font-bold uppercase text-dark/40 px-1">Select Year</label>
+            <label className="block text-[9px] font-mono font-bold uppercase text-[#64748B] px-1">Select Year</label>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="px-3 py-1.5 rounded-xl bg-[#F4F0E6] text-xs font-bold text-dark focus:outline-none cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-[#F1F5F9] text-xs font-bold text-[#0F172A] focus:outline-none cursor-pointer border border-[#E2E8F0]"
             >
               {yearsList.map((yVal) => (
                 <option key={yVal} value={yVal}>
@@ -178,7 +179,7 @@ export default function Reports() {
 
           <button
             onClick={handleExportCSV}
-            className="px-4 py-2.5 rounded-xl bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all flex items-center gap-1.5 shadow-xs"
+            className="btn-accent px-4 py-2.5 rounded-xl text-white font-semibold text-xs flex items-center gap-1.5 shadow-accent"
           >
             <Download size={14} /> Export CSV
           </button>
