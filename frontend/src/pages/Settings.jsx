@@ -129,19 +129,19 @@ export default function Settings() {
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="font-display text-2xl font-bold text-[#0F172A] flex items-center gap-2">
-          <SettingsIcon size={24} className="text-[#0052FF]" /> Salon System Settings
+        <h1 className="font-display text-2xl font-bold text-dark flex items-center gap-2">
+          <SettingsIcon size={24} className="text-[#D4AF37]" /> Salon System Settings
         </h1>
-        <p className="text-xs text-[#64748B]">Manage TRIO THE POSH branding, invoice headers, tax settings, and security</p>
+        <p className="text-xs text-dark/50">Manage TRIO THE POSH branding, invoice headers, tax settings, and security</p>
       </div>
 
       {/* Section 1: Administrator Profile */}
       <div className="glass-card p-6 sm:p-8 space-y-6">
-        <div className="flex items-center gap-3 border-b border-[#E2E8F0] pb-4">
-          <User size={20} className="text-[#0052FF]" />
+        <div className="flex items-center gap-3 border-b border-[#E8DFCF] pb-4">
+          <User size={20} className="text-[#D4AF37]" />
           <div>
-            <h3 className="font-display text-lg font-bold text-[#0F172A]">Administrator Profile</h3>
-            <p className="text-xs text-[#64748B]">View and update your administrator account details</p>
+            <h3 className="font-display text-lg font-bold text-dark">Administrator Profile</h3>
+            <p className="text-xs text-dark/50">View and update your administrator account details</p>
           </div>
         </div>
 
@@ -173,7 +173,7 @@ export default function Settings() {
             <button
               type="submit"
               disabled={savingProfile}
-              className="btn-accent px-6 py-2.5 rounded-full text-white font-semibold text-xs flex items-center gap-2 shadow-accent"
+              className="px-6 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-md flex items-center gap-2"
             >
               <Save size={16} /> {savingProfile ? 'Saving Profile...' : 'Save Profile'}
             </button>
@@ -303,7 +303,7 @@ export default function Settings() {
             <button
               type="submit"
               disabled={savingSettings}
-              className="btn-accent px-6 py-2.5 rounded-full text-white font-semibold text-xs flex items-center gap-2 shadow-accent"
+              className="px-6 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-md flex items-center gap-2"
             >
               <Save size={16} /> {savingSettings ? 'Saving...' : 'Save Salon Info'}
             </button>
@@ -313,8 +313,8 @@ export default function Settings() {
 
       {/* Section 3: Security & Change Password */}
       <div className="glass-card p-6 sm:p-8 space-y-6">
-        <div className="flex items-center gap-3 border-b border-[#E2E8F0] pb-4">
-          <Lock size={20} className="text-[#0052FF]" />
+        <div className="flex items-center gap-3 border-b border-[#E8DFCF] pb-4">
+          <Lock size={20} className="text-[#D4AF37]" />
           <div>
             <h3 className="font-display text-lg font-bold text-dark">Security & Change Password</h3>
             <p className="text-xs text-dark/50">Update your administrator password for future logins</p>

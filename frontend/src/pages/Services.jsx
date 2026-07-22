@@ -103,7 +103,7 @@ export default function Services() {
       header: 'Service Name',
       render: (row) => (
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-[#0052FF]/10 text-[#0052FF]">
+          <div className="p-2.5 rounded-2xl bg-[#D4AF37]/10 text-[#D4AF37]">
             <Scissors size={18} />
           </div>
           <div>
@@ -169,7 +169,7 @@ export default function Services() {
         actionButton={
           <button
             onClick={openAddModal}
-            className="btn-accent inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-white font-semibold text-xs shadow-accent"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-md"
           >
             <Plus size={16} /> Add New Service
           </button>

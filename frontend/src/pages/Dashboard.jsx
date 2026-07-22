@@ -5,9 +5,11 @@ import {
   DollarSign,
   Calendar,
   Users,
+  AlertTriangle,
   UserCheck,
   Package,
   TrendingUp,
+  Plus,
   Receipt,
   UserPlus,
   Clock,
@@ -65,40 +67,37 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card p-6 border border-[#1A1A1A]/15 bg-[#F9F8F6]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card p-6 border border-[#E8DFCF]">
         <div className="flex items-center gap-4">
-          <div className="h-14 w-14 bg-[#1A1A1A] p-1 border border-[#D4AF37] shrink-0 flex items-center justify-center">
-            <img
-              src="/logo.png"
-              alt="TRIO Logo"
-              className="h-full w-full object-contain filter invert brightness-200"
-            />
-          </div>
+          <img
+            src="/logo.png"
+            alt="TRIO Logo"
+            className="h-14 w-14 object-contain rounded-2xl bg-white p-1 border border-[#E8DFCF] shadow-xs shrink-0"
+          />
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="section-badge py-0.5 px-3 text-[9px]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#D4AF37]" />
-                EDITORIAL VIEW
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-widest bg-[#D4AF37] text-white">
+                Executive View
               </span>
-              <span className="text-xs text-[#6C6863] font-medium uppercase tracking-widest">TRIO The Posh</span>
+              <span className="text-xs text-dark/40">TRIO The Posh</span>
             </div>
-            <h1 className="font-display text-3xl font-bold text-[#1A1A1A] tracking-tight">
-              Salon Command <span className="italic text-[#D4AF37]">Center</span>
+            <h1 className="font-display text-2xl sm:text-3xl font-bold text-dark tracking-tight">
+              Salon Command Center
             </h1>
-            <p className="text-xs text-[#6C6863] mt-1">Curated real-time metrics, appointment schedules, and salon operations</p>
+            <p className="text-xs text-dark/50 mt-1">Real-time salon metrics, upcoming appointments, and staff operations</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/billing')}
-            className="btn-accent px-6 py-3 text-white font-semibold text-xs flex items-center gap-2"
+            className="px-5 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-md flex items-center gap-2"
           >
             <Receipt size={16} /> POS Terminal
           </button>
           <button
             onClick={() => navigate('/appointments')}
-            className="px-6 py-3 bg-transparent border border-[#1A1A1A] text-[#1A1A1A] font-semibold text-xs uppercase tracking-[0.2em] hover:bg-[#1A1A1A] hover:text-[#D4AF37] transition-all flex items-center gap-2"
+            className="px-5 py-2.5 rounded-full bg-white border border-[#E8DFCF] text-dark font-semibold text-xs hover:bg-[#F4F0E6] transition-all flex items-center gap-2"
           >
             <Calendar size={16} /> Bookings
           </button>
@@ -108,16 +107,16 @@ export default function Dashboard() {
       {/* Top Cards Grid - 6 Key Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {/* Card 1: Today's Revenue */}
-        <div className="glass-card glass-card-hover p-5 flex flex-col justify-between border-t-2 border-t-[#D4AF37]">
+        <div className="glass-card glass-card-hover p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="font-display text-2xl font-bold text-[#D4AF37]">₹</span>
-            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 border border-emerald-200">
+            <span className="text-[#D4AF37] font-display text-2xl font-bold">₹</span>
+            <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
               <TrendingUp size={12} /> Today
             </span>
           </div>
           <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#6C6863]">Today's Revenue</p>
-            <h3 className="font-display text-2xl font-bold text-[#1A1A1A] mt-0.5">
+            <p className="text-xs font-medium text-dark/50">Today's Revenue</p>
+            <h3 className="font-display text-2xl font-bold text-dark mt-0.5">
               ₹{stats.todayRevenue.toLocaleString('en-IN')}
             </h3>
           </div>
@@ -126,13 +125,13 @@ export default function Dashboard() {
         {/* Card 2: Today's Appointments */}
         <div className="glass-card glass-card-hover p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <div className="p-2 bg-purple-50 text-purple-700 border border-purple-200">
+            <div className="p-2.5 rounded-2xl bg-purple-50 text-purple-600">
               <Calendar size={18} />
             </div>
           </div>
           <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#6C6863]">Appointments Today</p>
-            <h3 className="font-display text-2xl font-bold text-[#1A1A1A] mt-0.5">
+            <p className="text-xs font-medium text-dark/50">Appointments Today</p>
+            <h3 className="font-display text-2xl font-bold text-dark mt-0.5">
               {stats.todayAppointments}
             </h3>
           </div>
@@ -141,13 +140,13 @@ export default function Dashboard() {
         {/* Card 3: Today's Customers */}
         <div className="glass-card glass-card-hover p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <div className="p-2 bg-blue-50 text-blue-700 border border-blue-200">
+            <div className="p-2.5 rounded-2xl bg-blue-50 text-blue-600">
               <Users size={18} />
             </div>
           </div>
           <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#6C6863]">Customers Today</p>
-            <h3 className="font-display text-2xl font-bold text-[#1A1A1A] mt-0.5">
+            <p className="text-xs font-medium text-dark/50">Customers Today</p>
+            <h3 className="font-display text-2xl font-bold text-dark mt-0.5">
               {stats.todayCustomers}
             </h3>
           </div>
@@ -156,13 +155,13 @@ export default function Dashboard() {
         {/* Card 4: Pending Payments */}
         <div className="glass-card glass-card-hover p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <div className="p-2 bg-amber-50 text-amber-700 border border-amber-200">
+            <div className="p-2.5 rounded-2xl bg-amber-50 text-amber-600">
               <DollarSign size={18} />
             </div>
           </div>
           <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#6C6863]">Pending Payments</p>
-            <h3 className="font-display text-2xl font-bold text-[#1A1A1A] mt-0.5">
+            <p className="text-xs font-medium text-dark/50">Pending Payments</p>
+            <h3 className="font-display text-2xl font-bold text-dark mt-0.5">
               ₹{stats.pendingPayments.toLocaleString('en-IN')}
             </h3>
           </div>
@@ -171,13 +170,13 @@ export default function Dashboard() {
         {/* Card 5: Staff Present */}
         <div className="glass-card glass-card-hover p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <div className="p-2 bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <div className="p-2.5 rounded-2xl bg-emerald-50 text-emerald-600">
               <UserCheck size={18} />
             </div>
           </div>
           <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#6C6863]">Staff Present</p>
-            <h3 className="font-display text-2xl font-bold text-[#1A1A1A] mt-0.5">
+            <p className="text-xs font-medium text-dark/50">Staff Present</p>
+            <h3 className="font-display text-2xl font-bold text-dark mt-0.5">
               {stats.staffPresent}
             </h3>
           </div>
@@ -186,18 +185,18 @@ export default function Dashboard() {
         {/* Card 6: Low Stock */}
         <div className="glass-card glass-card-hover p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <div className="p-2 bg-red-50 text-red-700 border border-red-200">
+            <div className="p-2.5 rounded-2xl bg-red-50 text-red-600">
               <Package size={18} />
             </div>
             {stats.lowStockCount > 0 && (
-              <span className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border border-red-200">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600">
                 Action
               </span>
             )}
           </div>
           <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#6C6863]">Low Stock Items</p>
-            <h3 className="font-display text-2xl font-bold text-[#1A1A1A] mt-0.5">
+            <p className="text-xs font-medium text-dark/50">Low Stock Items</p>
+            <h3 className="font-display text-2xl font-bold text-dark mt-0.5">
               {stats.lowStockCount}
             </h3>
           </div>
@@ -208,14 +207,14 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: Revenue Chart */}
         <div className="lg:col-span-2 glass-card p-6 flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4 border-b border-[#1A1A1A]/10 pb-3">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-display text-xl font-bold text-[#1A1A1A]">Revenue <span className="italic text-[#D4AF37]">Overview</span></h3>
-              <p className="text-xs text-[#6C6863]">Monthly performance statement for TRIO THE POSH</p>
+              <h3 className="font-display text-lg font-bold text-dark">Revenue Overview</h3>
+              <p className="text-xs text-dark/50">Real monthly revenue trend for TRIO THE POSH</p>
             </div>
             <button
               onClick={() => navigate('/reports')}
-              className="text-xs font-semibold uppercase tracking-[0.2em] text-[#D4AF37] hover:underline flex items-center gap-1"
+              className="text-xs font-semibold text-[#D4AF37] hover:underline flex items-center gap-1"
             >
               View Report <ChevronRight size={14} />
             </button>
@@ -230,106 +229,102 @@ export default function Dashboard() {
                     <stop offset="95%" stopColor="#D4AF37" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="month" stroke="#1A1A1A" opacity={0.6} tickLine={false} fontSize={11} />
-                <YAxis stroke="#1A1A1A" opacity={0.6} tickLine={false} fontSize={11} />
+                <XAxis dataKey="month" stroke="#1A1A1A" opacity={0.4} tickLine={false} fontSize={12} />
+                <YAxis stroke="#1A1A1A" opacity={0.4} tickLine={false} fontSize={12} />
                 <Tooltip
                   formatter={(val) => [`₹${Number(val).toLocaleString('en-IN')}`, 'Revenue']}
                   contentStyle={{
                     backgroundColor: '#1A1A1A',
-                    color: '#D4AF37',
-                    borderRadius: '0px',
-                    border: '1px solid #D4AF37',
+                    color: '#fff',
+                    borderRadius: '16px',
+                    border: 'none',
                     fontSize: '12px',
-                    fontFamily: 'Playfair Display',
                   }}
                 />
-                <Area type="monotone" dataKey="revenue" stroke="#D4AF37" strokeWidth={2} fillOpacity={1} fill="url(#goldGradient)" />
+                <Area type="monotone" dataKey="revenue" stroke="#D4AF37" strokeWidth={3} fillOpacity={1} fill="url(#goldGradient)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Right 1 Col: Quick Actions */}
-        <div className="glass-card p-6 flex flex-col justify-between border-t-2 border-t-[#D4AF37]">
+        <div className="glass-card p-6 flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-4 border-b border-[#1A1A1A]/10 pb-3">
+            <div className="flex items-center gap-2 mb-4">
               <Sparkles size={18} className="text-[#D4AF37]" />
-              <h3 className="font-display text-xl font-bold text-[#1A1A1A]">Quick Actions</h3>
+              <h3 className="font-display text-lg font-bold text-dark">Quick Actions</h3>
             </div>
-            <p className="text-xs text-[#6C6863] mb-6">Instantly access core salon operations</p>
+            <p className="text-xs text-dark/50 mb-6">Instantly access core salon operations</p>
 
             <div className="space-y-3">
               <button
                 onClick={() => navigate('/billing')}
-                className="w-full flex items-center justify-between p-3.5 btn-accent text-white font-semibold text-xs uppercase tracking-[0.15em]"
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#D4AF37] text-white font-semibold text-sm hover:bg-[#C59F2E] transition-all shadow-md"
               >
                 <span className="flex items-center gap-2.5">
-                  <Receipt size={16} /> New POS Billing
+                  <Receipt size={18} /> New POS Billing
                 </span>
                 <ChevronRight size={16} />
               </button>
 
               <button
                 onClick={() => navigate('/appointments')}
-                className="w-full flex items-center justify-between p-3.5 bg-[#F9F8F6] text-[#1A1A1A] font-semibold text-xs uppercase tracking-[0.15em] hover:bg-[#EBE5DE] transition-all border border-[#1A1A1A]/15"
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#F4F0E6] text-dark font-semibold text-sm hover:bg-white transition-all border border-[#E8DFCF]"
               >
                 <span className="flex items-center gap-2.5">
-                  <Calendar size={16} className="text-[#D4AF37]" /> Book Appointment
+                  <Calendar size={18} className="text-[#D4AF37]" /> Book Appointment
                 </span>
-                <ChevronRight size={16} className="text-[#6C6863]" />
+                <ChevronRight size={16} className="text-dark/40" />
               </button>
 
               <button
                 onClick={() => navigate('/customers')}
-                className="w-full flex items-center justify-between p-3.5 bg-[#F9F8F6] text-[#1A1A1A] font-semibold text-xs uppercase tracking-[0.15em] hover:bg-[#EBE5DE] transition-all border border-[#1A1A1A]/15"
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#F4F0E6] text-dark font-semibold text-sm hover:bg-white transition-all border border-[#E8DFCF]"
               >
                 <span className="flex items-center gap-2.5">
-                  <UserPlus size={16} className="text-[#D4AF37]" /> Add New Customer
+                  <UserPlus size={18} className="text-[#D4AF37]" /> Add New Customer
                 </span>
-                <ChevronRight size={16} className="text-[#6C6863]" />
+                <ChevronRight size={16} className="text-dark/40" />
               </button>
 
               <button
                 onClick={() => navigate('/attendance')}
-                className="w-full flex items-center justify-between p-3.5 bg-[#F9F8F6] text-[#1A1A1A] font-semibold text-xs uppercase tracking-[0.15em] hover:bg-[#EBE5DE] transition-all border border-[#1A1A1A]/15"
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#F4F0E6] text-dark font-semibold text-sm hover:bg-white transition-all border border-[#E8DFCF]"
               >
                 <span className="flex items-center gap-2.5">
-                  <UserCheck size={16} className="text-[#D4AF37]" /> Mark Attendance
+                  <UserCheck size={18} className="text-[#D4AF37]" /> Mark Attendance
                 </span>
-                <ChevronRight size={16} className="text-[#6C6863]" />
+                <ChevronRight size={16} className="text-dark/40" />
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom Section: Recent Invoices (Inverted Dark Section) & Upcoming Appointments */}
+      {/* Bottom Section: Recent Invoices & Upcoming Appointments */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Invoices - Inverted Contrast Section */}
-        <div className="bg-inverted p-6 border-t-2 border-t-[#D4AF37] shadow-xl text-white">
-          <div className="flex items-center justify-between mb-4 border-b border-[#D4AF37]/30 pb-3">
-            <h3 className="font-display text-lg font-bold text-white flex items-center gap-2">
-              <span className="h-2 w-2 bg-[#D4AF37]" />
-              Recent <span className="italic text-[#D4AF37]">Transactions</span>
-            </h3>
-            <button onClick={() => navigate('/billing')} className="text-xs font-semibold uppercase tracking-widest text-[#D4AF37] hover:underline">
+        {/* Recent Invoices */}
+        <div className="glass-card p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-display text-base font-bold text-dark">Recent Transactions</h3>
+            <button onClick={() => navigate('/billing')} className="text-xs font-semibold text-[#D4AF37] hover:underline">
               View All
             </button>
           </div>
 
           <div className="space-y-3">
             {stats.recentInvoices.length === 0 ? (
-              <p className="text-xs text-white/50 py-6 text-center italic font-display">No recent billing activity</p>
+              <p className="text-xs text-dark/40 py-6 text-center">No recent billing activity</p>
             ) : (
               stats.recentInvoices.map((inv) => (
-                <div key={inv.id} className="flex items-center justify-between p-3 bg-[#262626] border border-[#1A1A1A]">
+                <div key={inv.id} className="flex items-center justify-between p-3 rounded-2xl bg-[#F4F0E6]/50 border border-[#E8DFCF]">
                   <div>
-                    <p className="text-xs font-bold text-white uppercase tracking-wider">{inv.invoice_number}</p>
-                    <p className="text-[11px] text-white/60">{inv.customer_name || 'Walk-in Customer'}</p>
+                    <p className="text-xs font-bold text-dark">{inv.invoice_number}</p>
+                    <p className="text-[11px] text-dark/50">{inv.customer_name || 'Walk-in Customer'}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-display text-sm font-bold text-[#D4AF37]">₹{Number(inv.total).toLocaleString('en-IN')}</p>
-                    <span className="text-[9px] uppercase tracking-widest px-2 py-0.5 bg-[#D4AF37]/20 text-[#D4AF37] font-semibold border border-[#D4AF37]/30">
+                    <p className="text-xs font-bold text-dark">₹{Number(inv.total).toLocaleString('en-IN')}</p>
+                    <span className="text-[10px] capitalize px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
                       {inv.payment_method || 'Cash'}
                     </span>
                   </div>
@@ -340,30 +335,30 @@ export default function Dashboard() {
         </div>
 
         {/* Upcoming Appointments */}
-        <div className="glass-card p-6 border-t-2 border-t-[#1A1A1A]">
-          <div className="flex items-center justify-between mb-4 border-b border-[#1A1A1A]/10 pb-3">
-            <h3 className="font-display text-lg font-bold text-[#1A1A1A]">Upcoming <span className="italic text-[#D4AF37]">Appointments</span></h3>
-            <button onClick={() => navigate('/appointments')} className="text-xs font-semibold uppercase tracking-widest text-[#D4AF37] hover:underline">
+        <div className="glass-card p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-display text-base font-bold text-dark">Upcoming Appointments</h3>
+            <button onClick={() => navigate('/appointments')} className="text-xs font-semibold text-[#D4AF37] hover:underline">
               View Schedule
             </button>
           </div>
 
           <div className="space-y-3">
             {stats.upcomingAppointments.length === 0 ? (
-              <p className="text-xs text-[#6C6863] py-6 text-center italic font-display">No upcoming appointments booked</p>
+              <p className="text-xs text-dark/40 py-6 text-center">No upcoming appointments booked</p>
             ) : (
               stats.upcomingAppointments.map((app) => (
-                <div key={app.id} className="flex items-center justify-between p-3 bg-[#F9F8F6] border border-[#1A1A1A]/15">
+                <div key={app.id} className="flex items-center justify-between p-3 rounded-2xl bg-[#F4F0E6]/50 border border-[#E8DFCF]">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-[#1A1A1A] text-[#D4AF37]">
+                    <div className="p-2 rounded-xl bg-[#D4AF37]/10 text-[#D4AF37]">
                       <Clock size={16} />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-[#1A1A1A]">{app.customer_name || 'Client'}</p>
-                      <p className="text-[11px] text-[#6C6863]">{app.service_name || 'Service'} • {app.appointment_time}</p>
+                      <p className="text-xs font-bold text-dark">{app.customer_name || 'Client'}</p>
+                      <p className="text-[11px] text-dark/50">{app.service_name || 'Service'} • {app.appointment_time}</p>
                     </div>
                   </div>
-                  <span className="text-[10px] uppercase font-bold text-[#1A1A1A] bg-white px-2.5 py-1 border border-[#1A1A1A]/20 tracking-wider">
+                  <span className="text-xs font-semibold text-dark/70 bg-white px-2.5 py-1 rounded-full border border-[#E8DFCF]">
                     {app.staff_name || 'Any Staff'}
                   </span>
                 </div>

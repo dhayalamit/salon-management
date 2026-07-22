@@ -323,7 +323,7 @@ export default function Products() {
           actionButton={
             <button
               onClick={openAddModal}
-              className="btn-accent inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-white font-semibold text-xs shadow-accent"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-md"
             >
               <Plus size={16} /> Add Product
             </button>

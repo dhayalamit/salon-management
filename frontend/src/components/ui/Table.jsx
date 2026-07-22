@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Inbox } from 'lucide-react';
+import { Search, SlidersHorizontal, Inbox } from 'lucide-react';
 import Pagination from './Pagination';
 
 export default function Table({
@@ -22,13 +22,13 @@ export default function Table({
       {/* Table Header Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-md">
-          <Search size={16} className="absolute left-1 top-1/2 -translate-y-1/2 text-[#6C6863]" />
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-dark/40" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
-            className="w-full pl-7 pr-4 py-2 bg-transparent border-b border-[#1A1A1A] text-xs text-[#1A1A1A] placeholder:italic placeholder:font-display placeholder:text-[#6C6863] focus:outline-none focus:border-[#D4AF37] transition-all"
+            className="w-full pl-11 pr-4 py-2.5 bg-white/70 backdrop-blur-md border border-[#E8DFCF] rounded-full text-sm text-dark placeholder:text-dark/40 focus:outline-none focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 transition-all"
           />
         </div>
 
@@ -43,24 +43,24 @@ export default function Table({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-[#1A1A1A] bg-[#EBE5DE]">
+              <tr className="border-b border-[#E8DFCF] bg-[#F4F0E6]/50">
                 {columns.map((col, i) => (
                   <th
                     key={i}
-                    className={`px-6 py-4 font-sans text-xs font-bold uppercase tracking-[0.2em] text-[#1A1A1A] ${col.className || ''}`}
+                    className={`px-6 py-4 text-xs font-semibold uppercase tracking-wider text-dark/60 ${col.className || ''}`}
                   >
                     {col.header}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#1A1A1A]/10 text-sm">
+            <tbody className="divide-y divide-[#E8DFCF]/60 text-sm">
               {loading ? (
                 Array.from({ length: 5 }).map((_, r) => (
                   <tr key={r} className="animate-pulse">
                     {columns.map((_, c) => (
                       <td key={c} className="px-6 py-4">
-                        <div className="h-4 bg-[#EBE5DE] rounded-none w-3/4"></div>
+                        <div className="h-4 bg-[#E8DFCF]/50 rounded-full w-3/4"></div>
                       </td>
                     ))}
                   </tr>
@@ -68,16 +68,16 @@ export default function Table({
               ) : data.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center justify-center gap-2 text-[#6C6863]">
-                      <Inbox size={36} className="text-[#D4AF37]" />
-                      <p className="font-display font-medium text-lg text-[#1A1A1A]">No records found</p>
-                      <p className="text-xs text-[#6C6863]">Try adjusting your search or filters</p>
+                    <div className="flex flex-col items-center justify-center gap-2 text-dark/40">
+                      <Inbox size={36} className="text-[#D4AF37]/60" />
+                      <p className="font-medium text-base text-dark/60">No records found</p>
+                      <p className="text-xs text-dark/40">Try adjusting your search or filters</p>
                     </div>
                   </td>
                 </tr>
               ) : (
                 data.map((row, index) => (
-                  <tr key={row.id || index} className="hover:bg-[#EBE5DE]/40 transition-colors">
+                  <tr key={row.id || index} className="hover:bg-white/60 transition-colors">
                     {columns.map((col, cIndex) => (
                       <td key={cIndex} className={`px-6 py-4 ${col.className || ''}`}>
                         {col.render ? col.render(row, index) : row[col.accessor]}
@@ -91,7 +91,7 @@ export default function Table({
         </div>
 
         {/* Footer Pagination */}
-        <div className="px-6 pb-4 pt-2">
+        <div className="px-6 pb-4">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

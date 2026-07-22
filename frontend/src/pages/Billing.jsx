@@ -252,10 +252,10 @@ export default function Billing() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[#0F172A] flex items-center gap-2">
-            <Receipt size={24} className="text-[#0052FF]" /> POS Billing & Tax Invoices
+          <h1 className="font-display text-2xl font-bold text-dark flex items-center gap-2">
+            <Receipt size={24} className="text-[#D4AF37]" /> POS Billing & Tax Invoices
           </h1>
-          <p className="text-xs text-[#64748B]">Generate professional tax invoices for Services, Retail Products, or Mixed billing</p>
+          <p className="text-xs text-dark/50">Generate professional tax invoices for Services, Retail Products, or Mixed billing</p>
         </div>
 
         <button
@@ -263,7 +263,7 @@ export default function Billing() {
             setItems([]);
             setIsPOSOpen(true);
           }}
-          className="btn-accent px-6 py-3 rounded-full text-white font-semibold text-xs flex items-center gap-2 shadow-accent"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-md"
         >
           <Sparkles size={16} /> Create New POS Invoice
         </button>
@@ -523,8 +523,8 @@ export default function Billing() {
                       onClick={() => setPaymentMethod(method)}
                       className={`py-2 rounded-xl text-xs font-semibold uppercase transition-all ${
                         paymentMethod === method
-                          ? 'bg-gradient-to-r from-[#0052FF] to-[#4D7CFF] text-white shadow-accent'
-                          : 'bg-[#F1F5F9] text-[#0F172A]/70 border border-[#E2E8F0]'
+                          ? 'bg-[#D4AF37] text-white shadow-sm'
+                          : 'bg-[#F4F0E6] text-dark/70 border border-[#E8DFCF]'
                       }`}
                     >
                       {method}

@@ -116,14 +116,14 @@ export default function Customers() {
       header: 'Customer',
       render: (row) => (
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0052FF] to-[#4D7CFF] font-display text-sm font-bold text-white shadow-xs">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#D4AF37] to-[#A37E1F] font-display text-sm font-bold text-white shadow-sm">
             {row.name?.[0]?.toUpperCase() || 'C'}
           </div>
           <div>
-            <p className="font-semibold text-[#0F172A] hover:text-[#0052FF] cursor-pointer" onClick={() => navigate(`/customers/${row.id}`)}>
+            <p className="font-semibold text-dark hover:text-[#D4AF37] cursor-pointer" onClick={() => navigate(`/customers/${row.id}`)}>
               {row.name}
             </p>
-            <p className="text-xs text-[#64748B] flex items-center gap-1">
+            <p className="text-xs text-dark/50 flex items-center gap-1">
               <Phone size={12} /> {row.phone || 'No phone'}
             </p>
           </div>
@@ -133,7 +133,7 @@ export default function Customers() {
     {
       header: 'Total Spent',
       render: (row) => (
-        <span className="font-bold text-xs text-emerald-600">
+        <span className="font-bold text-xs text-emerald-700">
           ₹{Number(row.total_spent || 0).toLocaleString('en-IN')}
         </span>
       ),
@@ -141,7 +141,7 @@ export default function Customers() {
     {
       header: 'Last Visit Date',
       render: (row) => (
-        <span className="text-xs text-[#64748B]">
+        <span className="text-xs text-dark/70">
           {row.last_visit_date ? new Date(row.last_visit_date).toLocaleDateString('en-IN') : 'No past visits'}
         </span>
       ),
@@ -149,7 +149,7 @@ export default function Customers() {
     {
       header: 'Next Appointment',
       render: (row) => (
-        <span className="text-xs font-semibold text-purple-700 bg-purple-50 px-3 py-1 rounded-full border border-purple-200 inline-flex items-center gap-1.5">
+        <span className="text-xs font-semibold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200 flex items-center gap-1 inline-flex">
           <Calendar size={12} />
           {row.next_appointment_date ? new Date(row.next_appointment_date).toLocaleDateString('en-IN') : 'None scheduled'}
         </span>
@@ -161,14 +161,14 @@ export default function Customers() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate(`/customers/${row.id}`)}
-            className="p-2 rounded-xl bg-[#F1F5F9] text-[#64748B] hover:bg-[#0052FF] hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-[#F4F0E6] text-dark/70 hover:bg-[#D4AF37] hover:text-white transition-colors"
             title="View Profile"
           >
             <Eye size={16} />
           </button>
           <button
             onClick={() => openEditModal(row)}
-            className="p-2 rounded-xl bg-[#F1F5F9] text-[#64748B] hover:bg-[#0F172A] hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-[#F4F0E6] text-dark/70 hover:bg-dark hover:text-white transition-colors"
             title="Edit Customer"
           >
             <Edit3 size={16} />
@@ -190,8 +190,8 @@ export default function Customers() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[#0F172A]">Customer Database</h1>
-          <p className="text-xs text-[#64748B]">Manage clients, review visit history, and next appointment schedules</p>
+          <h1 className="font-display text-2xl font-bold text-dark">Customer Database</h1>
+          <p className="text-xs text-dark/50">Manage clients, review visit history, and next appointment schedules</p>
         </div>
 
         <button
@@ -199,7 +199,7 @@ export default function Customers() {
             setFormData({ name: '', phone: '', email: '', gender: '', birthday: '', nextAppointmentDate: '', notes: '' });
             setIsAddModalOpen(true);
           }}
-          className="btn-accent inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-white font-semibold text-xs shadow-accent"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-md"
         >
           <UserPlus size={16} /> Add Customer
         </button>
@@ -221,7 +221,7 @@ export default function Customers() {
           <select
             value={genderFilter}
             onChange={(e) => setGenderFilter(e.target.value)}
-            className="px-4 py-2.5 rounded-full bg-white border border-[#E2E8F0] text-xs font-medium text-[#0F172A] focus:outline-none focus:border-[#0052FF]"
+            className="px-4 py-2.5 rounded-full bg-white border border-[#E8DFCF] text-xs font-medium text-dark focus:outline-none focus:border-[#D4AF37]"
           >
             <option value="all">All Genders</option>
             <option value="female">Female</option>
@@ -235,34 +235,34 @@ export default function Customers() {
       <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Add New Customer">
         <form onSubmit={handleCreateCustomer} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">Full Name *</label>
+            <label className="block text-xs font-semibold text-dark/70 mb-1.5">Full Name *</label>
             <input
               type="text"
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="e.g. Priya Sharma"
-              className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E2E8F0] text-sm text-[#0F172A] focus:border-[#0052FF] focus:outline-none"
+              className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">Phone Number</label>
+              <label className="block text-xs font-semibold text-dark/70 mb-1.5">Phone Number</label>
               <input
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="e.g. 9876543210"
-                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E2E8F0] text-sm text-[#0F172A] focus:border-[#0052FF] focus:outline-none"
+                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">Gender</label>
+              <label className="block text-xs font-semibold text-dark/70 mb-1.5">Gender</label>
               <select
                 value={formData.gender}
                 onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E2E8F0] text-sm text-[#0F172A] focus:border-[#0052FF] focus:outline-none"
+                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
               >
                 <option value="">Select Gender</option>
                 <option value="female">Female</option>
@@ -274,47 +274,47 @@ export default function Customers() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">Date of Birth</label>
+              <label className="block text-xs font-semibold text-dark/70 mb-1.5">Date of Birth</label>
               <input
                 type="date"
                 value={formData.birthday}
                 onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E2E8F0] text-sm text-[#0F172A] focus:border-[#0052FF] focus:outline-none"
+                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">Preferred / Next Appointment Date</label>
+              <label className="block text-xs font-semibold text-dark/70 mb-1.5">Preferred / Next Appointment Date</label>
               <input
                 type="date"
                 value={formData.nextAppointmentDate}
                 onChange={(e) => setFormData({ ...formData, nextAppointmentDate: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E2E8F0] text-sm text-[#0F172A] focus:border-[#0052FF] focus:outline-none"
+                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">Special Preferences / Notes</label>
+            <label className="block text-xs font-semibold text-dark/70 mb-1.5">Special Preferences / Notes</label>
             <textarea
               rows={3}
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Allergies, preferred hair stylists, tea preferences..."
-              className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E2E8F0] text-sm text-[#0F172A] focus:border-[#0052FF] focus:outline-none"
+              className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-[#E2E8F0]">
+          <div className="flex justify-end gap-3 pt-4 border-t border-[#E8DFCF]">
             <button
               type="button"
               onClick={() => setIsAddModalOpen(false)}
-              className="px-5 py-2.5 rounded-full border border-[#E2E8F0] text-xs font-semibold text-[#0F172A] hover:bg-[#F1F5F9]"
+              className="px-5 py-2.5 rounded-full border border-[#E8DFCF] text-xs font-semibold text-dark hover:bg-[#F4F0E6]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="btn-accent px-6 py-2.5 rounded-full text-white font-semibold text-xs shadow-accent"
+              className="px-6 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E]"
             >
               Save Customer
             </button>
@@ -326,32 +326,32 @@ export default function Customers() {
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Customer Info">
         <form onSubmit={handleUpdateCustomer} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">Full Name</label>
+            <label className="block text-xs font-semibold text-dark/70 mb-1.5">Full Name</label>
             <input
               type="text"
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E2E8F0] text-sm text-[#0F172A] focus:border-[#0052FF] focus:outline-none"
+              className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">Phone Number</label>
+              <label className="block text-xs font-semibold text-dark/70 mb-1.5">Phone Number</label>
               <input
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E2E8F0] text-sm text-[#0F172A] focus:border-[#0052FF] focus:outline-none"
+                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">Gender</label>
+              <label className="block text-xs font-semibold text-dark/70 mb-1.5">Gender</label>
               <select
                 value={formData.gender}
                 onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E2E8F0] text-sm text-[#0F172A] focus:border-[#0052FF] focus:outline-none"
+                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
               >
                 <option value="">Select Gender</option>
                 <option value="female">Female</option>
@@ -363,46 +363,46 @@ export default function Customers() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">Date of Birth</label>
+              <label className="block text-xs font-semibold text-dark/70 mb-1.5">Date of Birth</label>
               <input
                 type="date"
                 value={formData.birthday}
                 onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E2E8F0] text-sm text-[#0F172A] focus:border-[#0052FF] focus:outline-none"
+                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">Preferred / Next Appointment Date</label>
+              <label className="block text-xs font-semibold text-dark/70 mb-1.5">Preferred / Next Appointment Date</label>
               <input
                 type="date"
                 value={formData.nextAppointmentDate}
                 onChange={(e) => setFormData({ ...formData, nextAppointmentDate: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E2E8F0] text-sm text-[#0F172A] focus:border-[#0052FF] focus:outline-none"
+                className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">Notes</label>
+            <label className="block text-xs font-semibold text-dark/70 mb-1.5">Notes</label>
             <textarea
               rows={3}
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E2E8F0] text-sm text-[#0F172A] focus:border-[#0052FF] focus:outline-none"
+              className="w-full px-4 py-2.5 rounded-2xl bg-white border border-[#E8DFCF] text-sm text-dark focus:border-[#D4AF37] focus:outline-none"
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-[#E2E8F0]">
+          <div className="flex justify-end gap-3 pt-4 border-t border-[#E8DFCF]">
             <button
               type="button"
               onClick={() => setIsEditModalOpen(false)}
-              className="px-5 py-2.5 rounded-full border border-[#E2E8F0] text-xs font-semibold text-[#0F172A] hover:bg-[#F1F5F9]"
+              className="px-5 py-2.5 rounded-full border border-[#E8DFCF] text-xs font-semibold text-dark hover:bg-[#F4F0E6]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="btn-accent px-6 py-2.5 rounded-full text-white font-semibold text-xs shadow-accent"
+              className="px-6 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E]"
             >
               Update Changes
             </button>
