@@ -53,16 +53,20 @@ export default function Customers() {
 
   const handleCreateCustomer = async (e) => {
     e.preventDefault();
-    if (!formData.name) return showError('Customer name is required');
+    if (!formData.name || !formData.name.trim()) return showError('Customer name is required');
 
     try {
-      await client.post('/customers', formData);
-      showSuccess('Customer created successfully');
+      const res = await client.post('/customers', formData);
+      showSuccess(`Customer "${res.data.name || formData.name}" added successfully`);
       setIsAddModalOpen(false);
       setFormData({ name: '', phone: '', email: '', gender: '', birthday: '', nextAppointmentDate: '', notes: '' });
+      setSearch('');
+      setGenderFilter('all');
+      window.dispatchEvent(new CustomEvent('customers_updated'));
+      window.dispatchEvent(new CustomEvent('dashboard_updated'));
       fetchCustomers();
     } catch (err) {
-      showError('Failed to create customer');
+      showError(err.response?.data?.error || 'Failed to create customer');
     }
   };
 
@@ -74,9 +78,11 @@ export default function Customers() {
       await client.put(`/customers/${selectedCustomer.id}`, formData);
       showSuccess('Customer updated successfully');
       setIsEditModalOpen(false);
+      window.dispatchEvent(new CustomEvent('customers_updated'));
+      window.dispatchEvent(new CustomEvent('dashboard_updated'));
       fetchCustomers();
     } catch (err) {
-      showError('Failed to update customer');
+      showError(err.response?.data?.error || 'Failed to update customer');
     }
   };
 

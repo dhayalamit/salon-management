@@ -14,6 +14,13 @@ export default function StaffProfile() {
 
   useEffect(() => {
     fetchProfile();
+    const handleUpdate = () => fetchProfile();
+    window.addEventListener('attendance_updated', handleUpdate);
+    window.addEventListener('billing_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('attendance_updated', handleUpdate);
+      window.removeEventListener('billing_updated', handleUpdate);
+    };
   }, [id]);
 
   const fetchProfile = async () => {

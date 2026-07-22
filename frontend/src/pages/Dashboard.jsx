@@ -54,9 +54,21 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchStats();
-    const handleAttendanceUpdate = () => fetchStats();
-    window.addEventListener('attendance_updated', handleAttendanceUpdate);
-    return () => window.removeEventListener('attendance_updated', handleAttendanceUpdate);
+    const handleUpdate = () => fetchStats();
+    window.addEventListener('dashboard_updated', handleUpdate);
+    window.addEventListener('attendance_updated', handleUpdate);
+    window.addEventListener('billing_updated', handleUpdate);
+    window.addEventListener('appointment_updated', handleUpdate);
+    window.addEventListener('customers_updated', handleUpdate);
+    window.addEventListener('products_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('dashboard_updated', handleUpdate);
+      window.removeEventListener('attendance_updated', handleUpdate);
+      window.removeEventListener('billing_updated', handleUpdate);
+      window.removeEventListener('appointment_updated', handleUpdate);
+      window.removeEventListener('customers_updated', handleUpdate);
+      window.removeEventListener('products_updated', handleUpdate);
+    };
   }, []);
 
   const fetchStats = async () => {

@@ -4,7 +4,7 @@ const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
-// GET /api/staff
+// GET /api/staff — List all staff with today's real-time attendance status
 router.get('/', authenticate, async (req, res) => {
   try {
     const today = new Date().toLocaleDateString('en-CA');
@@ -13,10 +13,10 @@ router.get('/', authenticate, async (req, res) => {
               COALESCE(att.today_status, 'not_marked') AS today_status
        FROM staff s
        LEFT JOIN (
-         SELECT staff_id, status AS today_status
+         SELECT staff_id::text AS staff_id, status AS today_status
          FROM attendance
-         WHERE date = $1 OR substr(date, 1, 10) = $1
-       ) att ON att.staff_id = s.id
+         WHERE (substr(date::text, 1, 10) = $1 OR date::date = $1::date)
+       ) att ON att.staff_id = s.id::text
        ORDER BY s.created_at DESC`,
       [today]
     );
@@ -34,11 +34,11 @@ router.get('/:id', authenticate, async (req, res) => {
     const staffQ = await db.query('SELECT * FROM staff WHERE id = $1', [id]);
     if (!staffQ.rows[0]) return res.status(404).json({ error: 'Staff member not found' });
 
-    const attendanceQ = await db.query('SELECT * FROM attendance WHERE staff_id = $1 ORDER BY date DESC LIMIT 30', [id]);
+    const attendanceQ = await db.query('SELECT * FROM attendance WHERE staff_id::text = $1 ORDER BY date DESC LIMIT 30', [id]);
     const invoicesQ = await db.query(
       `SELECT i.*, c.name AS customer_name FROM invoices i
-       LEFT JOIN customers c ON c.id = i.customer_id
-       WHERE i.staff_id = $1 ORDER BY i.created_at DESC LIMIT 20`,
+       LEFT JOIN customers c ON c.id::text = i.customer_id::text
+       WHERE i.staff_id::text = $1 ORDER BY i.created_at DESC LIMIT 20`,
       [id]
     );
 

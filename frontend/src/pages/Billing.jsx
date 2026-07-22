@@ -191,18 +191,24 @@ export default function Billing() {
 
   const columns = [
     {
-      header: 'Invoice #',
-      render: (row) => (
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-[#D4AF37]/10 text-[#D4AF37]">
-            <Receipt size={18} />
+      header: 'Invoice # & Timestamp',
+      render: (row) => {
+        const d = new Date(row.created_at || Date.now());
+        const payDate = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        const payTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        return (
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-2xl bg-[#D4AF37]/10 text-[#D4AF37] shrink-0">
+              <Receipt size={18} />
+            </div>
+            <div>
+              <p className="font-bold text-dark">{row.invoice_number}</p>
+              <p className="text-xs text-dark/70 font-medium">📅 {payDate}</p>
+              <p className="text-[11px] font-semibold text-[#D4AF37]">⏰ {payTime}</p>
+            </div>
           </div>
-          <div>
-            <p className="font-bold text-dark">{row.invoice_number}</p>
-            <p className="text-xs text-dark/50">{new Date(row.created_at).toLocaleDateString()}</p>
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       header: 'Client',

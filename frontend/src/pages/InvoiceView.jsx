@@ -118,12 +118,19 @@ export default function InvoiceView() {
             <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#F4F0E6] text-dark border border-[#E8DFCF] inline-block">
               TAX INVOICE
             </span>
-            <p className="font-display text-lg font-bold text-dark mt-2">{invoice.invoice_number}</p>
-            <p className="text-xs text-dark/50">
-              {new Date(invoice.created_at).toLocaleDateString('en-IN', {
+            <p className="font-display text-lg font-bold text-dark mt-1">{invoice.invoice_number}</p>
+            <p className="text-xs font-semibold text-dark/70 mt-1">
+              Payment Date: {new Date(invoice.created_at || Date.now()).toLocaleDateString('en-IN', {
                 day: '2-digit',
-                month: 'short',
+                month: 'long',
                 year: 'numeric',
+              })}
+            </p>
+            <p className="text-xs font-bold text-[#D4AF37]">
+              Payment Time: {new Date(invoice.created_at || Date.now()).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
               })}
             </p>
           </div>
