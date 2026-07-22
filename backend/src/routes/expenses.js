@@ -4,7 +4,7 @@ const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
-const STANDARD_CATEGORIES = [
+const DEFAULT_STANDARD_CATEGORIES = [
   'Electricity',
   'Rent',
   'Water Bill',
@@ -16,20 +16,28 @@ const STANDARD_CATEGORIES = [
   'Other',
 ];
 
-// GET /api/expenses/categories — Get standard + custom expense categories
+// GET /api/expenses/categories — Get active standard + custom categories (excluding deleted ones)
 router.get('/categories', authenticate, async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT name FROM custom_expense_categories ORDER BY name ASC').catch(() => ({ rows: [] }));
-    const customNames = (rows || []).map((r) => r.name);
-    const all = Array.from(new Set([...STANDARD_CATEGORIES, ...customNames]));
-    res.json({ categories: all, customCategories: customNames });
+    const customQ = await db.query('SELECT name FROM custom_expense_categories ORDER BY name ASC').catch(() => ({ rows: [] }));
+    const deletedQ = await db.query('SELECT name FROM deleted_expense_categories').catch(() => ({ rows: [] }));
+
+    const deletedNames = new Set((deletedQ.rows || []).map((r) => r.name));
+    const customNames = (customQ.rows || []).map((r) => r.name);
+
+    const activeStandard = DEFAULT_STANDARD_CATEGORIES.filter((cat) => !deletedNames.has(cat));
+    const activeCustom = customNames.filter((cat) => !deletedNames.has(cat));
+
+    const all = Array.from(new Set([...activeStandard, ...activeCustom]));
+
+    res.json({ categories: all, customCategories: customNames, deletedCategories: Array.from(deletedNames) });
   } catch (err) {
     console.error('Fetch categories error:', err);
-    res.json({ categories: STANDARD_CATEGORIES, customCategories: [] });
+    res.json({ categories: DEFAULT_STANDARD_CATEGORIES, customCategories: [], deletedCategories: [] });
   }
 });
 
-// POST /api/expenses/categories — Add custom expense category
+// POST /api/expenses/categories — Add or un-delete category
 router.post('/categories', authenticate, async (req, res) => {
   try {
     const { name } = req.body;
@@ -37,6 +45,9 @@ router.post('/categories', authenticate, async (req, res) => {
 
     const trimmed = name.trim();
     const id = db.generateUUID();
+
+    // If it was previously deleted, remove from deleted list
+    await db.query('DELETE FROM deleted_expense_categories WHERE name = $1', [trimmed]).catch(() => {});
 
     await db.query(
       `INSERT INTO custom_expense_categories (id, name) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING`,
@@ -50,19 +61,28 @@ router.post('/categories', authenticate, async (req, res) => {
   }
 });
 
-// DELETE /api/expenses/categories/:name — Remove custom category
+// DELETE /api/expenses/categories/:name — Delete ANY category (Standard or Custom)
 router.delete('/categories/:name', authenticate, async (req, res) => {
   try {
     const categoryName = decodeURIComponent(req.params.name);
-    await db.query('DELETE FROM custom_expense_categories WHERE name = $1', [categoryName]);
+
+    // Delete from custom if present
+    await db.query('DELETE FROM custom_expense_categories WHERE name = $1', [categoryName]).catch(() => {});
+
+    // Add to deleted categories table so standard categories can also be deleted
+    await db.query(
+      `INSERT INTO deleted_expense_categories (name) VALUES ($1) ON CONFLICT DO NOTHING`,
+      [categoryName]
+    ).catch(() => {});
+
     res.status(204).end();
   } catch (err) {
-    console.error('Delete custom category error:', err);
-    res.status(500).json({ error: 'Failed to delete custom category' });
+    console.error('Delete category error:', err);
+    res.status(500).json({ error: 'Failed to delete category' });
   }
 });
 
-// GET /api/expenses — Safe PostgreSQL query without created_at column error
+// GET /api/expenses
 router.get('/', authenticate, async (req, res) => {
   try {
     const { rows } = await db.query('SELECT * FROM expenses ORDER BY expense_date DESC');
@@ -73,7 +93,7 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-// POST /api/expenses — Simple expense creation (No Title field needed)
+// POST /api/expenses
 router.post('/', authenticate, async (req, res) => {
   try {
     const { category, amount, expenseDate, paymentMethod, note } = req.body;

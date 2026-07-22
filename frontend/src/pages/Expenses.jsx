@@ -99,23 +99,23 @@ export default function Expenses() {
 
     try {
       const res = await client.post('/expenses/categories', { name: customCategoryName.trim() });
-      showSuccess(`Custom category "${res.data.name}" added`);
+      showSuccess(`Category "${res.data.name}" added`);
       setCustomCategoryName('');
       fetchCategories();
       setFormData((prev) => ({ ...prev, category: res.data.name }));
     } catch (err) {
-      showError('Failed to add custom category');
+      showError('Failed to add category');
     }
   };
 
-  const handleDeleteCustomCategory = async (catName) => {
-    if (!window.confirm(`Delete custom category "${catName}"?`)) return;
+  const handleDeleteCategory = async (catName) => {
+    if (!window.confirm(`Are you sure you want to remove category "${catName}"?`)) return;
     try {
       await client.delete(`/expenses/categories/${encodeURIComponent(catName)}`);
-      showSuccess(`Category "${catName}" removed`);
+      showSuccess(`Category "${catName}" deleted successfully`);
       fetchCategories();
     } catch (err) {
-      showError('Failed to remove custom category');
+      showError('Failed to remove category');
     }
   };
 
@@ -371,7 +371,7 @@ export default function Expenses() {
               required
               value={customCategoryName}
               onChange={(e) => setCustomCategoryName(e.target.value)}
-              placeholder="Add new custom category (e.g. Generator Fuel)..."
+              placeholder="Add new category (e.g. Generator Fuel)..."
               className="flex-1 px-3.5 py-2 bg-white border border-[#E8DFCF] rounded-xl text-dark focus:outline-none focus:border-[#D4AF37]"
             />
             <button
@@ -382,9 +382,9 @@ export default function Expenses() {
             </button>
           </form>
 
-          {/* Existing Categories List with Delete option for custom categories */}
+          {/* Existing Categories List with Delete option for ALL categories (Standard & Custom) */}
           <div className="space-y-2">
-            <h4 className="font-bold text-dark border-b border-[#E8DFCF] pb-1">All Active Categories</h4>
+            <h4 className="font-bold text-dark border-b border-[#E8DFCF] pb-1">Active Expense Categories</h4>
             <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
               {categories.map((cat) => {
                 const isCustom = customCategories.includes(cat);
@@ -396,17 +396,13 @@ export default function Expenses() {
                     <span className="font-semibold text-dark">
                       {cat} {isCustom && <span className="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-bold ml-2">Custom</span>}
                     </span>
-                    {isCustom ? (
-                      <button
-                        onClick={() => handleDeleteCustomCategory(cat)}
-                        className="text-red-500 hover:text-red-700 p-1"
-                        title="Remove Custom Category"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    ) : (
-                      <span className="text-[10px] text-dark/40 font-medium">Standard</span>
-                    )}
+                    <button
+                      onClick={() => handleDeleteCategory(cat)}
+                      className="text-red-500 hover:text-red-700 p-1 flex items-center gap-1 text-[11px] font-semibold"
+                      title={`Remove category "${cat}"`}
+                    >
+                      <Trash2 size={14} /> Delete Category
+                    </button>
                   </div>
                 );
               })}

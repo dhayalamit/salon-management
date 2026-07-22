@@ -252,6 +252,13 @@ async function initSQLiteTables() {
     `);
 
     sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS deleted_expense_categories (
+        name TEXT PRIMARY KEY,
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+    `);
+
+    sqliteDb.run(`
       CREATE TABLE IF NOT EXISTS staff_work_entries (
         id TEXT PRIMARY KEY,
         staff_id TEXT NOT NULL,
@@ -304,60 +311,6 @@ async function initSQLiteTables() {
       INSERT OR IGNORE INTO settings (id, salon_name, tagline, address, phone, email, gst_number, default_gst_percent)
       VALUES (1, 'TRIO THE POSH', 'Redefining Beauty & Elegance', '123 Luxury Avenue, Beverly Hills', '+1 800-POSH-SALON', 'info@triotheposh.com', 'GSTIN29AAACT1234F1Z5', 18)
     `);
-
-    sqliteDb.get(`SELECT COUNT(*) as count FROM users`, [], (err, row) => {
-      if (!err && row && row.count === 0) {
-        const bcrypt = require('bcryptjs');
-        const hash = bcrypt.hashSync('admin123', 10);
-        sqliteDb.run(
-          `INSERT INTO users (id, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)`,
-          [generateUUID(), 'TRIO POSH Admin', 'admin@salon.com', hash, 'admin']
-        );
-
-        const services = [
-          ['Signature Haircut & Styling', 800, 45, 20],
-          ['Luxury Facial & Clean', 1500, 60, 15],
-          ['Hair Spa & Keratin Therapy', 2500, 90, 15],
-          ['Royal Beard Grooming', 450, 30, 20],
-          ['Premium Hair Color', 1800, 60, 10],
-          ['Bridal Makeup Package', 8500, 180, 25],
-        ];
-        services.forEach(([name, price, dur, comm]) => {
-          sqliteDb.run(
-            `INSERT INTO services (id, name, price, duration_minutes, commission_percent) VALUES (?, ?, ?, ?, ?)`,
-            [generateUUID(), name, price, dur, comm]
-          );
-        });
-
-        const products = [
-          ['Luxe Argan Oil Shampoo', 'Hair Care', 350, 750, 25],
-          ['Keratin Repair Serum', 'Hair Care', 500, 1100, 15],
-          ['Matte Styling Wax', 'Styling', 200, 450, 30],
-          ['Hydrating Face Mask', 'Skin Care', 180, 400, 20],
-          ['Organic Beard Elixir', 'Grooming', 250, 550, 10],
-        ];
-        products.forEach(([name, cat, buy, sell, stock]) => {
-          sqliteDb.run(
-            `INSERT INTO products (id, name, category, purchase_price, selling_price, stock_quantity) VALUES (?, ?, ?, ?, ?, ?)`,
-            [generateUUID(), name, cat, buy, sell, stock]
-          );
-        });
-
-        const staff = [
-          ['Vikram Malhotra', '9876543210', 35000, 15],
-          ['Sanya Kapoor', '9876543211', 30000, 15],
-          ['Arjun Nair', '9876543212', 28000, 12],
-        ];
-        staff.forEach(([name, phone, salary, comm]) => {
-          sqliteDb.run(
-            `INSERT INTO staff (id, name, phone, salary, commission_percent) VALUES (?, ?, ?, ?, ?)`,
-            [generateUUID(), name, phone, salary, comm]
-          );
-        });
-
-        console.log('[DB] Seeded initial catalog for SQLite');
-      }
-    });
   });
 }
 
@@ -529,6 +482,10 @@ async function initPGTables() {
         name TEXT UNIQUE NOT NULL,
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
+      CREATE TABLE IF NOT EXISTS deleted_expense_categories (
+        name TEXT PRIMARY KEY,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
       CREATE TABLE IF NOT EXISTS staff_work_entries (
         id TEXT PRIMARY KEY,
         staff_id TEXT NOT NULL,
@@ -569,47 +526,6 @@ async function initPGTables() {
     await pgPool.query(`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS cleared_at TIMESTAMPTZ`).catch(() => {});
     await pgPool.query(`ALTER TABLE services ALTER COLUMN active SET DATA TYPE BOOLEAN USING (active::boolean)`).catch(() => {});
     await pgPool.query(`ALTER TABLE customers ADD COLUMN IF NOT EXISTS next_appointment_date TEXT`).catch(() => {});
-
-    const userRes = await pgPool.query('SELECT COUNT(*) as count FROM users');
-    if (parseInt(userRes.rows[0]?.count || 0, 10) === 0) {
-      const bcrypt = require('bcryptjs');
-      const hash = bcrypt.hashSync('admin123', 10);
-      await pgPool.query(
-        `INSERT INTO users (id, name, email, password_hash, role) VALUES ($1, $2, $3, $4, $5)`,
-        [generateUUID(), 'TRIO POSH Admin', 'admin@salon.com', hash, 'admin']
-      );
-
-      const services = [
-        ['Signature Haircut & Styling', 800, 45, 20],
-        ['Luxury Facial & Clean', 1500, 60, 15],
-        ['Hair Spa & Keratin Therapy', 2500, 90, 15],
-        ['Royal Beard Grooming', 450, 30, 20],
-        ['Premium Hair Color', 1800, 60, 10],
-        ['Bridal Makeup Package', 8500, 180, 25],
-      ];
-      for (const [name, price, dur, comm] of services) {
-        await pgPool.query(
-          `INSERT INTO services (id, name, price, duration_minutes, commission_percent, active) VALUES ($1, $2, $3, $4, $5, true)`,
-          [generateUUID(), name, price, dur, comm]
-        );
-      }
-
-      const products = [
-        ['Luxe Argan Oil Shampoo', 'Hair Care', 350, 750, 25],
-        ['Keratin Repair Serum', 'Hair Care', 500, 1100, 15],
-        ['Matte Styling Wax', 'Styling', 200, 450, 30],
-        ['Hydrating Face Mask', 'Skin Care', 180, 400, 20],
-        ['Organic Beard Elixir', 'Grooming', 250, 550, 10],
-      ];
-      for (const [name, cat, buy, sell, stock] of products) {
-        await pgPool.query(
-          `INSERT INTO products (id, name, category, purchase_price, selling_price, stock_quantity) VALUES ($1, $2, $3, $4, $5, $6)`,
-          [generateUUID(), name, cat, buy, sell, stock]
-        );
-      }
-
-      console.log('[DB] Seeded catalog for PostgreSQL');
-    }
     console.log('[DB] PostgreSQL tables initialized successfully');
   } catch (err) {
     console.error('[DB] PostgreSQL init error:', err.message);
