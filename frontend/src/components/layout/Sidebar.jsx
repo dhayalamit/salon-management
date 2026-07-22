@@ -18,6 +18,7 @@ import {
   Sparkles,
   Award,
   DollarSign,
+  X,
 } from 'lucide-react';
 
 const navItems = [
@@ -42,43 +43,53 @@ export default function Sidebar({ open, onClose }) {
 
   return (
     <>
-      {/* Mobile backdrop */}
+      {/* Backdrop (Active on all screen sizes when open) */}
       {open && (
         <div
-          className="fixed inset-0 z-30 bg-dark/40 backdrop-blur-sm lg:hidden transition-opacity"
+          className="fixed inset-0 z-40 bg-dark/40 backdrop-blur-sm transition-opacity"
           onClick={onClose}
         />
       )}
 
-      {/* Glass Sidebar Panel */}
+      {/* Drawer Sidebar Panel (Only visible when open is true) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-72 p-4 transition-transform duration-300 ease-out lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 p-4 transition-transform duration-300 ease-out ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="h-full glass-card flex flex-col justify-between p-5 overflow-hidden shadow-luxury">
           {/* Header & Branding */}
           <div>
-            <div className="flex items-center gap-3.5 px-2 py-2">
-              <img
-                src="/logo.png"
-                alt="TRIO"
-                className="h-11 w-11 rounded-2xl object-contain bg-white shadow-md p-1 border border-[#E8DFCF]"
-              />
-              <div className="min-w-0">
-                <h1 className="font-display text-lg font-bold tracking-tight text-dark leading-none">
-                  TRIO THE POSH
-                </h1>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#D4AF37] mt-1">
-                  Luxury Unisex Salon
-                </p>
+            <div className="flex items-center justify-between px-2 py-2">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <img
+                  src="/logo.png"
+                  alt="TRIO"
+                  className="h-10 w-10 rounded-2xl object-contain bg-white shadow-md p-1 border border-[#E8DFCF] shrink-0"
+                />
+                <div className="min-w-0">
+                  <h1 className="font-display text-base font-bold tracking-tight text-dark leading-none truncate">
+                    TRIO THE POSH
+                  </h1>
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#D4AF37] mt-1">
+                    Luxury Unisex Salon
+                  </p>
+                </div>
               </div>
+
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-xl text-dark/40 hover:text-dark hover:bg-[#F4F0E6] transition-colors"
+                title="Close Menu"
+              >
+                <X size={18} />
+              </button>
             </div>
 
-            <div className="my-5 h-px bg-gradient-to-r from-[#E8DFCF] via-[#D4AF37]/30 to-transparent" />
+            <div className="my-4 h-px bg-gradient-to-r from-[#E8DFCF] via-[#D4AF37]/30 to-transparent" />
 
             {/* Nav List */}
-            <nav className="space-y-1 overflow-y-auto max-h-[calc(100vh-250px)] pr-1">
+            <nav className="space-y-1 overflow-y-auto max-h-[calc(100vh-230px)] pr-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
 
