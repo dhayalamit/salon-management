@@ -1,49 +1,46 @@
-const fs = require('fs');
+const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const path = require('path');
-const crypto = require('crypto');
-require('dotenv').config();
+const fs = require('fs');
 
-let mode = 'sqlite'; // 'pg' or 'sqlite'
 let pgPool = null;
 let sqliteDb = null;
+let mode = 'sqlite';
 
-// Ensure local data folder exists for SQLite persistence
-const dataDir = path.join(__dirname, '..', 'data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
-const dbPath = path.join(dataDir, 'salon_data.db');
-
-// Try connecting to Postgres first if DATABASE_URL is set
-if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgresql')) {
-  try {
-    const { Pool } = require('pg');
-    pgPool = new Pool({ connectionString: process.env.DATABASE_URL });
-    mode = 'pg';
-    console.log('[DB] Configured for PostgreSQL');
-  } catch (err) {
-    console.warn('[DB] PostgreSQL pool init failed, falling back to local SQLite:', err.message);
-    mode = 'sqlite';
+if (process.env.DATABASE_URL) {
+  mode = 'pg';
+  pgPool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+  });
+  console.log('[DB] Connected to PostgreSQL Database');
+} else {
+  mode = 'sqlite';
+  const dataDir = path.join(__dirname, '../data');
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
   }
-}
-
-if (mode === 'sqlite') {
-  const sqlite3 = require('sqlite3').verbose();
+  const dbPath = path.join(dataDir, 'salon_data.db');
   sqliteDb = new sqlite3.Database(dbPath, (err) => {
     if (err) {
-      console.error('[DB] SQLite Connection error:', err.message);
+      console.error('[DB] SQLite connection error:', err);
     } else {
-      console.log(`[DB] Connected to local persistent SQLite DB at ${dbPath}`);
+      console.log('[DB] Connected to local SQLite database:', dbPath);
     }
   });
 }
 
 function generateUUID() {
-  return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0,
+      v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
 
-function initSQLiteTables() {
+async function initSQLiteTables() {
   if (mode !== 'sqlite') return;
+
   sqliteDb.serialize(() => {
     sqliteDb.run(`
       CREATE TABLE IF NOT EXISTS users (
@@ -256,7 +253,6 @@ function initSQLiteTables() {
       )
     `);
 
-    // Ensure columns exist if table was already created
     ['tagline', 'email', 'business_hours'].forEach((col) => {
       sqliteDb.run(`ALTER TABLE settings ADD COLUMN ${col} TEXT`, () => {});
     });
@@ -266,7 +262,6 @@ function initSQLiteTables() {
       VALUES (1, 'TRIO THE POSH', 'Redefining Beauty & Elegance', '123 Luxury Avenue, Beverly Hills', '+1 800-POSH-SALON', 'info@triotheposh.com', 'GSTIN29AAACT1234F1Z5', 18)
     `);
 
-    // Seed default admin if missing
     sqliteDb.get(`SELECT COUNT(*) as count FROM users`, [], (err, row) => {
       if (!err && row && row.count === 0) {
         const bcrypt = require('bcryptjs');
@@ -276,7 +271,6 @@ function initSQLiteTables() {
           [generateUUID(), 'TRIO POSH Admin', 'admin@salon.com', hash, 'admin']
         );
 
-        // Seed initial services
         const services = [
           ['Signature Haircut & Styling', 800, 45, 20],
           ['Luxury Facial & Clean', 1500, 60, 15],
@@ -292,7 +286,6 @@ function initSQLiteTables() {
           );
         });
 
-        // Seed initial products
         const products = [
           ['Luxe Argan Oil Shampoo', 'Hair Care', 350, 750, 25],
           ['Keratin Repair Serum', 'Hair Care', 500, 1100, 15],
@@ -307,7 +300,6 @@ function initSQLiteTables() {
           );
         });
 
-        // Seed initial staff
         const staff = [
           ['Vikram Malhotra', '9876543210', 35000, 15],
           ['Sanya Kapoor', '9876543211', 30000, 15],
@@ -373,7 +365,7 @@ async function initPGTables() {
         price REAL NOT NULL,
         duration_minutes INTEGER DEFAULT 30,
         commission_percent REAL DEFAULT 0,
-        active INTEGER DEFAULT 1
+        active BOOLEAN DEFAULT true
       );
       CREATE TABLE IF NOT EXISTS products (
         id TEXT PRIMARY KEY,
@@ -501,6 +493,9 @@ async function initPGTables() {
       ON CONFLICT (id) DO NOTHING;
     `);
 
+    // Ensure active column is BOOLEAN type for Postgres if previously created as INTEGER
+    await pgPool.query(`ALTER TABLE services ALTER COLUMN active SET DATA TYPE BOOLEAN USING (active::boolean)`).catch(() => {});
+
     const userRes = await pgPool.query('SELECT COUNT(*) as count FROM users');
     if (parseInt(userRes.rows[0]?.count || 0, 10) === 0) {
       const bcrypt = require('bcryptjs');
@@ -509,7 +504,61 @@ async function initPGTables() {
         `INSERT INTO users (id, name, email, password_hash, role) VALUES ($1, $2, $3, $4, $5)`,
         [generateUUID(), 'TRIO POSH Admin', 'admin@salon.com', hash, 'admin']
       );
-      console.log('[DB] Seeded initial admin user for PostgreSQL');
+
+      const services = [
+        ['Signature Haircut & Styling', 800, 45, 20],
+        ['Luxury Facial & Clean', 1500, 60, 15],
+        ['Hair Spa & Keratin Therapy', 2500, 90, 15],
+        ['Royal Beard Grooming', 450, 30, 20],
+        ['Premium Hair Color', 1800, 60, 10],
+        ['Bridal Makeup Package', 8500, 180, 25],
+      ];
+      for (const [name, price, dur, comm] of services) {
+        await pgPool.query(
+          `INSERT INTO services (id, name, price, duration_minutes, commission_percent, active) VALUES ($1, $2, $3, $4, $5, true)`,
+          [generateUUID(), name, price, dur, comm]
+        );
+      }
+
+      const products = [
+        ['Luxe Argan Oil Shampoo', 'Hair Care', 350, 750, 25],
+        ['Keratin Repair Serum', 'Hair Care', 500, 1100, 15],
+        ['Matte Styling Wax', 'Styling', 200, 450, 30],
+        ['Hydrating Face Mask', 'Skin Care', 180, 400, 20],
+        ['Organic Beard Elixir', 'Grooming', 250, 550, 10],
+      ];
+      for (const [name, cat, buy, sell, stock] of products) {
+        await pgPool.query(
+          `INSERT INTO products (id, name, category, purchase_price, selling_price, stock_quantity) VALUES ($1, $2, $3, $4, $5, $6)`,
+          [generateUUID(), name, cat, buy, sell, stock]
+        );
+      }
+
+      const staffList = [
+        ['Vikram Malhotra', '9876543210', 35000, 15],
+        ['Sanya Kapoor', '9876543211', 30000, 15],
+        ['Arjun Nair', '9876543212', 28000, 12],
+      ];
+      for (const [name, phone, salary, comm] of staffList) {
+        await pgPool.query(
+          `INSERT INTO staff (id, name, phone, salary, commission_percent) VALUES ($1, $2, $3, $4, $5)`,
+          [generateUUID(), name, phone, salary, comm]
+        );
+      }
+
+      const customersList = [
+        ['Ananya Sharma', '9123456789', 'female', 'VIP Client'],
+        ['Rohan Mehta', '9123456790', 'male', 'Regular Client'],
+        ['Priya Patel', '9123456791', 'female', 'New Client'],
+      ];
+      for (const [name, phone, gender, notes] of customersList) {
+        await pgPool.query(
+          `INSERT INTO customers (id, name, phone, gender, notes) VALUES ($1, $2, $3, $4, $5)`,
+          [generateUUID(), name, phone, gender, notes]
+        );
+      }
+
+      console.log('[DB] Seeded initial data for PostgreSQL');
     }
     console.log('[DB] PostgreSQL tables initialized successfully');
   } catch (err) {
@@ -523,7 +572,14 @@ initPGTables();
 // Polyfill query method for unified SQL execution across postgres / sqlite
 async function query(sqlText, params = []) {
   if (mode === 'pg') {
-    return await pgPool.query(sqlText, params);
+    let text = sqlText
+      .replace(/CURRENT_DATE/gi, "to_char(CURRENT_DATE, 'YYYY-MM-DD')")
+      .replace(/active = true/gi, "(active = true OR active = true)")
+      .replace(/active = false/gi, "(active = false OR active = false)")
+      .replace(/substr\(created_at, 1, 10\)/gi, "to_char(created_at, 'YYYY-MM-DD')")
+      .replace(/substr\(appointment_date, 1, 10\)/gi, "to_char(appointment_date::date, 'YYYY-MM-DD')")
+      .replace(/substr\(date, 1, 10\)/gi, "date");
+    return await pgPool.query(text, params);
   }
 
   return new Promise((resolve, reject) => {
@@ -538,7 +594,6 @@ async function query(sqlText, params = []) {
       .replace(/::timestamp/gi, '')
       .replace(/CURRENT_TIMESTAMP/gi, "datetime('now')");
 
-    // Replace $1, $2 with ?
     let paramIndex = 1;
     text = text.replace(/\$(\d+)/g, () => '?');
 
@@ -554,11 +609,6 @@ async function query(sqlText, params = []) {
     } else if (isInsert) {
       let hasReturning = /RETURNING/i.test(text);
       let cleanedText = text.replace(/RETURNING\s+\*/i, '').replace(/RETURNING\s+\w+/i, '');
-
-      // Ensure ID is passed if table has UUID primary key
-      if (!params || params.length === 0 || text.includes('(name,')) {
-        // Handled dynamically if needed
-      }
 
       sqliteDb.run(cleanedText, params, function (err) {
         if (err) return reject(err);
@@ -600,20 +650,7 @@ async function query(sqlText, params = []) {
   });
 }
 
-// Transaction client mock for SQLite / PG compatibility
-async function getClient() {
-  if (mode === 'pg') {
-    return await pgPool.connect();
-  }
-  return {
-    query: (sql, params) => query(sql, params),
-    release: () => {},
-  };
-}
-
 module.exports = {
   query,
-  pool: { connect: getClient },
   generateUUID,
-  mode,
 };
