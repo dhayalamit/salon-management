@@ -495,6 +495,7 @@ async function initPGTables() {
 
     // Ensure active column is BOOLEAN type for Postgres if previously created as INTEGER
     await pgPool.query(`ALTER TABLE services ALTER COLUMN active SET DATA TYPE BOOLEAN USING (active::boolean)`).catch(() => {});
+    await pgPool.query(`ALTER TABLE customers ADD COLUMN IF NOT EXISTS next_appointment_date TEXT`).catch(() => {});
 
     const userRes = await pgPool.query('SELECT COUNT(*) as count FROM users');
     if (parseInt(userRes.rows[0]?.count || 0, 10) === 0) {

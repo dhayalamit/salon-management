@@ -26,7 +26,7 @@ router.get('/', authenticate, async (req, res) => {
               COALESCE(inv.visit_count, 0) AS visit_count,
               COALESCE(inv.total_spent, 0) AS total_spent,
               inv.last_visit_date,
-              app.next_appointment_date
+              COALESCE(c.next_appointment_date, app.next_appointment_date) AS next_appointment_date
        FROM customers c
        LEFT JOIN (
          SELECT customer_id, COUNT(*) AS visit_count, SUM(total) AS total_spent, MAX(created_at) AS last_visit_date
@@ -89,17 +89,17 @@ router.get('/:id', authenticate, async (req, res) => {
 // POST /api/customers
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { name, phone, gender, birthday, notes, email, address } = req.body;
+    const { name, phone, gender, birthday, notes, nextAppointmentDate } = req.body;
     if (!name) return res.status(400).json({ error: 'Name is required' });
 
     const id = db.generateUUID();
     const { rows } = await db.query(
-      `INSERT INTO customers (id, name, phone, gender, birthday, notes) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [id, name, phone || null, gender || 'other', birthday || null, notes || null]
+      `INSERT INTO customers (id, name, phone, gender, birthday, notes, next_appointment_date) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [id, name, phone || null, gender || 'other', birthday || null, notes || null, nextAppointmentDate || null]
     );
     
     // Return created customer (fallback object if RETURNING array empty)
-    const created = rows[0] || { id, name, phone, gender, birthday, notes };
+    const created = rows[0] || { id, name, phone, gender, birthday, notes, next_appointment_date: nextAppointmentDate };
     res.status(201).json(created);
   } catch (err) {
     console.error('Create customer error:', err);
@@ -110,13 +110,13 @@ router.post('/', authenticate, async (req, res) => {
 // PUT /api/customers/:id
 router.put('/:id', authenticate, async (req, res) => {
   try {
-    const { name, phone, gender, birthday, notes } = req.body;
+    const { name, phone, gender, birthday, notes, nextAppointmentDate } = req.body;
     const { rows } = await db.query(
       `UPDATE customers SET name = COALESCE($1,name), phone = COALESCE($2,phone), gender = COALESCE($3,gender),
-         birthday = COALESCE($4,birthday), notes = COALESCE($5,notes) WHERE id = $6 RETURNING *`,
-      [name, phone, gender, birthday, notes, req.params.id]
+         birthday = COALESCE($4,birthday), notes = COALESCE($5,notes), next_appointment_date = COALESCE($6,next_appointment_date) WHERE id = $7 RETURNING *`,
+      [name, phone, gender, birthday, notes, nextAppointmentDate || null, req.params.id]
     );
-    res.json(rows[0] || { id: req.params.id, name, phone, gender, birthday, notes });
+    res.json(rows[0] || { id: req.params.id, name, phone, gender, birthday, notes, next_appointment_date: nextAppointmentDate });
   } catch (err) {
     console.error('Update customer error:', err);
     res.status(500).json({ error: 'Failed to update customer' });
