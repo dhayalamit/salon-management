@@ -29,10 +29,12 @@ import {
   CheckCircle,
   PiggyBank,
   Landmark,
+  CalendarDays,
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Modal from '../components/ui/Modal.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { getTodayDateString } from '../utils/dateUtils.js';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -66,10 +68,13 @@ export default function Dashboard() {
   // Active Popup Modal state: null | 'revenue' | 'appointments' | 'customers' | 'pending' | 'staff' | 'low_stock' | 'balance'
   const [activeModal, setActiveModal] = useState(null);
 
-  // Daily Balance Form State
+  // Date selection state for Daily Register Balance modal
+  const [selectedBalanceDate, setSelectedBalanceDate] = useState(() => getTodayDateString());
   const [balanceForm, setBalanceForm] = useState({
     openingBalance: '',
     closingBalance: '',
+    revenue: 0,
+    expenses: 0,
     notes: '',
   });
 
@@ -96,15 +101,16 @@ export default function Dashboard() {
     };
   }, []);
 
+  useEffect(() => {
+    if (activeModal === 'balance') {
+      fetchBalanceForDate(selectedBalanceDate);
+    }
+  }, [activeModal, selectedBalanceDate]);
+
   const fetchStats = async () => {
     try {
       const res = await client.get('/dashboard/stats');
       setStats(res.data);
-      setBalanceForm({
-        openingBalance: res.data.todayOpeningBalance || 0,
-        closingBalance: res.data.todayClosingBalance || 0,
-        notes: res.data.todayBalanceNotes || '',
-      });
     } catch (err) {
       console.error('Failed to fetch dashboard stats', err);
     } finally {
@@ -112,15 +118,35 @@ export default function Dashboard() {
     }
   };
 
+  const fetchBalanceForDate = async (targetDate) => {
+    try {
+      const res = await client.get('/dashboard/balance', { params: { date: targetDate } });
+      setBalanceForm({
+        openingBalance: res.data.openingBalance || 0,
+        closingBalance: res.data.closingBalance || 0,
+        revenue: res.data.revenue || 0,
+        expenses: res.data.expenses || 0,
+        notes: res.data.notes || '',
+      });
+    } catch (err) {
+      console.error('Failed to fetch daily balance for date', err);
+    }
+  };
+
   const handleSaveDailyBalance = async (e) => {
     e.preventDefault();
     try {
-      await client.post('/dashboard/balance', balanceForm);
-      showSuccess('Daily register balance updated successfully');
+      await client.post('/dashboard/balance', {
+        date: selectedBalanceDate,
+        openingBalance: balanceForm.openingBalance,
+        closingBalance: balanceForm.closingBalance,
+        notes: balanceForm.notes,
+      });
+      showSuccess(`Register balances saved for ${selectedBalanceDate}`);
       setActiveModal(null);
       fetchStats();
     } catch (err) {
-      showError('Failed to update daily balance');
+      showError('Failed to update register balances');
     }
   };
 
@@ -199,7 +225,7 @@ export default function Dashboard() {
             onClick={() => setActiveModal('balance')}
             className="px-4 py-2.5 rounded-full bg-[#F4F0E6] border border-[#E8DFCF] text-dark font-semibold text-xs hover:bg-white transition-all flex items-center justify-center gap-2"
           >
-            <Edit3 size={15} className="text-[#D4AF37]" /> Daily Register Balances
+            <Edit3 size={15} className="text-[#D4AF37]" /> Manage Register Balances
           </button>
           <button
             onClick={() => navigate('/billing')}
@@ -210,51 +236,39 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Register Opening & Closing Balances Banner Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Opening Balance Card */}
-        <div
-          onClick={() => setActiveModal('balance')}
-          className="glass-card p-4 sm:p-5 flex items-center justify-between border-l-4 border-l-blue-500 cursor-pointer hover:border-blue-400 transition-all group"
-        >
-          <div className="flex items-center gap-3.5">
-            <div className="p-3 rounded-2xl bg-blue-50 text-blue-600 shrink-0">
-              <Landmark size={22} />
+      {/* SINGLE COMBINED REGISTER BALANCES CARD */}
+      <div
+        onClick={() => setActiveModal('balance')}
+        className="glass-card p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-l-4 border-l-[#D4AF37] cursor-pointer hover:border-[#D4AF37] transition-all group"
+      >
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 rounded-2xl bg-[#D4AF37]/10 text-[#D4AF37] shrink-0">
+            <Landmark size={22} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="font-bold text-dark text-sm">Daily Cash Register Balances</h4>
+              <span className="text-[10px] bg-[#F4F0E6] px-2 py-0.5 rounded-full text-dark/60 font-semibold border border-[#E8DFCF]">
+                Click to Select Any Date 📅
+              </span>
             </div>
-            <div>
-              <p className="text-xs font-semibold text-dark/50 uppercase tracking-wider">Today's Opening Balance</p>
-              <h3 className="font-display text-2xl font-bold text-dark mt-0.5">
-                ₹{Number(stats.todayOpeningBalance || 0).toLocaleString('en-IN')}
-              </h3>
-              <p className="text-[10px] text-blue-600 mt-0.5 font-medium">Cash float in register at start of day</p>
+            <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs">
+              <div>
+                <span className="text-dark/50 font-medium text-[11px]">Opening Balance: </span>
+                <span className="font-bold text-blue-700">₹{Number(stats.todayOpeningBalance || 0).toLocaleString('en-IN')}</span>
+              </div>
+              <span className="text-dark/30 hidden sm:inline">•</span>
+              <div>
+                <span className="text-dark/50 font-medium text-[11px]">Closing Balance: </span>
+                <span className="font-bold text-emerald-700">₹{Number(stats.todayClosingBalance || 0).toLocaleString('en-IN')}</span>
+              </div>
             </div>
           </div>
-          <span className="text-xs font-bold text-[#D4AF37] bg-white px-3 py-1.5 rounded-full border border-[#E8DFCF] shadow-xs group-hover:bg-[#D4AF37] group-hover:text-white transition-all">
-            Edit →
-          </span>
         </div>
 
-        {/* Estimated Closing Balance Card */}
-        <div
-          onClick={() => setActiveModal('balance')}
-          className="glass-card p-4 sm:p-5 flex items-center justify-between border-l-4 border-l-emerald-500 cursor-pointer hover:border-emerald-400 transition-all group"
-        >
-          <div className="flex items-center gap-3.5">
-            <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-600 shrink-0">
-              <PiggyBank size={22} />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-dark/50 uppercase tracking-wider">Today's Closing Balance</p>
-              <h3 className="font-display text-2xl font-bold text-emerald-700 mt-0.5">
-                ₹{Number(stats.todayClosingBalance || 0).toLocaleString('en-IN')}
-              </h3>
-              <p className="text-[10px] text-emerald-600 mt-0.5 font-medium">Opening + Revenue (₹{stats.todayRevenue}) - Expenses (₹{stats.todayExpenses})</p>
-            </div>
-          </div>
-          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 group-hover:bg-emerald-600 group-hover:text-white transition-all">
-            Manage →
-          </span>
-        </div>
+        <button className="px-4 py-2 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-xs shrink-0 self-end sm:self-auto">
+          Manage Register Balances →
+        </button>
       </div>
 
       {/* Top Cards Grid - 6 Key Metrics (Responsive for Mobile, Tab, iPad & Desktop) */}
@@ -533,16 +547,38 @@ export default function Dashboard() {
 
       {/* ======================= POPUP MODALS FOR STAT CARDS ======================= */}
 
-      {/* 0. Manage Daily Register Balances Modal */}
+      {/* 0. Manage Daily Register Balances Modal (With Date Picker) */}
       <Modal isOpen={activeModal === 'balance'} onClose={() => setActiveModal(null)} title="Manage Daily Register Balances">
         <form onSubmit={handleSaveDailyBalance} className="space-y-4 text-xs">
-          <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200">
-            <h4 className="font-bold text-blue-900 text-sm">Opening & Closing Cash Register Float</h4>
-            <p className="text-blue-700 text-[11px] mt-0.5">Admin can set the opening cash float for today and manage closing balance records.</p>
+          {/* Date Selector Header Bar */}
+          <div className="p-3.5 rounded-2xl bg-[#F4F0E6] border border-[#E8DFCF] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h4 className="font-bold text-dark text-sm flex items-center gap-1.5">
+                <CalendarDays size={16} className="text-[#D4AF37]" /> Select Register Date
+              </h4>
+              <p className="text-dark/50 text-[11px] mt-0.5">Admin can view or edit opening & closing balances for any date</p>
+            </div>
+            <input
+              type="date"
+              value={selectedBalanceDate}
+              onChange={(e) => setSelectedBalanceDate(e.target.value)}
+              className="px-3.5 py-2 bg-white border border-[#E8DFCF] rounded-xl text-dark text-xs font-bold focus:outline-none focus:border-[#D4AF37] shrink-0"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="p-3 rounded-2xl bg-blue-50 border border-blue-200">
+              <span className="text-[11px] font-semibold text-blue-800">Date Revenue</span>
+              <p className="font-display font-bold text-blue-700 text-lg mt-0.5">₹{(balanceForm.revenue || 0).toLocaleString('en-IN')}</p>
+            </div>
+            <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200">
+              <span className="text-[11px] font-semibold text-amber-800">Date Expenses</span>
+              <p className="font-display font-bold text-amber-700 text-lg mt-0.5">₹{(balanceForm.expenses || 0).toLocaleString('en-IN')}</p>
+            </div>
           </div>
 
           <div>
-            <label className="block font-semibold text-dark/70 mb-1">Today's Opening Cash Balance (₹)</label>
+            <label className="block font-semibold text-dark/70 mb-1">Opening Cash Balance (₹)</label>
             <input
               type="number"
               step="0.01"
@@ -555,7 +591,7 @@ export default function Dashboard() {
           </div>
 
           <div>
-            <label className="block font-semibold text-dark/70 mb-1">Target / Overridden Closing Cash Balance (₹)</label>
+            <label className="block font-semibold text-dark/70 mb-1">Closing Cash Balance (₹)</label>
             <input
               type="number"
               step="0.01"
@@ -565,7 +601,7 @@ export default function Dashboard() {
               placeholder="Leave 0 for automatic calculation"
               className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark text-sm focus:outline-none focus:border-[#D4AF37]"
             />
-            <p className="text-[10px] text-dark/40 mt-1">Calculated default: Opening (₹{balanceForm.openingBalance || 0}) + Revenue (₹{stats.todayRevenue}) - Expenses (₹{stats.todayExpenses}) = ₹{Math.max(0, Number(balanceForm.openingBalance || 0) + stats.todayRevenue - stats.todayExpenses)}</p>
+            <p className="text-[10px] text-dark/40 mt-1">Calculated formula: Opening (₹{balanceForm.openingBalance || 0}) + Revenue (₹{balanceForm.revenue || 0}) - Expenses (₹{balanceForm.expenses || 0}) = ₹{Math.max(0, Number(balanceForm.openingBalance || 0) + Number(balanceForm.revenue || 0) - Number(balanceForm.expenses || 0))}</p>
           </div>
 
           <div>
@@ -591,7 +627,7 @@ export default function Dashboard() {
               type="submit"
               className="px-5 py-2 rounded-full bg-[#D4AF37] text-white font-semibold hover:bg-[#C59F2E] flex items-center gap-1.5"
             >
-              <CheckCircle size={15} /> Save Register Balance
+              <CheckCircle size={15} /> Save Register Balance for {selectedBalanceDate}
             </button>
           </div>
         </form>
@@ -775,7 +811,6 @@ export default function Dashboard() {
             </button>
           </div>
 
-          {/* List of Pending Invoices */}
           <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
             {pendingInvoicesList.length === 0 ? (
               <p className="text-xs text-emerald-700 py-8 text-center font-semibold">🎉 All payments are up-to-date! No pending balances.</p>

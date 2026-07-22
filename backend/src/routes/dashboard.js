@@ -16,6 +16,73 @@ function getTodayDateStrings() {
   return [unique[0], unique[1] || unique[0], unique[2] || unique[0]];
 }
 
+// GET /api/dashboard/balance?date=YYYY-MM-DD — Get balance & metrics for specific date
+router.get('/balance', authenticate, async (req, res) => {
+  try {
+    const targetDate = req.query.date || new Date().toLocaleDateString('en-CA');
+
+    const balanceQ = await db.query('SELECT * FROM daily_balances WHERE date LIKE $1 || \'%\'', [targetDate]).catch(() => ({ rows: [] }));
+    const balanceRecord = balanceQ.rows[0] || {};
+
+    const revQ = await db.query(
+      `SELECT COALESCE(SUM(total), 0) AS revenue FROM invoices WHERE created_at::text LIKE $1 || '%' AND (payment_method IS NULL OR (LOWER(payment_method) != 'cancelled' AND LOWER(payment_method) != 'draft' AND LOWER(payment_method) != 'pending'))`,
+      [targetDate]
+    ).catch(() => ({ rows: [{ revenue: 0 }] }));
+
+    const expQ = await db.query(
+      `SELECT COALESCE(SUM(amount), 0) AS total FROM expenses WHERE expense_date::text LIKE $1 || '%'`,
+      [targetDate]
+    ).catch(() => ({ rows: [{ total: 0 }] }));
+
+    const revenue = Number(revQ.rows[0]?.revenue || 0);
+    const expenses = Number(expQ.rows[0]?.total || 0);
+    const openingBalance = Number(balanceRecord.opening_balance || 0);
+    const closingBalance = balanceRecord.closing_balance !== undefined && balanceRecord.closing_balance !== null && balanceRecord.closing_balance !== 0
+      ? Number(balanceRecord.closing_balance)
+      : Math.max(0, openingBalance + revenue - expenses);
+
+    res.json({
+      date: targetDate,
+      openingBalance,
+      closingBalance,
+      revenue,
+      expenses,
+      notes: balanceRecord.notes || '',
+    });
+  } catch (err) {
+    console.error('Get daily balance error:', err);
+    res.status(500).json({ error: 'Failed to fetch daily balance' });
+  }
+});
+
+// POST /api/dashboard/balance — Save or update Opening & Closing Balance for any date
+router.post('/balance', authenticate, async (req, res) => {
+  try {
+    const { date, openingBalance, closingBalance, notes } = req.body;
+    const targetDate = date || new Date().toLocaleDateString('en-CA');
+
+    const existing = await db.query('SELECT id FROM daily_balances WHERE date = $1', [targetDate]);
+
+    if (existing.rows && existing.rows.length > 0) {
+      const { rows } = await db.query(
+        `UPDATE daily_balances SET opening_balance = $1, closing_balance = $2, notes = $3 WHERE date = $4 RETURNING *`,
+        [Number(openingBalance || 0), Number(closingBalance || 0), notes || null, targetDate]
+      );
+      return res.json(rows[0] || { date: targetDate, opening_balance: openingBalance, closing_balance: closingBalance });
+    } else {
+      const id = db.generateUUID();
+      const { rows } = await db.query(
+        `INSERT INTO daily_balances (id, date, opening_balance, closing_balance, notes) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+        [id, targetDate, Number(openingBalance || 0), Number(closingBalance || 0), notes || null]
+      );
+      return res.status(201).json(rows[0] || { id, date: targetDate, opening_balance: openingBalance, closing_balance: closingBalance });
+    }
+  } catch (err) {
+    console.error('Save daily balance error:', err);
+    res.status(500).json({ error: 'Failed to save daily balance' });
+  }
+});
+
 // GET /api/dashboard/stats
 router.get('/stats', authenticate, async (req, res) => {
   try {
@@ -167,7 +234,6 @@ router.get('/stats', authenticate, async (req, res) => {
 
     const balanceRecord = dailyBalance.rows[0] || {};
     const openingBalance = Number(balanceRecord.opening_balance || 0);
-    // Calculated closing balance = opening + today revenue - today expenses (or manually overridden if stored)
     const closingBalance = balanceRecord.closing_balance !== undefined && balanceRecord.closing_balance !== null && balanceRecord.closing_balance !== 0
       ? Number(balanceRecord.closing_balance)
       : Math.max(0, openingBalance + totalRevenue - totalExpenses);
@@ -238,34 +304,6 @@ router.get('/stats', authenticate, async (req, res) => {
   } catch (err) {
     console.error('Fetch dashboard stats error:', err);
     res.status(500).json({ error: 'Failed to fetch dashboard stats' });
-  }
-});
-
-// POST /api/dashboard/balance — Save or update Opening & Closing Balance for today
-router.post('/balance', authenticate, async (req, res) => {
-  try {
-    const { openingBalance, closingBalance, notes } = req.body;
-    const [d1] = getTodayDateStrings();
-
-    const existing = await db.query('SELECT id FROM daily_balances WHERE date = $1', [d1]);
-
-    if (existing.rows && existing.rows.length > 0) {
-      const { rows } = await db.query(
-        `UPDATE daily_balances SET opening_balance = $1, closing_balance = $2, notes = $3 WHERE date = $4 RETURNING *`,
-        [Number(openingBalance || 0), Number(closingBalance || 0), notes || null, d1]
-      );
-      return res.json(rows[0] || { date: d1, opening_balance: openingBalance, closing_balance: closingBalance });
-    } else {
-      const id = db.generateUUID();
-      const { rows } = await db.query(
-        `INSERT INTO daily_balances (id, date, opening_balance, closing_balance, notes) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-        [id, d1, Number(openingBalance || 0), Number(closingBalance || 0), notes || null]
-      );
-      return res.status(201).json(rows[0] || { id, date: d1, opening_balance: openingBalance, closing_balance: closingBalance });
-    }
-  } catch (err) {
-    console.error('Save daily balance error:', err);
-    res.status(500).json({ error: 'Failed to save daily balance' });
   }
 });
 
