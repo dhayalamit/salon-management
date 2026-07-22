@@ -21,6 +21,8 @@ router.get('/stats', authenticate, async (req, res) => {
 
     const [
       todayRev,
+      todayCash,
+      todayOnline,
       todayAppts,
       todayCusts,
       pendingPay,
@@ -30,13 +32,29 @@ router.get('/stats', authenticate, async (req, res) => {
       todayAppointments,
       lowStockItems,
       todayStaff,
-      todayPaymentMethods
     ] = await Promise.all([
       db.query(
         `SELECT COALESCE(SUM(total), 0) AS revenue
          FROM invoices
          WHERE (substr(created_at::text, 1, 10) = $1 OR created_at::date = $1::date)
-           AND (payment_method IS NULL OR (LOWER(payment_method) != 'cancelled' AND LOWER(payment_method) != 'draft'))`,
+           AND (payment_method IS NULL OR (LOWER(payment_method) != 'cancelled' AND LOWER(payment_method) != 'draft' AND LOWER(payment_method) != 'pending'))`,
+        [today]
+      ),
+      db.query(
+        `SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS count
+         FROM invoices
+         WHERE (substr(created_at::text, 1, 10) = $1 OR created_at::date = $1::date)
+           AND (LOWER(COALESCE(payment_method, 'cash')) = 'cash' OR LOWER(payment_method) LIKE '%cash%')`,
+        [today]
+      ),
+      db.query(
+        `SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS count
+         FROM invoices
+         WHERE (substr(created_at::text, 1, 10) = $1 OR created_at::date = $1::date)
+           AND LOWER(COALESCE(payment_method, '')) != 'cash'
+           AND LOWER(COALESCE(payment_method, '')) NOT LIKE '%cash%'
+           AND LOWER(COALESCE(payment_method, '')) != 'pending'
+           AND LOWER(COALESCE(payment_method, '')) != 'cancelled'`,
         [today]
       ),
       db.query(
@@ -90,15 +108,13 @@ router.get('/stats', authenticate, async (req, res) => {
          LEFT JOIN staff st ON st.id::text = att.staff_id::text
          WHERE (att.date::date = $1::date OR substr(att.date::text, 1, 10) = $1) AND LOWER(att.status) = 'present'`,
         [today]
-      ),
-      db.query(
-        `SELECT COALESCE(payment_method, 'Cash') AS method, SUM(total) AS amount, COUNT(*) AS count
-         FROM invoices
-         WHERE (substr(created_at::text, 1, 10) = $1 OR created_at::date = $1::date)
-         GROUP BY COALESCE(payment_method, 'Cash')`,
-        [today]
       )
     ]);
+
+    const cashAmount = Number(todayCash.rows[0]?.total || 0);
+    const cashCount = Number(todayCash.rows[0]?.count || 0);
+    const onlineAmount = Number(todayOnline.rows[0]?.total || 0);
+    const onlineCount = Number(todayOnline.rows[0]?.count || 0);
 
     // Calculate actual monthly revenue trend
     const monthlyRevenueTrend = [];
@@ -141,7 +157,11 @@ router.get('/stats', authenticate, async (req, res) => {
     );
 
     res.json({
-      todayRevenue: Number(todayRev.rows[0]?.revenue || 0),
+      todayRevenue: Number(todayRev.rows[0]?.revenue || (cashAmount + onlineAmount)),
+      todayCashRevenue: cashAmount,
+      todayCashCount: cashCount,
+      todayOnlineRevenue: onlineAmount,
+      todayOnlineCount: onlineCount,
       todayAppointments: Number(todayAppts.rows[0]?.count || 0),
       todayCustomers: Number(todayCusts.rows[0]?.count || 0),
       pendingPayments: Number(pendingPay.rows[0]?.pending || 0),
@@ -151,7 +171,6 @@ router.get('/stats', authenticate, async (req, res) => {
       todayAppointmentsList: todayAppointments.rows || [],
       lowStockProductsList: lowStockItems.rows || [],
       todayStaffPresentList: todayStaff.rows || [],
-      todayPaymentMethods: todayPaymentMethods.rows || [],
       monthlyRevenueTrend,
       recentInvoices: recentInvoices.rows || [],
       upcomingAppointments: upcomingAppointments.rows || [],

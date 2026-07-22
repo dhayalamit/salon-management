@@ -480,60 +480,67 @@ export default function Dashboard() {
       {/* 1. Today's Revenue Details Modal */}
       <Modal isOpen={activeModal === 'revenue'} onClose={() => setActiveModal(null)} title="Today's Revenue Breakdown">
         <div className="space-y-6">
-          {/* Revenue Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
-              <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">Total Revenue Today</p>
-              <h4 className="font-display text-2xl font-bold text-emerald-700 mt-1">₹{stats.todayRevenue.toLocaleString('en-IN')}</h4>
-              <p className="text-[11px] text-emerald-600 mt-0.5">{stats.todayInvoicesList.length} Invoices Generated Today</p>
+          {/* Revenue Breakdown Cards: Cash, Online, Total */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Cash Revenue Card */}
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex flex-col justify-between">
+              <div>
+                <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">💵 Cash Revenue</span>
+                <h4 className="font-display text-2xl font-bold text-emerald-700 mt-1">₹{(stats.todayCashRevenue || 0).toLocaleString('en-IN')}</h4>
+              </div>
+              <p className="text-[11px] text-emerald-600 mt-2 font-medium">{stats.todayCashCount || 0} Cash Payments Today</p>
             </div>
-            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200">
-              <p className="text-xs font-semibold text-amber-800 uppercase tracking-wider">Pending Payments</p>
-              <h4 className="font-display text-2xl font-bold text-amber-700 mt-1">₹{stats.pendingPayments.toLocaleString('en-IN')}</h4>
-              <p className="text-[11px] text-amber-600 mt-0.5">Payment collection pending</p>
-            </div>
-          </div>
 
-          {/* Payment Method Breakdown List */}
-          <div>
-            <h4 className="text-xs font-bold text-dark/70 uppercase tracking-wider mb-3">Payment Methods Received Today</h4>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {stats.todayPaymentMethods.length === 0 ? (
-                <p className="col-span-full text-xs text-dark/40 italic">No payment breakdown records available for today yet</p>
-              ) : (
-                stats.todayPaymentMethods.map((pm, idx) => (
-                  <div key={idx} className="p-3 rounded-2xl bg-[#F4F0E6]/70 border border-[#E8DFCF]">
-                    <span className="text-xs font-bold text-dark uppercase">{pm.method || 'Cash'}</span>
-                    <p className="font-display text-lg font-bold text-[#D4AF37] mt-0.5">₹{Number(pm.amount || 0).toLocaleString('en-IN')}</p>
-                    <span className="text-[10px] text-dark/50">{pm.count} Invoices</span>
-                  </div>
-                ))
-              )}
+            {/* Online Revenue Card */}
+            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 flex flex-col justify-between">
+              <div>
+                <span className="text-xs font-bold text-blue-800 uppercase tracking-wider">📱 Online / UPI / Card</span>
+                <h4 className="font-display text-2xl font-bold text-blue-700 mt-1">₹{(stats.todayOnlineRevenue || 0).toLocaleString('en-IN')}</h4>
+              </div>
+              <p className="text-[11px] text-blue-600 mt-2 font-medium">{stats.todayOnlineCount || 0} Online Payments Today</p>
+            </div>
+
+            {/* Total Revenue Card */}
+            <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 flex flex-col justify-between">
+              <div>
+                <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">💰 Total Revenue</span>
+                <h4 className="font-display text-2xl font-bold text-purple-700 mt-1">₹{(stats.todayRevenue || 0).toLocaleString('en-IN')}</h4>
+              </div>
+              <p className="text-[11px] text-purple-600 mt-2 font-medium">{stats.todayInvoicesList.length} Total Invoices Today</p>
             </div>
           </div>
 
           {/* Today's Paid Invoices List */}
           <div>
-            <h4 className="text-xs font-bold text-dark/70 uppercase tracking-wider mb-3">Today's Invoices List ({stats.todayInvoicesList.length})</h4>
-            <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+            <h4 className="text-xs font-bold text-dark/70 uppercase tracking-wider mb-3">Today's Transactions List ({stats.todayInvoicesList.length})</h4>
+            <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
               {stats.todayInvoicesList.length === 0 ? (
-                <p className="text-xs text-dark/40 py-4 text-center italic">No invoices recorded today yet</p>
+                <p className="text-xs text-dark/40 py-6 text-center italic">No invoices recorded today yet</p>
               ) : (
-                stats.todayInvoicesList.map((inv) => (
-                  <div key={inv.id} className="p-3 rounded-2xl bg-white border border-[#E8DFCF] flex items-center justify-between text-xs">
-                    <div>
-                      <p className="font-bold text-dark">{inv.invoice_number}</p>
-                      <p className="text-[11px] text-dark/60">{inv.customer_name || 'Walk-in Client'} {inv.customer_phone ? `(${inv.customer_phone})` : ''}</p>
-                      <p className="text-[10px] text-dark/40">Stylist: {inv.staff_name || 'Staff'}</p>
+                stats.todayInvoicesList.map((inv) => {
+                  const isCash = (inv.payment_method || 'cash').toLowerCase().includes('cash');
+                  return (
+                    <div key={inv.id} className="p-3 rounded-2xl bg-white border border-[#E8DFCF] flex items-center justify-between text-xs">
+                      <div>
+                        <p className="font-bold text-dark">{inv.invoice_number}</p>
+                        <p className="text-[11px] text-dark/60">{inv.customer_name || 'Walk-in Client'} {inv.customer_phone ? `(${inv.customer_phone})` : ''}</p>
+                        <p className="text-[10px] text-dark/40">Stylist: {inv.staff_name || 'Staff'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-display font-bold text-emerald-700 text-sm">₹{Number(inv.total).toLocaleString('en-IN')}</p>
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                            isCash
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                              : 'bg-blue-100 text-blue-800 border-blue-200'
+                          }`}
+                        >
+                          {isCash ? '💵 Cash' : '📱 Online'}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-display font-bold text-emerald-700 text-sm">₹{Number(inv.total).toLocaleString('en-IN')}</p>
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                        {inv.payment_method || 'Cash'}
-                      </span>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
