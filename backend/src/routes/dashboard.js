@@ -17,39 +17,90 @@ router.get('/stats', authenticate, async (req, res) => {
     const today = getLocalDateString();
     const d = new Date();
     const currentYear = d.getFullYear();
-    const currentMonthIndex = d.getMonth(); // 0-indexed (e.g. 6 for July)
+    const currentMonthIndex = d.getMonth();
 
-    const [todayRev, todayAppts, todayCusts, pendingPay, staffPres, lowStock] = await Promise.all([
+    const [
+      todayRev,
+      todayAppts,
+      todayCusts,
+      pendingPay,
+      staffPres,
+      lowStock,
+      todayInvoices,
+      todayAppointments,
+      lowStockItems,
+      todayStaff,
+      todayPaymentMethods
+    ] = await Promise.all([
       db.query(
         `SELECT COALESCE(SUM(total), 0) AS revenue
          FROM invoices
-         WHERE (substr(created_at, 1, 10) = $1 OR created_at::date = $1::date)
+         WHERE (substr(created_at::text, 1, 10) = $1 OR created_at::date = $1::date)
            AND (payment_method IS NULL OR (LOWER(payment_method) != 'cancelled' AND LOWER(payment_method) != 'draft'))`,
         [today]
       ),
       db.query(
         `SELECT COUNT(*) AS count
          FROM appointments
-         WHERE (appointment_date = $1 OR substr(appointment_date, 1, 10) = $1)
+         WHERE (appointment_date::date = $1::date OR substr(appointment_date::text, 1, 10) = $1)
            AND LOWER(status) IN ('booked', 'confirmed', 'completed', 'in_progress')`,
         [today]
       ),
       db.query(
         `SELECT COUNT(DISTINCT customer_id) AS count
          FROM invoices
-         WHERE (substr(created_at, 1, 10) = $1 OR created_at::date = $1::date)
+         WHERE (substr(created_at::text, 1, 10) = $1 OR created_at::date = $1::date)
            AND customer_id IS NOT NULL`,
         [today]
       ),
       db.query(`SELECT COALESCE(SUM(total), 0) AS pending FROM invoices WHERE LOWER(payment_method) = 'pending'`),
       db.query(
-        `SELECT COUNT(*) AS count FROM attendance WHERE (date = $1 OR substr(date, 1, 10) = $1) AND LOWER(status) = 'present'`,
+        `SELECT COUNT(*) AS count FROM attendance WHERE (date::date = $1::date OR substr(date::text, 1, 10) = $1) AND LOWER(status) = 'present'`,
         [today]
       ),
       db.query(`SELECT COUNT(*) AS count FROM products WHERE stock_quantity <= low_stock_threshold`),
+      db.query(
+        `SELECT i.id, i.invoice_number, i.total, i.payment_method, i.created_at,
+                c.name AS customer_name, c.phone AS customer_phone,
+                s.name AS staff_name
+         FROM invoices i
+         LEFT JOIN customers c ON c.id::text = i.customer_id::text
+         LEFT JOIN staff s ON s.id::text = i.staff_id::text
+         WHERE (substr(i.created_at::text, 1, 10) = $1 OR i.created_at::date = $1::date)
+         ORDER BY i.created_at DESC`,
+        [today]
+      ),
+      db.query(
+        `SELECT a.*, c.name AS customer_name, c.phone AS customer_phone,
+                s.name AS staff_name, sv.name AS service_name, sv.price AS service_price
+         FROM appointments a
+         LEFT JOIN customers c ON c.id::text = a.customer_id::text
+         LEFT JOIN staff s ON s.id::text = a.staff_id::text
+         LEFT JOIN services sv ON sv.id::text = a.service_id::text
+         WHERE (a.appointment_date::date = $1::date OR substr(a.appointment_date::text, 1, 10) = $1)
+         ORDER BY a.appointment_time ASC`,
+        [today]
+      ),
+      db.query(
+        `SELECT * FROM products WHERE stock_quantity <= low_stock_threshold ORDER BY stock_quantity ASC`
+      ),
+      db.query(
+        `SELECT att.*, st.name AS staff_name, st.phone AS staff_phone
+         FROM attendance att
+         LEFT JOIN staff st ON st.id::text = att.staff_id::text
+         WHERE (att.date::date = $1::date OR substr(att.date::text, 1, 10) = $1) AND LOWER(att.status) = 'present'`,
+        [today]
+      ),
+      db.query(
+        `SELECT COALESCE(payment_method, 'Cash') AS method, SUM(total) AS amount, COUNT(*) AS count
+         FROM invoices
+         WHERE (substr(created_at::text, 1, 10) = $1 OR created_at::date = $1::date)
+         GROUP BY COALESCE(payment_method, 'Cash')`,
+        [today]
+      )
     ]);
 
-    // Calculate actual monthly revenue trend for Jan through current month of the current year
+    // Calculate actual monthly revenue trend
     const monthlyRevenueTrend = [];
     for (let m = 0; m <= currentMonthIndex; m++) {
       const monthNum = m + 1;
@@ -96,6 +147,11 @@ router.get('/stats', authenticate, async (req, res) => {
       pendingPayments: Number(pendingPay.rows[0]?.pending || 0),
       staffPresent: Number(staffPres.rows[0]?.count || 0),
       lowStockCount: Number(lowStock.rows[0]?.count || 0),
+      todayInvoicesList: todayInvoices.rows || [],
+      todayAppointmentsList: todayAppointments.rows || [],
+      lowStockProductsList: lowStockItems.rows || [],
+      todayStaffPresentList: todayStaff.rows || [],
+      todayPaymentMethods: todayPaymentMethods.rows || [],
       monthlyRevenueTrend,
       recentInvoices: recentInvoices.rows || [],
       upcomingAppointments: upcomingAppointments.rows || [],

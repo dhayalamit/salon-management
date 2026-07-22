@@ -15,8 +15,15 @@ import {
   Clock,
   ChevronRight,
   Sparkles,
+  Phone,
+  Eye,
+  CreditCard,
+  Wallet,
+  Smartphone,
+  ExternalLink,
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import Modal from '../components/ui/Modal.jsx';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -27,11 +34,19 @@ export default function Dashboard() {
     pendingPayments: 0,
     staffPresent: 0,
     lowStockCount: 0,
+    todayInvoicesList: [],
+    todayAppointmentsList: [],
+    lowStockProductsList: [],
+    todayStaffPresentList: [],
+    todayPaymentMethods: [],
     monthlyRevenueTrend: [],
     recentInvoices: [],
     upcomingAppointments: [],
   });
   const [loading, setLoading] = useState(true);
+
+  // Active Popup Modal state: null | 'revenue' | 'appointments' | 'customers' | 'pending' | 'staff' | 'low_stock'
+  const [activeModal, setActiveModal] = useState(null);
 
   useEffect(() => {
     fetchStats();
@@ -67,136 +82,178 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card p-6 border border-[#E8DFCF]">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card p-4 sm:p-6 border border-[#E8DFCF]">
+        <div className="flex items-center gap-3 sm:gap-4">
           <img
             src="/logo.png"
             alt="TRIO Logo"
-            className="h-14 w-14 object-contain rounded-2xl bg-white p-1 border border-[#E8DFCF] shadow-xs shrink-0"
+            className="h-12 w-12 sm:h-14 sm:w-14 object-contain rounded-2xl bg-white p-1 border border-[#E8DFCF] shadow-xs shrink-0"
           />
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-widest bg-[#D4AF37] text-white">
                 Executive View
               </span>
-              <span className="text-xs text-dark/40">TRIO The Posh</span>
+              <span className="text-xs text-dark/40 font-medium">TRIO The Posh</span>
             </div>
-            <h1 className="font-display text-2xl sm:text-3xl font-bold text-dark tracking-tight">
+            <h1 className="font-display text-xl sm:text-3xl font-bold text-dark tracking-tight">
               Salon Command Center
             </h1>
-            <p className="text-xs text-dark/50 mt-1">Real-time salon metrics, upcoming appointments, and staff operations</p>
+            <p className="text-xs text-dark/50 mt-0.5">Real-time salon metrics, click cards to view detailed popups</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => navigate('/billing')}
-            className="px-5 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-md flex items-center gap-2"
+            className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-md flex items-center justify-center gap-2"
           >
             <Receipt size={16} /> POS Terminal
           </button>
           <button
             onClick={() => navigate('/appointments')}
-            className="px-5 py-2.5 rounded-full bg-white border border-[#E8DFCF] text-dark font-semibold text-xs hover:bg-[#F4F0E6] transition-all flex items-center gap-2"
+            className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 rounded-full bg-white border border-[#E8DFCF] text-dark font-semibold text-xs hover:bg-[#F4F0E6] transition-all flex items-center justify-center gap-2"
           >
             <Calendar size={16} /> Bookings
           </button>
         </div>
       </div>
 
-      {/* Top Cards Grid - 6 Key Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      {/* Top Cards Grid - 6 Key Metrics (Responsive for Mobile, Tab, iPad & Desktop) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         {/* Card 1: Today's Revenue */}
-        <div className="glass-card glass-card-hover p-5 flex flex-col justify-between">
+        <div
+          onClick={() => setActiveModal('revenue')}
+          className="glass-card glass-card-hover p-4 sm:p-5 flex flex-col justify-between cursor-pointer group hover:border-[#D4AF37] transition-all"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-[#D4AF37] font-display text-2xl font-bold">₹</span>
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+            <span className="text-[#D4AF37] font-display text-xl sm:text-2xl font-bold">₹</span>
+            <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
               <TrendingUp size={12} /> Today
             </span>
           </div>
-          <div className="mt-4">
-            <p className="text-xs font-medium text-dark/50">Today's Revenue</p>
-            <h3 className="font-display text-2xl font-bold text-dark mt-0.5">
+          <div className="mt-3 sm:mt-4">
+            <p className="text-[11px] sm:text-xs font-medium text-dark/50 flex items-center justify-between">
+              <span>Today's Revenue</span>
+              <span className="text-[10px] text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity">Details →</span>
+            </p>
+            <h3 className="font-display text-xl sm:text-2xl font-bold text-dark mt-0.5">
               ₹{stats.todayRevenue.toLocaleString('en-IN')}
             </h3>
           </div>
         </div>
 
         {/* Card 2: Today's Appointments */}
-        <div className="glass-card glass-card-hover p-5 flex flex-col justify-between">
+        <div
+          onClick={() => setActiveModal('appointments')}
+          className="glass-card glass-card-hover p-4 sm:p-5 flex flex-col justify-between cursor-pointer group hover:border-purple-300 transition-all"
+        >
           <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-2xl bg-purple-50 text-purple-600">
+            <div className="p-2 sm:p-2.5 rounded-2xl bg-purple-50 text-purple-600">
               <Calendar size={18} />
             </div>
+            <span className="text-[10px] text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full font-bold">
+              View
+            </span>
           </div>
-          <div className="mt-4">
-            <p className="text-xs font-medium text-dark/50">Appointments Today</p>
-            <h3 className="font-display text-2xl font-bold text-dark mt-0.5">
+          <div className="mt-3 sm:mt-4">
+            <p className="text-[11px] sm:text-xs font-medium text-dark/50 flex items-center justify-between">
+              <span>Appointments Today</span>
+              <span className="text-[10px] text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity">Details →</span>
+            </p>
+            <h3 className="font-display text-xl sm:text-2xl font-bold text-dark mt-0.5">
               {stats.todayAppointments}
             </h3>
           </div>
         </div>
 
         {/* Card 3: Today's Customers */}
-        <div className="glass-card glass-card-hover p-5 flex flex-col justify-between">
+        <div
+          onClick={() => setActiveModal('customers')}
+          className="glass-card glass-card-hover p-4 sm:p-5 flex flex-col justify-between cursor-pointer group hover:border-blue-300 transition-all"
+        >
           <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-2xl bg-blue-50 text-blue-600">
+            <div className="p-2 sm:p-2.5 rounded-2xl bg-blue-50 text-blue-600">
               <Users size={18} />
             </div>
+            <span className="text-[10px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-bold">
+              View
+            </span>
           </div>
-          <div className="mt-4">
-            <p className="text-xs font-medium text-dark/50">Customers Today</p>
-            <h3 className="font-display text-2xl font-bold text-dark mt-0.5">
+          <div className="mt-3 sm:mt-4">
+            <p className="text-[11px] sm:text-xs font-medium text-dark/50 flex items-center justify-between">
+              <span>Customers Today</span>
+              <span className="text-[10px] text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">Details →</span>
+            </p>
+            <h3 className="font-display text-xl sm:text-2xl font-bold text-dark mt-0.5">
               {stats.todayCustomers}
             </h3>
           </div>
         </div>
 
         {/* Card 4: Pending Payments */}
-        <div className="glass-card glass-card-hover p-5 flex flex-col justify-between">
+        <div
+          onClick={() => setActiveModal('pending')}
+          className="glass-card glass-card-hover p-4 sm:p-5 flex flex-col justify-between cursor-pointer group hover:border-amber-300 transition-all"
+        >
           <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-2xl bg-amber-50 text-amber-600">
+            <div className="p-2 sm:p-2.5 rounded-2xl bg-amber-50 text-amber-600">
               <DollarSign size={18} />
             </div>
           </div>
-          <div className="mt-4">
-            <p className="text-xs font-medium text-dark/50">Pending Payments</p>
-            <h3 className="font-display text-2xl font-bold text-dark mt-0.5">
+          <div className="mt-3 sm:mt-4">
+            <p className="text-[11px] sm:text-xs font-medium text-dark/50 flex items-center justify-between">
+              <span>Pending Payments</span>
+              <span className="text-[10px] text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity">Details →</span>
+            </p>
+            <h3 className="font-display text-xl sm:text-2xl font-bold text-dark mt-0.5">
               ₹{stats.pendingPayments.toLocaleString('en-IN')}
             </h3>
           </div>
         </div>
 
         {/* Card 5: Staff Present */}
-        <div className="glass-card glass-card-hover p-5 flex flex-col justify-between">
+        <div
+          onClick={() => setActiveModal('staff')}
+          className="glass-card glass-card-hover p-4 sm:p-5 flex flex-col justify-between cursor-pointer group hover:border-emerald-300 transition-all"
+        >
           <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-2xl bg-emerald-50 text-emerald-600">
+            <div className="p-2 sm:p-2.5 rounded-2xl bg-emerald-50 text-emerald-600">
               <UserCheck size={18} />
             </div>
           </div>
-          <div className="mt-4">
-            <p className="text-xs font-medium text-dark/50">Staff Present</p>
-            <h3 className="font-display text-2xl font-bold text-dark mt-0.5">
+          <div className="mt-3 sm:mt-4">
+            <p className="text-[11px] sm:text-xs font-medium text-dark/50 flex items-center justify-between">
+              <span>Staff Present</span>
+              <span className="text-[10px] text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity">Details →</span>
+            </p>
+            <h3 className="font-display text-xl sm:text-2xl font-bold text-dark mt-0.5">
               {stats.staffPresent}
             </h3>
           </div>
         </div>
 
         {/* Card 6: Low Stock */}
-        <div className="glass-card glass-card-hover p-5 flex flex-col justify-between">
+        <div
+          onClick={() => setActiveModal('low_stock')}
+          className="glass-card glass-card-hover p-4 sm:p-5 flex flex-col justify-between cursor-pointer group hover:border-red-300 transition-all"
+        >
           <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-2xl bg-red-50 text-red-600">
+            <div className="p-2 sm:p-2.5 rounded-2xl bg-red-50 text-red-600">
               <Package size={18} />
             </div>
             {stats.lowStockCount > 0 && (
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600">
-                Action
+                {stats.lowStockCount} Low
               </span>
             )}
           </div>
-          <div className="mt-4">
-            <p className="text-xs font-medium text-dark/50">Low Stock Items</p>
-            <h3 className="font-display text-2xl font-bold text-dark mt-0.5">
+          <div className="mt-3 sm:mt-4">
+            <p className="text-[11px] sm:text-xs font-medium text-dark/50 flex items-center justify-between">
+              <span>Low Stock Items</span>
+              <span className="text-[10px] text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">View List →</span>
+            </p>
+            <h3 className="font-display text-xl sm:text-2xl font-bold text-dark mt-0.5">
               {stats.lowStockCount}
             </h3>
           </div>
@@ -206,7 +263,7 @@ export default function Dashboard() {
       {/* Main Section: Chart & Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: Revenue Chart */}
-        <div className="lg:col-span-2 glass-card p-6 flex flex-col justify-between">
+        <div className="lg:col-span-2 glass-card p-4 sm:p-6 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-display text-lg font-bold text-dark">Revenue Overview</h3>
@@ -248,7 +305,7 @@ export default function Dashboard() {
         </div>
 
         {/* Right 1 Col: Quick Actions */}
-        <div className="glass-card p-6 flex flex-col justify-between">
+        <div className="glass-card p-4 sm:p-6 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Sparkles size={18} className="text-[#D4AF37]" />
@@ -304,9 +361,9 @@ export default function Dashboard() {
       {/* Bottom Section: Recent Invoices & Upcoming Appointments */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Invoices */}
-        <div className="glass-card p-6">
+        <div className="glass-card p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-base font-bold text-dark">Recent Transactions</h3>
+            <h3 className="font-display text-lg font-bold text-dark">Recent Billing Activity</h3>
             <button onClick={() => navigate('/billing')} className="text-xs font-semibold text-[#D4AF37] hover:underline">
               View All
             </button>
@@ -314,7 +371,7 @@ export default function Dashboard() {
 
           <div className="space-y-3">
             {stats.recentInvoices.length === 0 ? (
-              <p className="text-xs text-dark/40 py-6 text-center">No recent billing activity</p>
+              <p className="text-xs text-dark/40 py-6 text-center italic">No recent billing activity</p>
             ) : (
               stats.recentInvoices.map((inv) => (
                 <div key={inv.id} className="flex items-center justify-between p-3 rounded-2xl bg-[#F4F0E6]/50 border border-[#E8DFCF]">
@@ -323,8 +380,8 @@ export default function Dashboard() {
                     <p className="text-[11px] text-dark/50">{inv.customer_name || 'Walk-in Customer'}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-bold text-dark">₹{Number(inv.total).toLocaleString('en-IN')}</p>
-                    <span className="text-[10px] capitalize px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
+                    <p className="font-display text-sm font-bold text-[#D4AF37]">₹{Number(inv.total).toLocaleString('en-IN')}</p>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
                       {inv.payment_method || 'Cash'}
                     </span>
                   </div>
@@ -335,9 +392,9 @@ export default function Dashboard() {
         </div>
 
         {/* Upcoming Appointments */}
-        <div className="glass-card p-6">
+        <div className="glass-card p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-base font-bold text-dark">Upcoming Appointments</h3>
+            <h3 className="font-display text-lg font-bold text-dark">Upcoming Bookings</h3>
             <button onClick={() => navigate('/appointments')} className="text-xs font-semibold text-[#D4AF37] hover:underline">
               View Schedule
             </button>
@@ -345,12 +402,12 @@ export default function Dashboard() {
 
           <div className="space-y-3">
             {stats.upcomingAppointments.length === 0 ? (
-              <p className="text-xs text-dark/40 py-6 text-center">No upcoming appointments booked</p>
+              <p className="text-xs text-dark/40 py-6 text-center italic">No upcoming appointments booked</p>
             ) : (
               stats.upcomingAppointments.map((app) => (
                 <div key={app.id} className="flex items-center justify-between p-3 rounded-2xl bg-[#F4F0E6]/50 border border-[#E8DFCF]">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-[#D4AF37]/10 text-[#D4AF37]">
+                    <div className="p-2 rounded-xl bg-white text-[#D4AF37] border border-[#E8DFCF]">
                       <Clock size={16} />
                     </div>
                     <div>
@@ -367,6 +424,258 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* ======================= POPUP MODALS FOR STAT CARDS ======================= */}
+
+      {/* 1. Today's Revenue Details Modal */}
+      <Modal isOpen={activeModal === 'revenue'} onClose={() => setActiveModal(null)} title="Today's Revenue Breakdown">
+        <div className="space-y-6">
+          {/* Revenue Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
+              <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">Total Revenue Today</p>
+              <h4 className="font-display text-2xl font-bold text-emerald-700 mt-1">₹{stats.todayRevenue.toLocaleString('en-IN')}</h4>
+              <p className="text-[11px] text-emerald-600 mt-0.5">{stats.todayInvoicesList.length} Invoices Generated Today</p>
+            </div>
+            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200">
+              <p className="text-xs font-semibold text-amber-800 uppercase tracking-wider">Pending Payments</p>
+              <h4 className="font-display text-2xl font-bold text-amber-700 mt-1">₹{stats.pendingPayments.toLocaleString('en-IN')}</h4>
+              <p className="text-[11px] text-amber-600 mt-0.5">Payment collection pending</p>
+            </div>
+          </div>
+
+          {/* Payment Method Breakdown List */}
+          <div>
+            <h4 className="text-xs font-bold text-dark/70 uppercase tracking-wider mb-3">Payment Methods Received Today</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {stats.todayPaymentMethods.length === 0 ? (
+                <p className="col-span-full text-xs text-dark/40 italic">No payment breakdown records available for today yet</p>
+              ) : (
+                stats.todayPaymentMethods.map((pm, idx) => (
+                  <div key={idx} className="p-3 rounded-2xl bg-[#F4F0E6]/70 border border-[#E8DFCF]">
+                    <span className="text-xs font-bold text-dark uppercase">{pm.method || 'Cash'}</span>
+                    <p className="font-display text-lg font-bold text-[#D4AF37] mt-0.5">₹{Number(pm.amount || 0).toLocaleString('en-IN')}</p>
+                    <span className="text-[10px] text-dark/50">{pm.count} Invoices</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Today's Paid Invoices List */}
+          <div>
+            <h4 className="text-xs font-bold text-dark/70 uppercase tracking-wider mb-3">Today's Invoices List ({stats.todayInvoicesList.length})</h4>
+            <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+              {stats.todayInvoicesList.length === 0 ? (
+                <p className="text-xs text-dark/40 py-4 text-center italic">No invoices recorded today yet</p>
+              ) : (
+                stats.todayInvoicesList.map((inv) => (
+                  <div key={inv.id} className="p-3 rounded-2xl bg-white border border-[#E8DFCF] flex items-center justify-between text-xs">
+                    <div>
+                      <p className="font-bold text-dark">{inv.invoice_number}</p>
+                      <p className="text-[11px] text-dark/60">{inv.customer_name || 'Walk-in Client'} {inv.customer_phone ? `(${inv.customer_phone})` : ''}</p>
+                      <p className="text-[10px] text-dark/40">Stylist: {inv.staff_name || 'Staff'}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-display font-bold text-emerald-700 text-sm">₹{Number(inv.total).toLocaleString('en-IN')}</p>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        {inv.payment_method || 'Cash'}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* 2. Appointments Today Modal */}
+      <Modal isOpen={activeModal === 'appointments'} onClose={() => setActiveModal(null)} title="Today's Appointments Schedule">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-purple-50 border border-purple-200">
+            <span className="text-xs font-bold text-purple-900">Total Booked Today</span>
+            <span className="font-display text-lg font-bold text-purple-700">{stats.todayAppointmentsList.length} Appointments</span>
+          </div>
+
+          <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+            {stats.todayAppointmentsList.length === 0 ? (
+              <p className="text-xs text-dark/40 py-8 text-center italic">No appointments scheduled for today</p>
+            ) : (
+              stats.todayAppointmentsList.map((app) => (
+                <div key={app.id} className="p-3.5 rounded-2xl bg-white border border-[#E8DFCF] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-xl bg-[#F4F0E6] text-dark font-mono font-bold text-xs border border-[#E8DFCF] shrink-0">
+                      {app.appointment_time}
+                    </div>
+                    <div>
+                      <p className="font-bold text-dark text-sm">{app.customer_name || 'Walk-in Client'}</p>
+                      <p className="text-xs text-dark/60 flex items-center gap-1 mt-0.5">
+                        <Phone size={12} /> {app.customer_phone || 'No phone'}
+                      </p>
+                      <p className="text-xs text-[#D4AF37] font-semibold mt-1">
+                        Service: {app.service_name || 'Hair Cut / Styling'} {app.service_price ? `(₹${app.service_price})` : ''}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-2 sm:pt-0 border-[#E8DFCF]">
+                    <span className="text-xs font-semibold text-dark/70 bg-[#F4F0E6] px-3 py-1 rounded-full border border-[#E8DFCF]">
+                      Stylist: {app.staff_name || 'Any Stylist'}
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200 mt-1">
+                      {app.status}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </Modal>
+
+      {/* 3. Customers Today Modal */}
+      <Modal isOpen={activeModal === 'customers'} onClose={() => setActiveModal(null)} title="Today's Served Customers">
+        <div className="space-y-4">
+          <div className="p-3 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-between">
+            <span className="text-xs font-bold text-blue-900">Total Clients Served Today</span>
+            <span className="font-display text-lg font-bold text-blue-700">{stats.todayInvoicesList.length} Clients</span>
+          </div>
+
+          <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+            {stats.todayInvoicesList.length === 0 ? (
+              <p className="text-xs text-dark/40 py-8 text-center italic">No customer transactions recorded today</p>
+            ) : (
+              stats.todayInvoicesList.map((cust, idx) => (
+                <div key={cust.id || idx} className="p-3.5 rounded-2xl bg-white border border-[#E8DFCF] space-y-2 text-xs">
+                  <div className="flex items-center justify-between border-b border-[#E8DFCF] pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-[#D4AF37] text-white flex items-center justify-center font-bold text-xs">
+                        {cust.customer_name?.[0]?.toUpperCase() || 'C'}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-dark text-sm">{cust.customer_name || 'Walk-in Customer'}</h4>
+                        <p className="text-xs text-dark/50 flex items-center gap-1">
+                          <Phone size={12} /> {cust.customer_phone || 'Mobile: Not recorded'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-display text-base font-bold text-emerald-700">₹{Number(cust.total).toLocaleString('en-IN')}</span>
+                      <p className="text-[10px] text-dark/40">{cust.invoice_number}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-dark/70 pt-1">
+                    <p className="font-medium">
+                      Styled / Served By: <span className="font-bold text-dark">{cust.staff_name || 'Salon Stylist'}</span>
+                    </p>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#F4F0E6] border border-[#E8DFCF]">
+                      {cust.payment_method || 'Paid Cash'}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </Modal>
+
+      {/* 4. Pending Payments Modal */}
+      <Modal isOpen={activeModal === 'pending'} onClose={() => setActiveModal(null)} title="Pending Payments Overview">
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200">
+            <p className="text-xs font-semibold text-amber-800 uppercase tracking-wider">Total Pending Collection</p>
+            <h4 className="font-display text-2xl font-bold text-amber-700 mt-1">₹{stats.pendingPayments.toLocaleString('en-IN')}</h4>
+          </div>
+          <p className="text-xs text-dark/60">Manage pending balances and collect payment via the POS Terminal.</p>
+          <div className="flex justify-end pt-2">
+            <button
+              onClick={() => {
+                setActiveModal(null);
+                navigate('/billing');
+              }}
+              className="px-5 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] flex items-center gap-2"
+            >
+              <Receipt size={16} /> Open POS Billing
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* 5. Staff Present Modal */}
+      <Modal isOpen={activeModal === 'staff'} onClose={() => setActiveModal(null)} title="Staff Attendance Today">
+        <div className="space-y-4">
+          <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
+            <span className="text-xs font-bold text-emerald-900">Staff Members Present Today</span>
+            <span className="font-display text-lg font-bold text-emerald-700">{stats.todayStaffPresentList.length} Present</span>
+          </div>
+
+          <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+            {stats.todayStaffPresentList.length === 0 ? (
+              <p className="text-xs text-dark/40 py-8 text-center italic">No staff attendance marked present for today yet</p>
+            ) : (
+              stats.todayStaffPresentList.map((st) => (
+                <div key={st.id} className="p-3 rounded-2xl bg-white border border-[#E8DFCF] flex items-center justify-between text-xs">
+                  <div>
+                    <p className="font-bold text-dark text-sm">{st.staff_name}</p>
+                    <p className="text-xs text-dark/50">{st.staff_phone || 'Active Stylist'}</p>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                    Present
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </Modal>
+
+      {/* 6. Low Stock Items Modal */}
+      <Modal isOpen={activeModal === 'low_stock'} onClose={() => setActiveModal(null)} title="Low Stock Products Alert">
+        <div className="space-y-4">
+          <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold text-red-900">Low Stock Warning</p>
+              <p className="text-[11px] text-red-700">Products below low stock threshold</p>
+            </div>
+            <span className="font-display text-lg font-bold text-red-700">{stats.lowStockProductsList.length} Items</span>
+          </div>
+
+          <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+            {stats.lowStockProductsList.length === 0 ? (
+              <p className="text-xs text-emerald-700 py-8 text-center font-semibold">🎉 Excellent! All inventory stock levels are healthy.</p>
+            ) : (
+              stats.lowStockProductsList.map((prod) => (
+                <div key={prod.id} className="p-3 rounded-2xl bg-white border border-red-200 flex items-center justify-between text-xs">
+                  <div>
+                    <p className="font-bold text-dark text-sm">{prod.name}</p>
+                    <p className="text-xs text-dark/50">Category: {prod.category || 'General'}</p>
+                    <p className="text-[11px] text-[#D4AF37] font-semibold">Selling Price: ₹{prod.selling_price}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200 inline-block mb-1">
+                      {prod.stock_quantity} left (Threshold: {prod.low_stock_threshold})
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="flex justify-end pt-2 border-t border-[#E8DFCF]">
+            <button
+              onClick={() => {
+                setActiveModal(null);
+                navigate('/products');
+              }}
+              className="px-5 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] flex items-center gap-2"
+            >
+              <Package size={16} /> Go to Products Inventory
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
