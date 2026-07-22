@@ -22,7 +22,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-md transition-opacity animate-fadeIn"
+        className="fixed inset-0 bg-[#1A1A1A]/50 backdrop-blur-md transition-opacity animate-fadeIn"
         onClick={onClose}
       />
 
@@ -30,15 +30,15 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
       <div
         className={`relative w-full ${maxWidth} glass-modal p-6 sm:p-8 z-10 my-8 max-h-[90vh] flex flex-col shadow-luxury transform transition-all duration-300 animate-scaleUp overflow-hidden`}
       >
-        {/* Top Gradient Accent Bar */}
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#0052FF] to-[#4D7CFF]" />
+        {/* Top Metallic Gold Accent Bar */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-[#D4AF37]" />
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-4 mb-6">
-          <h3 className="font-display text-2xl font-semibold text-[#0F172A] tracking-tight">{title}</h3>
+        <div className="flex items-center justify-between border-b border-[#1A1A1A]/15 pb-4 mb-6">
+          <h3 className="font-display text-2xl font-bold text-[#1A1A1A] tracking-tight uppercase">{title}</h3>
           <button
             onClick={onClose}
-            className="p-2 rounded-full text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] transition-colors"
+            className="p-2 text-[#6C6863] hover:text-[#1A1A1A] hover:bg-[#EBE5DE] transition-colors"
           >
             <X size={20} />
           </button>

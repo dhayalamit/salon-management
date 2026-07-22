@@ -60,37 +60,36 @@ export default function Topbar({ onMenuClick }) {
   });
 
   return (
-    <header className="px-4 pt-6 pb-4 sm:px-8 flex items-center justify-between gap-4 relative z-30">
+    <header className="px-4 pt-6 pb-4 sm:px-8 flex items-center justify-between gap-4 relative z-30 border-b border-[#1A1A1A]/10 bg-[#F9F8F6]">
       {/* Left Greeting & Date */}
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
-          className="p-2.5 rounded-2xl glass-card text-[#0F172A] lg:hidden hover:bg-white transition-colors flex items-center gap-2"
+          className="p-2 glass-card text-[#1A1A1A] lg:hidden hover:bg-white transition-colors flex items-center gap-2"
         >
           <Menu size={18} />
-          <img src="/logo.png" alt="TRIO Logo" className="h-7 w-7 object-contain" />
+          <img src="/logo.png" alt="TRIO Logo" className="h-6 w-6 object-contain" />
         </button>
 
         <div>
-          <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#0F172A] flex items-center gap-2">
-            {greeting}, <span className="gradient-text">{user?.name?.split(' ')[0] || 'Administrator'}</span>
+          <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#1A1A1A] flex items-center gap-2">
+            {greeting}, <span className="italic text-[#D4AF37]">{user?.name?.split(' ')[0] || 'Administrator'}</span>
           </h2>
-          <p className="text-xs font-mono font-medium text-[#64748B] mt-0.5">{formattedDate}</p>
+          <p className="text-[11px] font-sans font-medium uppercase tracking-[0.2em] text-[#6C6863] mt-0.5">{formattedDate}</p>
         </div>
       </div>
 
-      {/* Right Tools: Global Search Bar */}
+      {/* Right Tools: Underline Editorial Search Bar */}
       <div className="flex items-center gap-3">
-        {/* Global Search Component */}
         <div ref={searchRef} className="relative w-48 sm:w-64 lg:w-80">
-          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none" />
+          <Search size={16} className="absolute left-1 top-1/2 -translate-y-1/2 text-[#6C6863] pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             onFocus={() => searchQuery.length >= 2 && setIsSearchOpen(true)}
             placeholder="Search clients, bills, staff, products..."
-            className="w-full pl-10 pr-8 py-2.5 bg-white border border-[#E2E8F0] rounded-full text-xs text-[#0F172A] placeholder:text-[#64748B]/60 focus:outline-none focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/20 transition-all shadow-xs"
+            className="w-full pl-7 pr-8 py-2 bg-transparent border-b border-[#1A1A1A] text-xs text-[#1A1A1A] placeholder:italic placeholder:font-display placeholder:text-[#6C6863] focus:outline-none focus:border-[#D4AF37] transition-all"
           />
           {searchQuery && (
             <button
@@ -99,7 +98,7 @@ export default function Topbar({ onMenuClick }) {
                 setSearchResults(null);
                 setIsSearchOpen(false);
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-[#0F172A]"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[#6C6863] hover:text-[#1A1A1A]"
             >
               <X size={14} />
             </button>
@@ -108,16 +107,16 @@ export default function Topbar({ onMenuClick }) {
           {/* Search Dropdown Modal */}
           {isSearchOpen && searchResults && (
             <div className="absolute right-0 top-12 w-80 sm:w-96 glass-modal p-4 shadow-luxury max-h-[70vh] overflow-y-auto space-y-4 text-xs z-50">
-              <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2">
-                <span className="font-mono text-[10px] font-semibold text-[#0052FF] uppercase tracking-wider">Search Results</span>
-                <span className="text-[10px] text-[#64748B]">Query: "{searchQuery}"</span>
+              <div className="flex items-center justify-between border-b border-[#1A1A1A]/15 pb-2">
+                <span className="font-sans text-[10px] font-semibold text-[#D4AF37] uppercase tracking-[0.2em]">Editorial Search Results</span>
+                <span className="text-[10px] text-[#6C6863]">Query: "{searchQuery}"</span>
               </div>
 
               {/* Customers */}
               {searchResults.customers?.length > 0 && (
                 <div>
-                  <p className="font-mono text-[10px] font-bold text-[#64748B] uppercase mb-1.5 flex items-center gap-1">
-                    <Users size={12} className="text-[#0052FF]" /> Clients ({searchResults.customers.length})
+                  <p className="font-sans text-[10px] font-bold text-[#6C6863] uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <Users size={12} className="text-[#D4AF37]" /> Clients ({searchResults.customers.length})
                   </p>
                   <div className="space-y-1">
                     {searchResults.customers.map((c) => (
@@ -127,10 +126,10 @@ export default function Topbar({ onMenuClick }) {
                           navigate(`/customers/${c.id}`);
                           setIsSearchOpen(false);
                         }}
-                        className="p-2 rounded-xl bg-[#FAFAFA] hover:bg-[#EFF4FF] cursor-pointer flex justify-between items-center transition-colors"
+                        className="p-2 border-b border-[#1A1A1A]/10 hover:bg-[#EBE5DE] cursor-pointer flex justify-between items-center transition-colors"
                       >
-                        <span className="font-semibold text-[#0F172A]">{c.name}</span>
-                        <span className="text-[#64748B] text-[11px]">{c.phone || 'No phone'}</span>
+                        <span className="font-semibold text-[#1A1A1A]">{c.name}</span>
+                        <span className="text-[#6C6863] text-[11px]">{c.phone || 'No phone'}</span>
                       </div>
                     ))}
                   </div>
@@ -140,8 +139,8 @@ export default function Topbar({ onMenuClick }) {
               {/* Appointments */}
               {searchResults.appointments?.length > 0 && (
                 <div>
-                  <p className="font-mono text-[10px] font-bold text-[#64748B] uppercase mb-1.5 flex items-center gap-1">
-                    <Calendar size={12} className="text-purple-600" /> Appointments ({searchResults.appointments.length})
+                  <p className="font-sans text-[10px] font-bold text-[#6C6863] uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <Calendar size={12} className="text-purple-700" /> Appointments ({searchResults.appointments.length})
                   </p>
                   <div className="space-y-1">
                     {searchResults.appointments.map((a) => (
@@ -151,13 +150,13 @@ export default function Topbar({ onMenuClick }) {
                           navigate('/appointments');
                           setIsSearchOpen(false);
                         }}
-                        className="p-2 rounded-xl bg-[#FAFAFA] hover:bg-purple-50 cursor-pointer flex justify-between items-center transition-colors"
+                        className="p-2 border-b border-[#1A1A1A]/10 hover:bg-purple-50 cursor-pointer flex justify-between items-center transition-colors"
                       >
                         <div>
-                          <p className="font-semibold text-[#0F172A]">{a.customer_name || 'Client'}</p>
-                          <p className="text-[10px] text-[#64748B]">{a.service_name} • {a.appointment_date} {a.appointment_time}</p>
+                          <p className="font-semibold text-[#1A1A1A]">{a.customer_name || 'Client'}</p>
+                          <p className="text-[10px] text-[#6C6863]">{a.service_name} • {a.appointment_date} {a.appointment_time}</p>
                         </div>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold bg-purple-100 text-purple-700">
+                        <span className="px-2 py-0.5 text-[10px] uppercase font-bold bg-purple-100 text-purple-700">
                           {a.status}
                         </span>
                       </div>
@@ -169,8 +168,8 @@ export default function Topbar({ onMenuClick }) {
               {/* Invoices */}
               {searchResults.invoices?.length > 0 && (
                 <div>
-                  <p className="font-mono text-[10px] font-bold text-[#64748B] uppercase mb-1.5 flex items-center gap-1">
-                    <Receipt size={12} className="text-emerald-600" /> Invoices ({searchResults.invoices.length})
+                  <p className="font-sans text-[10px] font-bold text-[#6C6863] uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <Receipt size={12} className="text-emerald-700" /> Invoices ({searchResults.invoices.length})
                   </p>
                   <div className="space-y-1">
                     {searchResults.invoices.map((inv) => (
@@ -180,13 +179,13 @@ export default function Topbar({ onMenuClick }) {
                           navigate(`/billing/${inv.id}`);
                           setIsSearchOpen(false);
                         }}
-                        className="p-2 rounded-xl bg-[#FAFAFA] hover:bg-emerald-50 cursor-pointer flex justify-between items-center transition-colors"
+                        className="p-2 border-b border-[#1A1A1A]/10 hover:bg-emerald-50 cursor-pointer flex justify-between items-center transition-colors"
                       >
                         <div>
-                          <p className="font-semibold text-[#0F172A]">{inv.invoice_number}</p>
-                          <p className="text-[10px] text-[#64748B]">{inv.customer_name || 'Walk-in Client'}</p>
+                          <p className="font-semibold text-[#1A1A1A]">{inv.invoice_number}</p>
+                          <p className="text-[10px] text-[#6C6863]">{inv.customer_name || 'Walk-in Client'}</p>
                         </div>
-                        <span className="font-bold text-[#0F172A]">₹{Number(inv.total).toLocaleString()}</span>
+                        <span className="font-display font-bold text-[#1A1A1A]">₹{Number(inv.total).toLocaleString()}</span>
                       </div>
                     ))}
                   </div>
@@ -196,8 +195,8 @@ export default function Topbar({ onMenuClick }) {
               {/* Products */}
               {searchResults.products?.length > 0 && (
                 <div>
-                  <p className="font-mono text-[10px] font-bold text-[#64748B] uppercase mb-1.5 flex items-center gap-1">
-                    <Package size={12} className="text-amber-600" /> Products ({searchResults.products.length})
+                  <p className="font-sans text-[10px] font-bold text-[#6C6863] uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <Package size={12} className="text-amber-700" /> Products ({searchResults.products.length})
                   </p>
                   <div className="space-y-1">
                     {searchResults.products.map((p) => (
@@ -207,13 +206,13 @@ export default function Topbar({ onMenuClick }) {
                           navigate('/products');
                           setIsSearchOpen(false);
                         }}
-                        className="p-2 rounded-xl bg-[#FAFAFA] hover:bg-amber-50 cursor-pointer flex justify-between items-center transition-colors"
+                        className="p-2 border-b border-[#1A1A1A]/10 hover:bg-amber-50 cursor-pointer flex justify-between items-center transition-colors"
                       >
                         <div>
-                          <p className="font-semibold text-[#0F172A]">{p.name}</p>
-                          <p className="text-[10px] text-[#64748B]">Stock: {p.stock_quantity} units</p>
+                          <p className="font-semibold text-[#1A1A1A]">{p.name}</p>
+                          <p className="text-[10px] text-[#6C6863]">Stock: {p.stock_quantity} units</p>
                         </div>
-                        <span className="font-bold text-[#0F172A]">₹{Number(p.selling_price).toLocaleString()}</span>
+                        <span className="font-display font-bold text-[#1A1A1A]">₹{Number(p.selling_price).toLocaleString()}</span>
                       </div>
                     ))}
                   </div>
@@ -223,8 +222,8 @@ export default function Topbar({ onMenuClick }) {
               {/* Staff */}
               {searchResults.staff?.length > 0 && (
                 <div>
-                  <p className="font-mono text-[10px] font-bold text-[#64748B] uppercase mb-1.5 flex items-center gap-1">
-                    <UserCog size={12} className="text-blue-600" /> Staff ({searchResults.staff.length})
+                  <p className="font-sans text-[10px] font-bold text-[#6C6863] uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <UserCog size={12} className="text-blue-700" /> Staff ({searchResults.staff.length})
                   </p>
                   <div className="space-y-1">
                     {searchResults.staff.map((st) => (
@@ -234,10 +233,10 @@ export default function Topbar({ onMenuClick }) {
                           navigate(`/staff/${st.id}`);
                           setIsSearchOpen(false);
                         }}
-                        className="p-2 rounded-xl bg-[#FAFAFA] hover:bg-blue-50 cursor-pointer flex justify-between items-center transition-colors"
+                        className="p-2 border-b border-[#1A1A1A]/10 hover:bg-blue-50 cursor-pointer flex justify-between items-center transition-colors"
                       >
-                        <span className="font-semibold text-[#0F172A]">{st.name}</span>
-                        <span className="text-[#64748B] text-[11px]">{st.phone || 'Stylist'}</span>
+                        <span className="font-semibold text-[#1A1A1A]">{st.name}</span>
+                        <span className="text-[#6C6863] text-[11px]">{st.phone || 'Stylist'}</span>
                       </div>
                     ))}
                   </div>
@@ -245,7 +244,7 @@ export default function Topbar({ onMenuClick }) {
               )}
 
               {Object.values(searchResults).every((arr) => arr.length === 0) && (
-                <p className="py-4 text-center text-[#64748B] italic">No matching records found</p>
+                <p className="py-4 text-center text-[#6C6863] italic font-display">No matching records found</p>
               )}
             </div>
           )}

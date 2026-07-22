@@ -1,28 +1,26 @@
-@import url('https://fonts.googleapis.com/css2?family=Calistoga&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  *, ::before, ::after {
+    border-radius: 0px !important;
+  }
+
   html, body {
-    background-color: #FAFAFA;
-    background-image: 
-      radial-gradient(at 0% 0%, rgba(0, 82, 255, 0.03) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(77, 124, 255, 0.03) 0px, transparent 50%);
-    color: #0F172A;
+    background-color: #F9F8F6;
+    color: #1A1A1A;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, .font-display {
-    font-family: 'Calistoga', Georgia, serif;
-    font-weight: 400;
-  }
-
-  .font-mono {
-    font-family: 'JetBrains Mono', monospace;
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
 
   /* Hide number input spinner controls globally across all browsers */
@@ -38,102 +36,121 @@
   }
 }
 
-/* Minimalist Modern Glassmorphism & Elevation System */
+/* Luxury Architectural Cards & Fills */
 .glass-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid #E2E8F0;
-  border-radius: 20px;
-  box-shadow: 0 4px 20px 0 rgba(15, 23, 42, 0.04);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  background: #FFFFFF;
+  border: 1px solid rgba(26, 26, 26, 0.15);
+  border-radius: 0px !important;
+  box-shadow: 0 4px 20px rgba(26, 26, 26, 0.04);
+  transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .glass-card-hover:hover {
+  border-color: #D4AF37;
+  box-shadow: 0 8px 32px rgba(212, 175, 55, 0.15);
   transform: translateY(-2px);
-  background: #FFFFFF;
-  box-shadow: 0 12px 30px 0 rgba(0, 82, 255, 0.12);
-  border-color: rgba(0, 82, 255, 0.3);
 }
 
 .glass-modal {
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(30px) saturate(200%);
-  -webkit-backdrop-filter: blur(30px) saturate(200%);
-  border: 1px solid #E2E8F0;
-  border-radius: 24px;
-  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.15);
+  background: #F9F8F6;
+  border: 1px solid #1A1A1A;
+  border-top: 4px solid #D4AF37;
+  border-radius: 0px !important;
+  box-shadow: 0 24px 60px rgba(26, 26, 26, 0.2);
 }
 
 .shadow-luxury {
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 8px 32px rgba(26, 26, 26, 0.08);
 }
 
-/* Signature Electric Blue Gradient Fills & Text */
-.gold-gradient-bg, .btn-accent {
-  background: linear-gradient(135deg, #0052FF 0%, #4D7CFF 100%);
+/* Primary Luxury Metallic Gold Button */
+.gold-gradient-bg, .btn-accent, .btn-luxury-primary {
+  position: relative;
+  background-color: #1A1A1A;
   color: #FFFFFF;
-  transition: all 0.2s ease-out;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  border-radius: 0px !important;
+  overflow: hidden;
+  transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  z-index: 1;
 }
 
-.btn-accent:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(0, 82, 255, 0.35);
-  filter: brightness(108%);
+.btn-accent::before, .btn-luxury-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #D4AF37;
+  transform: translateX(-100%);
+  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  z-index: -1;
 }
 
-.btn-accent:active {
-  transform: scale(0.98);
+.btn-accent:hover::before, .btn-luxury-primary:hover::before {
+  transform: translateX(0);
+}
+
+.btn-accent:hover, .btn-luxury-primary:hover {
+  color: #1A1A1A;
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.3);
 }
 
 .gradient-text, .gold-text-gradient {
-  background: linear-gradient(135deg, #0052FF 0%, #4D7CFF 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #D4AF37;
 }
 
-/* Minimalist Modern Section Badge */
+/* Editorial Section Badges */
 .section-badge {
   display: inline-flex;
-  items-center: center;
+  align-items: center;
   gap: 0.5rem;
-  border-radius: 9999px;
-  border: 1px solid rgba(0, 82, 255, 0.25);
-  background: rgba(0, 82, 255, 0.05);
-  padding: 0.375rem 1rem;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
+  border-top: 1px solid #D4AF37;
+  border-bottom: 1px solid #D4AF37;
+  padding: 0.25rem 0.75rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.125em;
-  color: #0052FF;
+  letter-spacing: 0.25em;
+  color: #1A1A1A;
+  border-radius: 0px !important;
 }
 
-/* Inverted Dark Section Background & Dot Pattern */
+/* Inverted Dark Editorial Section */
 .bg-inverted {
-  background-color: #0F172A;
-  color: #FFFFFF;
+  background-color: #1A1A1A;
+  color: #F9F8F6;
+  border-radius: 0px !important;
 }
 
-.bg-dot-pattern {
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-  background-size: 24px 24px;
+/* Grayscale Image Reveal Transitions */
+.editorial-img {
+  filter: grayscale(100%);
+  transition: all 1500ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.group:hover .editorial-img, .editorial-img:hover {
+  filter: grayscale(0%);
+  transform: scale(1.05);
 }
 
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #F9F8F6;
 }
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #0052FF;
+  background: #D4AF37;
+  border-radius: 0px !important;
 }
 
 /* Print styles for tax invoice */

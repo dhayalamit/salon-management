@@ -44,42 +44,40 @@ export default function Sidebar({ open, onClose }) {
       {/* Mobile backdrop */}
       {open && (
         <div
-          className="fixed inset-0 z-30 bg-[#0F172A]/40 backdrop-blur-sm lg:hidden transition-opacity"
+          className="fixed inset-0 z-30 bg-[#1A1A1A]/40 backdrop-blur-sm lg:hidden transition-opacity"
           onClick={onClose}
         />
       )}
 
-      {/* Glass Sidebar Panel */}
+      {/* Luxury Editorial Sidebar Panel */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 w-72 p-4 transition-transform duration-300 ease-out lg:static lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="h-full glass-card flex flex-col justify-between p-5 overflow-hidden shadow-luxury">
+        <div className="h-full glass-card flex flex-col justify-between p-5 overflow-hidden shadow-luxury border border-[#1A1A1A]/15 bg-[#F9F8F6]">
           {/* Header & Branding */}
           <div>
-            <div className="flex items-center gap-3.5 px-2 py-2">
-              <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-[#0052FF] to-[#4D7CFF] p-0.5 shadow-md shrink-0">
+            <div className="flex items-center gap-3.5 px-2 py-2 border-b border-[#1A1A1A]/15 pb-4">
+              <div className="h-11 w-11 bg-[#1A1A1A] p-1 border border-[#D4AF37] shrink-0 flex items-center justify-center">
                 <img
                   src="/logo.png"
                   alt="TRIO"
-                  className="h-full w-full rounded-[14px] object-contain bg-white p-1"
+                  className="h-full w-full object-contain filter invert brightness-200"
                 />
               </div>
               <div className="min-w-0">
-                <h1 className="font-display text-lg font-bold tracking-tight text-[#0F172A] leading-none">
+                <h1 className="font-display text-lg font-bold tracking-tight text-[#1A1A1A] leading-none uppercase">
                   TRIO THE POSH
                 </h1>
-                <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.25em] text-[#0052FF] mt-1">
+                <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.25em] text-[#D4AF37] mt-1">
                   Luxury Unisex Salon
                 </p>
               </div>
             </div>
 
-            <div className="my-5 h-px bg-gradient-to-r from-[#E2E8F0] via-[#0052FF]/20 to-transparent" />
-
             {/* Nav List */}
-            <nav className="space-y-1 overflow-y-auto max-h-[calc(100vh-250px)] pr-1">
+            <nav className="space-y-1 overflow-y-auto max-h-[calc(100vh-250px)] pt-4 pr-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
 
@@ -90,23 +88,23 @@ export default function Sidebar({ open, onClose }) {
                     end={item.to === '/'}
                     onClick={onClose}
                     className={({ isActive }) =>
-                      `group flex items-center gap-3.5 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-300 ${
+                      `group flex items-center gap-3.5 px-4 py-3 text-xs font-semibold uppercase tracking-[0.15em] transition-all duration-300 ${
                         isActive
-                          ? 'bg-gradient-to-r from-[#0052FF] to-[#4D7CFF] text-white font-semibold shadow-accent'
-                          : 'text-[#0F172A]/70 hover:bg-[#F1F5F9] hover:text-[#0F172A]'
+                          ? 'bg-[#1A1A1A] text-[#D4AF37] border-l-2 border-[#D4AF37] shadow-sm'
+                          : 'text-[#1A1A1A]/70 hover:bg-[#EBE5DE] hover:text-[#1A1A1A]'
                       }`
                     }
                   >
                     {({ isActive }) => (
                       <>
                         <span
-                          className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-300 ${
+                          className={`flex h-7 w-7 items-center justify-center transition-all duration-300 ${
                             isActive
-                              ? 'bg-white/20 text-white'
-                              : 'bg-[#F1F5F9] text-[#0F172A]/60 group-hover:bg-white group-hover:text-[#0052FF]'
+                              ? 'text-[#D4AF37]'
+                              : 'text-[#1A1A1A]/60 group-hover:text-[#1A1A1A]'
                           }`}
                         >
-                          <Icon size={18} />
+                          <Icon size={16} />
                         </span>
                         <span>{item.label}</span>
                       </>
@@ -118,22 +116,22 @@ export default function Sidebar({ open, onClose }) {
           </div>
 
           {/* User Profile Card Footer */}
-          <div className="pt-4 border-t border-[#E2E8F0]">
-            <div className="flex items-center justify-between p-2.5 rounded-2xl bg-[#F1F5F9]/70 border border-[#E2E8F0]">
+          <div className="pt-4 border-t border-[#1A1A1A]/15">
+            <div className="flex items-center justify-between p-3 bg-[#1A1A1A] text-white">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0052FF] to-[#4D7CFF] font-display text-sm font-bold text-white shadow-xs">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-[#D4AF37] font-display text-sm font-bold text-[#1A1A1A]">
                   {user?.name?.[0]?.toUpperCase() || 'A'}
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-xs font-semibold text-[#0F172A]">{user?.name || 'Admin User'}</p>
-                  <p className="text-[10px] capitalize text-[#64748B]">{user?.role || 'Administrator'}</p>
+                  <p className="truncate text-xs font-semibold text-white uppercase tracking-wider">{user?.name || 'Admin User'}</p>
+                  <p className="text-[9px] uppercase tracking-widest text-[#D4AF37]">{user?.role || 'Administrator'}</p>
                 </div>
               </div>
 
               <button
                 onClick={() => setShowLogoutConfirm(true)}
                 title="Logout"
-                className="p-2 text-[#64748B] hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                className="p-1.5 text-white/60 hover:text-[#D4AF37] transition-colors"
               >
                 <LogOut size={16} />
               </button>
