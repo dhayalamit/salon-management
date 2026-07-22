@@ -56,11 +56,12 @@ router.post('/', authenticate, async (req, res) => {
 
     const id = db.generateUUID();
     const entryDate = date || new Date().toISOString().slice(0, 10);
+    const nowIso = new Date().toISOString();
 
     const { rows } = await db.query(
-      `INSERT INTO staff_work_entries (id, staff_id, description, amount, date)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [id, staffId, description || null, Number(amount), entryDate]
+      `INSERT INTO staff_work_entries (id, staff_id, description, amount, date, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [id, staffId, description || null, Number(amount), entryDate, nowIso]
     );
 
     // Also fetch staff name for immediate UI display
@@ -68,7 +69,7 @@ router.post('/', authenticate, async (req, res) => {
     const staffName = staffQ.rows[0]?.name || 'Staff';
 
     res.status(201).json({
-      ...(rows[0] || { id, staff_id: staffId, description, amount, date: entryDate }),
+      ...(rows[0] || { id, staff_id: staffId, description, amount, date: entryDate, created_at: nowIso }),
       staff_name: staffName,
     });
   } catch (err) {

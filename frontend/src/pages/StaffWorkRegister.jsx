@@ -170,7 +170,7 @@ export default function StaffWorkRegister() {
               <span className="text-xs text-dark/40 font-medium">TRIO The Posh</span>
             </div>
             <h1 className="font-display text-2xl font-bold text-dark">Staff Work Register</h1>
-            <p className="text-xs text-dark/50">Record daily manual work entries per stylist with service dropdown</p>
+            <p className="text-xs text-dark/50">Record daily manual work entries per stylist with timestamps</p>
           </div>
         </div>
 
@@ -362,29 +362,40 @@ export default function StaffWorkRegister() {
 
                   {/* List of Work Items for this Staff */}
                   <div className="space-y-1.5 pl-2">
-                    {group.items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-[#F4F0E6]/50 hover:bg-[#F4F0E6] transition-colors text-xs"
-                      >
-                        <div>
-                          <span className="font-semibold text-dark">
-                            {item.description || 'Manual Work Entry'}
-                          </span>
-                          <span className="text-[10px] text-dark/40 ml-2">📅 {item.date}</span>
+                    {group.items.map((item) => {
+                      const timeDisplay = item.created_at
+                        ? new Date(item.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+                        : null;
+
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between py-2 px-3 rounded-xl bg-[#F4F0E6]/50 hover:bg-[#F4F0E6] transition-colors text-xs"
+                        >
+                          <div>
+                            <span className="font-semibold text-dark text-xs sm:text-sm">
+                              {item.description || 'Manual Work Entry'}
+                            </span>
+                            <div className="flex items-center gap-2.5 mt-0.5 text-[10px] text-dark/50">
+                              <span>📅 {item.date}</span>
+                              {timeDisplay && (
+                                <span className="font-semibold text-[#D4AF37]">⏰ {timeDisplay}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="font-bold font-mono text-dark text-sm">₹{Number(item.amount).toLocaleString('en-IN')}</span>
+                            <button
+                              onClick={() => handleDeleteEntry(item.id)}
+                              className="text-red-400 hover:text-red-600 p-1"
+                              title="Delete Entry"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="font-bold font-mono text-dark">₹{Number(item.amount).toLocaleString('en-IN')}</span>
-                          <button
-                            onClick={() => handleDeleteEntry(item.id)}
-                            className="text-red-400 hover:text-red-600 p-0.5"
-                            title="Delete Entry"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))
