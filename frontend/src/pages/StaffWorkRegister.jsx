@@ -13,6 +13,7 @@ import {
   Clock,
   Sparkles,
   TrendingUp,
+  Scissors,
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext.jsx';
 import { getTodayDateString } from '../utils/dateUtils.js';
@@ -21,11 +22,13 @@ export default function StaffWorkRegister() {
   const { showSuccess, showError } = useToast();
 
   const [staffList, setStaffList] = useState([]);
+  const [servicesList, setServicesList] = useState([]);
   const [entries, setEntries] = useState([]);
   const [totalWorkAmount, setTotalWorkAmount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   // Form State
+  const [selectedServiceId, setSelectedServiceId] = useState('');
   const [formData, setFormData] = useState({
     staffId: '',
     description: '',
@@ -41,6 +44,7 @@ export default function StaffWorkRegister() {
 
   useEffect(() => {
     fetchStaff();
+    fetchServices();
   }, []);
 
   useEffect(() => {
@@ -56,6 +60,15 @@ export default function StaffWorkRegister() {
       }
     } catch (err) {
       showError('Failed to load staff list');
+    }
+  };
+
+  const fetchServices = async () => {
+    try {
+      const res = await client.get('/services');
+      setServicesList(res.data || []);
+    } catch (err) {
+      console.error('Failed to load services list', err);
     }
   };
 
@@ -77,6 +90,23 @@ export default function StaffWorkRegister() {
     }
   };
 
+  const handleServiceSelect = (e) => {
+    const sId = e.target.value;
+    setSelectedServiceId(sId);
+    if (sId === 'custom') {
+      // Allow custom typing
+    } else {
+      const s = servicesList.find((srv) => srv.id === sId);
+      if (s) {
+        setFormData((prev) => ({
+          ...prev,
+          description: s.name,
+          amount: s.price,
+        }));
+      }
+    }
+  };
+
   const handleSaveEntry = async (e) => {
     e.preventDefault();
     if (!formData.staffId || !formData.amount) {
@@ -87,6 +117,7 @@ export default function StaffWorkRegister() {
       setSubmitting(true);
       await client.post('/staff-work', formData);
       showSuccess('Staff work entry recorded successfully!');
+      setSelectedServiceId('');
       setFormData({
         staffId: staffList[0]?.id || '',
         description: '',
@@ -139,7 +170,7 @@ export default function StaffWorkRegister() {
               <span className="text-xs text-dark/40 font-medium">TRIO The Posh</span>
             </div>
             <h1 className="font-display text-2xl font-bold text-dark">Staff Work Register</h1>
-            <p className="text-xs text-dark/50">Record daily manual work entries per stylist (e.g. Haircut, Hair Spa, Grooming)</p>
+            <p className="text-xs text-dark/50">Record daily manual work entries per stylist with service dropdown</p>
           </div>
         </div>
 
@@ -178,7 +209,26 @@ export default function StaffWorkRegister() {
             </div>
 
             <div>
-              <label className="block font-semibold text-dark/70 mb-1.5">Work Description (Optional)</label>
+              <label className="block font-semibold text-dark/70 mb-1.5 flex items-center gap-1">
+                <Scissors size={14} className="text-[#D4AF37]" /> Select Service / Work Description *
+              </label>
+
+              {/* Service Dropdown Selector */}
+              <select
+                value={selectedServiceId}
+                onChange={handleServiceSelect}
+                className="w-full px-3.5 py-2.5 bg-[#F4F0E6]/60 border border-[#E8DFCF] rounded-xl text-dark font-semibold focus:outline-none focus:border-[#D4AF37] mb-2"
+              >
+                <option value="">Choose Service from Menu...</option>
+                {servicesList.map((srv) => (
+                  <option key={srv.id} value={srv.id}>
+                    {srv.name} — ₹{srv.price}
+                  </option>
+                ))}
+                <option value="custom">✏️ Custom Description...</option>
+              </select>
+
+              {/* Editable Work Description Field */}
               <input
                 type="text"
                 value={formData.description}
