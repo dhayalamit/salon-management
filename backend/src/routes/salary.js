@@ -231,7 +231,7 @@ router.post('/advance', authenticate, requireAdmin, async (req, res) => {
 
     await db.query(
       `INSERT INTO salary_payments (id, payroll_id, staff_id, payment_date, amount, payment_mode, payment_type, month_covered, note)
-       VALUES ($1, $2, $3, $4::date, $5, $6, 'advance', $7, $8)`,
+       VALUES ($1, $2, $3, $4, $5, $6, 'advance', $7, $8)`,
       [payId, currentRec.id, String(staffId), pDate, advanceAmt, paymentMode || 'cash', yearMonth, note || null]
     );
 
@@ -344,7 +344,7 @@ router.post('/pay-remaining', authenticate, requireAdmin, async (req, res) => {
 
     await db.query(
       `INSERT INTO salary_payments (id, payroll_id, staff_id, payment_date, amount, payment_mode, payment_type, month_covered, note)
-       VALUES ($1, $2, $3, $4::date, $5, $6, 'salary', $7, $8)`,
+       VALUES ($1, $2, $3, $4, $5, $6, 'salary', $7, $8)`,
       [payId, currentRec.id, String(staffId), pDate, amountToPay, paymentMode || 'cash', yearMonth, note || null]
     );
 

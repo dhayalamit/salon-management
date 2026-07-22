@@ -80,7 +80,7 @@ router.post('/', authenticate, async (req, res) => {
     const { rows } = await db.query(
       `INSERT INTO staff_commissions
         (id, staff_id, customer_id, service_name, commission_type, commission_rate, base_amount, commission_amount, status, date, remarks)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Pending', COALESCE($9::date, CURRENT_DATE), $10) RETURNING *`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Pending', COALESCE($9, to_char(CURRENT_DATE, 'YYYY-MM-DD')), $10) RETURNING *`,
       [id, String(staffId), customerId ? String(customerId) : null, serviceName || null, type, rate, base, finalAmount, date || null, remarks || null]
     );
 

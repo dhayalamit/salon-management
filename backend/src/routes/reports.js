@@ -4,12 +4,13 @@ const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Helper: Calculate percentage change
+// Helper: Calculate percentage change safely
 function calcGrowth(current, previous) {
   const c = Number(current || 0);
   const p = Number(previous || 0);
   if (p === 0) return c > 0 ? 100 : 0;
-  return Math.round(((c - p) / p) * 100);
+  const val = Math.round(((c - p) / p) * 100);
+  return isNaN(val) ? 0 : val;
 }
 
 // GET /api/reports/monthly — Historical month-wise analytics report with year & month selectors
@@ -42,7 +43,7 @@ router.get('/monthly', authenticate, async (req, res) => {
               COALESCE(SUM(discount), 0) AS total_discount,
               COUNT(*) AS invoice_count
        FROM invoices
-       WHERE created_at >= $1::timestamp AND created_at <= ($2 || ' 23:59:59')::timestamp`,
+       WHERE substr(created_at::text, 1, 10) >= $1 AND substr(created_at::text, 1, 10) <= $2`,
       [startDate, endDate]
     );
 
@@ -50,7 +51,7 @@ router.get('/monthly', authenticate, async (req, res) => {
       `SELECT COALESCE(SUM(total), 0) AS total_revenue,
               COUNT(*) AS invoice_count
        FROM invoices
-       WHERE created_at >= $1::timestamp AND created_at <= ($2 || ' 23:59:59')::timestamp`,
+       WHERE substr(created_at::text, 1, 10) >= $1 AND substr(created_at::text, 1, 10) <= $2`,
       [prevStartDate, prevEndDate]
     );
 
@@ -64,7 +65,7 @@ router.get('/monthly', authenticate, async (req, res) => {
     const currentApptRes = await db.query(
       `SELECT status, COUNT(*) AS count
        FROM appointments
-       WHERE appointment_date >= $1::date AND appointment_date <= $2::date
+       WHERE appointment_date >= $1 AND appointment_date <= $2
        GROUP BY status`,
       [startDate, endDate]
     );
@@ -72,7 +73,7 @@ router.get('/monthly', authenticate, async (req, res) => {
     const prevApptRes = await db.query(
       `SELECT COUNT(*) AS total
        FROM appointments
-       WHERE appointment_date >= $1::date AND appointment_date <= $2::date`,
+       WHERE appointment_date >= $1 AND appointment_date <= $2`,
       [prevStartDate, prevEndDate]
     );
 
@@ -99,21 +100,21 @@ router.get('/monthly', authenticate, async (req, res) => {
     const custServedRes = await db.query(
       `SELECT COUNT(DISTINCT customer_id) AS total_served
        FROM invoices
-       WHERE created_at >= $1::timestamp AND created_at <= ($2 || ' 23:59:59')::timestamp AND customer_id IS NOT NULL`,
+       WHERE substr(created_at::text, 1, 10) >= $1 AND substr(created_at::text, 1, 10) <= $2 AND customer_id IS NOT NULL`,
       [startDate, endDate]
     );
 
     const prevCustServedRes = await db.query(
       `SELECT COUNT(DISTINCT customer_id) AS total_served
        FROM invoices
-       WHERE created_at >= $1::timestamp AND created_at <= ($2 || ' 23:59:59')::timestamp AND customer_id IS NOT NULL`,
+       WHERE substr(created_at::text, 1, 10) >= $1 AND substr(created_at::text, 1, 10) <= $2 AND customer_id IS NOT NULL`,
       [prevStartDate, prevEndDate]
     );
 
     const newCustRes = await db.query(
       `SELECT COUNT(*) AS new_count
        FROM customers
-       WHERE created_at >= $1::timestamp AND created_at <= ($2 || ' 23:59:59')::timestamp`,
+       WHERE substr(created_at::text, 1, 10) >= $1 AND substr(created_at::text, 1, 10) <= $2`,
       [startDate, endDate]
     );
 
@@ -126,8 +127,8 @@ router.get('/monthly', authenticate, async (req, res) => {
     const serviceBreakdown = await db.query(
       `SELECT ii.name, COUNT(*) AS bookings_count, COALESCE(SUM(ii.line_total), 0) AS total_revenue
        FROM invoice_items ii
-       JOIN invoices i ON i.id::text = ii.invoice_id::text
-       WHERE i.created_at >= $1::timestamp AND i.created_at <= ($2 || ' 23:59:59')::timestamp AND ii.item_type = 'service'
+       JOIN invoices i ON i.id = ii.invoice_id
+       WHERE substr(i.created_at::text, 1, 10) >= $1 AND substr(i.created_at::text, 1, 10) <= $2 AND ii.item_type = 'service'
        GROUP BY ii.name
        ORDER BY total_revenue DESC`,
       [startDate, endDate]
@@ -141,8 +142,8 @@ router.get('/monthly', authenticate, async (req, res) => {
     const productBreakdown = await db.query(
       `SELECT ii.name, COALESCE(SUM(ii.quantity), 0) AS total_qty, COALESCE(SUM(ii.line_total), 0) AS total_revenue
        FROM invoice_items ii
-       JOIN invoices i ON i.id::text = ii.invoice_id::text
-       WHERE i.created_at >= $1::timestamp AND i.created_at <= ($2 || ' 23:59:59')::timestamp AND ii.item_type = 'product'
+       JOIN invoices i ON i.id = ii.invoice_id
+       WHERE substr(i.created_at::text, 1, 10) >= $1 AND substr(i.created_at::text, 1, 10) <= $2 AND ii.item_type = 'product'
        GROUP BY ii.name
        ORDER BY total_revenue DESC`,
       [startDate, endDate]
@@ -151,8 +152,8 @@ router.get('/monthly', authenticate, async (req, res) => {
     const prevProductRes = await db.query(
       `SELECT COALESCE(SUM(ii.line_total), 0) AS total_revenue
        FROM invoice_items ii
-       JOIN invoices i ON i.id::text = ii.invoice_id::text
-       WHERE i.created_at >= $1::timestamp AND i.created_at <= ($2 || ' 23:59:59')::timestamp AND ii.item_type = 'product'`,
+       JOIN invoices i ON i.id = ii.invoice_id
+       WHERE substr(i.created_at::text, 1, 10) >= $1 AND substr(i.created_at::text, 1, 10) <= $2 AND ii.item_type = 'product'`,
       [prevStartDate, prevEndDate]
     );
 
@@ -180,14 +181,14 @@ router.get('/monthly', authenticate, async (req, res) => {
     const staffCommissionRes = await db.query(
       `SELECT COALESCE(SUM(commission_amount), 0) AS total_commission_paid
        FROM staff_commissions
-       WHERE date >= $1::date AND date <= $2::date AND status = 'Paid'`,
+       WHERE date >= $1 AND date <= $2 AND status = 'Paid'`,
       [startDate, endDate]
     );
 
     const staffPerformance = await db.query(
       `SELECT s.name AS staff_name, COUNT(i.id) AS bills_count, COALESCE(SUM(i.total), 0) AS total_sales
        FROM staff s
-       LEFT JOIN invoices i ON i.staff_id::text = s.id::text AND i.created_at >= $1::timestamp AND i.created_at <= ($2 || ' 23:59:59')::timestamp
+       LEFT JOIN invoices i ON i.staff_id = s.id AND substr(i.created_at::text, 1, 10) >= $1 AND substr(i.created_at::text, 1, 10) <= $2
        GROUP BY s.id, s.name
        ORDER BY total_sales DESC`,
       [startDate, endDate]
@@ -200,7 +201,7 @@ router.get('/monthly', authenticate, async (req, res) => {
     const paymentBreakdownRes = await db.query(
       `SELECT payment_method, COALESCE(SUM(total), 0) AS total_amount, COUNT(*) AS count
        FROM invoices
-       WHERE created_at >= $1::timestamp AND created_at <= ($2 || ' 23:59:59')::timestamp
+       WHERE substr(created_at::text, 1, 10) >= $1 AND substr(created_at::text, 1, 10) <= $2
        GROUP BY payment_method`,
       [startDate, endDate]
     );
