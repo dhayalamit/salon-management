@@ -11,8 +11,6 @@ const STANDARD_CATEGORIES = [
   'Internet',
   'Staff Tea/Snacks',
   'Cleaning',
-  'Maintenance',
-  'Marketing',
   'Stationery',
   'Miscellaneous',
   'Other',
