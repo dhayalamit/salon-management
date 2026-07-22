@@ -4,10 +4,19 @@ const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
+function getTodayDates() {
+  const d = new Date();
+  const utc = d.toISOString().slice(0, 10);
+  const ist = new Date(d.getTime() + (5.5 * 60 * 60 * 1000)).toISOString().slice(0, 10);
+  const local = d.toLocaleDateString('en-CA');
+  const arr = Array.from(new Set([ist, utc, local]));
+  return [arr[0], arr[1] || arr[0], arr[2] || arr[0]];
+}
+
 // GET /api/staff — List all staff with today's real-time attendance status
 router.get('/', authenticate, async (req, res) => {
   try {
-    const today = new Date().toLocaleDateString('en-CA');
+    const [d1, d2, d3] = getTodayDates();
     const { rows } = await db.query(
       `SELECT s.*,
               COALESCE(att.today_status, 'not_marked') AS today_status
@@ -15,10 +24,10 @@ router.get('/', authenticate, async (req, res) => {
        LEFT JOIN (
          SELECT staff_id::text AS staff_id, status AS today_status
          FROM attendance
-         WHERE (substr(date::text, 1, 10) = $1 OR date::date = $1::date)
+         WHERE (substr(date::text, 1, 10) IN ($1, $2, $3) OR date::date IN ($1::date, $2::date, $3::date))
        ) att ON att.staff_id = s.id::text
        ORDER BY s.created_at DESC`,
-      [today]
+      [d1, d2, d3]
     );
     res.json(rows);
   } catch (err) {
