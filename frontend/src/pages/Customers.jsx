@@ -27,7 +27,7 @@ export default function Customers() {
     name: '',
     phone: '',
     email: '',
-    gender: 'female',
+    gender: '',
     birthday: '',
     notes: '',
   });

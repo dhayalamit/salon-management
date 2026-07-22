@@ -17,7 +17,7 @@ export default function Expenses() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
-    category: 'Salon Supplies',
+    category: '',
     amount: '',
     expenseDate: getTodayDateString(),
     note: '',
@@ -49,7 +49,7 @@ export default function Expenses() {
       await client.post('/expenses', formData);
       showSuccess('Expense recorded successfully');
       setIsModalOpen(false);
-      setFormData({ category: 'Salon Supplies', amount: '', expenseDate: getTodayDateString(), note: '' });
+      setFormData({ category: '', amount: '', expenseDate: getTodayDateString(), note: '' });
       fetchExpenses();
     } catch (err) {
       showError('Failed to record expense');

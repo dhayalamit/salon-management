@@ -22,11 +22,11 @@ export default function Products() {
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    category: 'Hair Care',
+    category: '',
     purchasePrice: '',
     sellingPrice: '',
-    stockQuantity: 10,
-    lowStockThreshold: 5,
+    stockQuantity: '',
+    lowStockThreshold: '',
   });
 
   useEffect(() => {
@@ -92,11 +92,11 @@ export default function Products() {
     setEditingProduct(null);
     setFormData({
       name: '',
-      category: 'Hair Care',
+      category: '',
       purchasePrice: '',
       sellingPrice: '',
-      stockQuantity: 10,
-      lowStockThreshold: 5,
+      stockQuantity: '',
+      lowStockThreshold: '',
     });
     setIsModalOpen(true);
   };

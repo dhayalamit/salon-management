@@ -24,7 +24,7 @@ export default function Staff() {
     name: '',
     phone: '',
     salary: '',
-    commissionPercent: 15,
+    commissionPercent: '',
     status: 'active',
   });
 
@@ -80,7 +80,7 @@ export default function Staff() {
 
   const openAddModal = () => {
     setEditingStaff(null);
-    setFormData({ name: '', phone: '', salary: '', commissionPercent: 15, status: 'active' });
+    setFormData({ name: '', phone: '', salary: '', commissionPercent: '', status: 'active' });
     setIsModalOpen(true);
   };
 

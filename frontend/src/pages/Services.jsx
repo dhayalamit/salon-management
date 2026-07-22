@@ -22,8 +22,8 @@ export default function Services() {
   const [formData, setFormData] = useState({
     name: '',
     price: '',
-    durationMinutes: 30,
-    commissionPercent: 15,
+    durationMinutes: '',
+    commissionPercent: '',
   });
 
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function Services() {
 
   const openAddModal = () => {
     setEditingService(null);
-    setFormData({ name: '', price: '', durationMinutes: 30, commissionPercent: 15 });
+    setFormData({ name: '', price: '', durationMinutes: '', commissionPercent: '' });
     setIsModalOpen(true);
   };
 
