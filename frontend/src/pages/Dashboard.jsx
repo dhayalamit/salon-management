@@ -271,7 +271,7 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Top Cards Grid - 6 Key Metrics (Responsive for Mobile, Tab, iPad & Desktop) */}
+      {/* Top Cards Grid - 6 Uniform & Crystal-Clear Metric Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         {/* Card 1: Today's Revenue */}
         <div
@@ -279,9 +279,11 @@ export default function Dashboard() {
           className="glass-card glass-card-hover p-4 sm:p-5 flex flex-col justify-between cursor-pointer group hover:border-[#D4AF37] transition-all"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[#D4AF37] font-display text-xl sm:text-2xl font-bold">₹</span>
-            <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-              <TrendingUp size={12} /> Today
+            <div className="p-2 sm:p-2.5 rounded-2xl bg-amber-50 text-[#D4AF37]">
+              <TrendingUp size={18} />
+            </div>
+            <span className="text-[10px] text-[#D4AF37] bg-[#F4F0E6] px-2 py-0.5 rounded-full font-bold border border-[#E8DFCF]">
+              View
             </span>
           </div>
           <div className="mt-3 sm:mt-4">
@@ -295,7 +297,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Card 2: Today's Appointments */}
+        {/* Card 2: Appointments Today */}
         <div
           onClick={() => setActiveModal('appointments')}
           className="glass-card glass-card-hover p-4 sm:p-5 flex flex-col justify-between cursor-pointer group hover:border-purple-300 transition-all"
@@ -319,7 +321,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Card 3: Today's Customers */}
+        {/* Card 3: Customers Today */}
         <div
           onClick={() => setActiveModal('customers')}
           className="glass-card glass-card-hover p-4 sm:p-5 flex flex-col justify-between cursor-pointer group hover:border-blue-300 transition-all"
@@ -352,11 +354,9 @@ export default function Dashboard() {
             <div className="p-2 sm:p-2.5 rounded-2xl bg-amber-50 text-amber-600">
               <DollarSign size={18} />
             </div>
-            {stats.pendingPayments > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">
-                Action
-              </span>
-            )}
+            <span className="text-[10px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-bold">
+              {stats.pendingPayments > 0 ? 'Action' : 'View'}
+            </span>
           </div>
           <div className="mt-3 sm:mt-4">
             <p className="text-[11px] sm:text-xs font-medium text-dark/50 flex items-center justify-between">
@@ -378,6 +378,9 @@ export default function Dashboard() {
             <div className="p-2 sm:p-2.5 rounded-2xl bg-emerald-50 text-emerald-600">
               <UserCheck size={18} />
             </div>
+            <span className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full font-bold">
+              View
+            </span>
           </div>
           <div className="mt-3 sm:mt-4">
             <p className="text-[11px] sm:text-xs font-medium text-dark/50 flex items-center justify-between">
@@ -399,11 +402,9 @@ export default function Dashboard() {
             <div className="p-2 sm:p-2.5 rounded-2xl bg-red-50 text-red-600">
               <Package size={18} />
             </div>
-            {stats.lowStockCount > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600">
-                {stats.lowStockCount} Low
-              </span>
-            )}
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
+              {stats.lowStockCount > 0 ? `${stats.lowStockCount} Low` : 'View'}
+            </span>
           </div>
           <div className="mt-3 sm:mt-4">
             <p className="text-[11px] sm:text-xs font-medium text-dark/50 flex items-center justify-between">
