@@ -20,6 +20,7 @@ import Reports from './pages/Reports.jsx';
 import Settings from './pages/Settings.jsx';
 import StaffSalary from './pages/StaffSalary.jsx';
 import StaffCommissions from './pages/StaffCommissions.jsx';
+import StaffWorkRegister from './pages/StaffWorkRegister.jsx';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/attendance" element={<Attendance />} />
         <Route path="/salary" element={<StaffSalary />} />
         <Route path="/commissions" element={<StaffCommissions />} />
+        <Route path="/staff-work" element={<StaffWorkRegister />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/customers/:id" element={<CustomerProfile />} />
         <Route path="/services" element={<Services />} />

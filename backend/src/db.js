@@ -154,9 +154,12 @@ async function initSQLiteTables() {
         gst_percent REAL DEFAULT 0,
         gst_amount REAL DEFAULT 0,
         total REAL NOT NULL DEFAULT 0,
+        amount_received REAL DEFAULT 0,
+        change_returned REAL DEFAULT 0,
         payment_method TEXT,
         commission_amount REAL DEFAULT 0,
         next_appointment_date TEXT,
+        cleared_at TEXT,
         created_at TEXT DEFAULT (datetime('now'))
       )
     `);
@@ -231,10 +234,31 @@ async function initSQLiteTables() {
     sqliteDb.run(`
       CREATE TABLE IF NOT EXISTS expenses (
         id TEXT PRIMARY KEY,
+        title TEXT,
         category TEXT NOT NULL,
         amount REAL NOT NULL,
         expense_date TEXT NOT NULL DEFAULT (date('now')),
+        payment_method TEXT DEFAULT 'cash',
         note TEXT
+      )
+    `);
+
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS custom_expense_categories (
+        id TEXT PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL,
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+    `);
+
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS staff_work_entries (
+        id TEXT PRIMARY KEY,
+        staff_id TEXT NOT NULL,
+        description TEXT,
+        amount REAL NOT NULL,
+        date TEXT NOT NULL,
+        created_at TEXT DEFAULT (datetime('now'))
       )
     `);
 
@@ -264,8 +288,16 @@ async function initSQLiteTables() {
       )
     `);
 
-    ['tagline', 'email', 'business_hours'].forEach((col) => {
-      sqliteDb.run(`ALTER TABLE settings ADD COLUMN ${col} TEXT`, () => {});
+    ['title', 'payment_method'].forEach((col) => {
+      sqliteDb.run(`ALTER TABLE expenses ADD COLUMN ${col} TEXT`, () => {});
+    });
+
+    ['amount_received', 'change_returned'].forEach((col) => {
+      sqliteDb.run(`ALTER TABLE invoices ADD COLUMN ${col} REAL DEFAULT 0`, () => {});
+    });
+
+    ['cleared_at'].forEach((col) => {
+      sqliteDb.run(`ALTER TABLE invoices ADD COLUMN ${col} TEXT`, () => {});
     });
 
     sqliteDb.run(`
@@ -323,7 +355,7 @@ async function initSQLiteTables() {
           );
         });
 
-        console.log('[DB] Seeded initial data for SQLite');
+        console.log('[DB] Seeded initial catalog for SQLite');
       }
     });
   });
@@ -420,9 +452,12 @@ async function initPGTables() {
         gst_percent REAL DEFAULT 0,
         gst_amount REAL DEFAULT 0,
         total REAL NOT NULL DEFAULT 0,
+        amount_received REAL DEFAULT 0,
+        change_returned REAL DEFAULT 0,
         payment_method TEXT,
         commission_amount REAL DEFAULT 0,
         next_appointment_date TEXT,
+        cleared_at TIMESTAMPTZ,
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
       CREATE TABLE IF NOT EXISTS invoice_items (
@@ -482,10 +517,25 @@ async function initPGTables() {
       );
       CREATE TABLE IF NOT EXISTS expenses (
         id TEXT PRIMARY KEY,
+        title TEXT,
         category TEXT NOT NULL,
         amount REAL NOT NULL,
         expense_date TEXT NOT NULL DEFAULT CURRENT_DATE,
+        payment_method TEXT DEFAULT 'cash',
         note TEXT
+      );
+      CREATE TABLE IF NOT EXISTS custom_expense_categories (
+        id TEXT PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS staff_work_entries (
+        id TEXT PRIMARY KEY,
+        staff_id TEXT NOT NULL,
+        description TEXT,
+        amount REAL NOT NULL,
+        date TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
       CREATE TABLE IF NOT EXISTS daily_balances (
         id TEXT PRIMARY KEY,
@@ -512,23 +562,13 @@ async function initPGTables() {
       ON CONFLICT (id) DO NOTHING;
     `);
 
-    // Ensure active column is BOOLEAN type for Postgres if previously created as INTEGER
+    await pgPool.query(`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS title TEXT`).catch(() => {});
+    await pgPool.query(`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'cash'`).catch(() => {});
+    await pgPool.query(`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS amount_received REAL DEFAULT 0`).catch(() => {});
+    await pgPool.query(`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS change_returned REAL DEFAULT 0`).catch(() => {});
+    await pgPool.query(`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS cleared_at TIMESTAMPTZ`).catch(() => {});
     await pgPool.query(`ALTER TABLE services ALTER COLUMN active SET DATA TYPE BOOLEAN USING (active::boolean)`).catch(() => {});
     await pgPool.query(`ALTER TABLE customers ADD COLUMN IF NOT EXISTS next_appointment_date TEXT`).catch(() => {});
-
-    // ONE-TIME PRODUCTION WIPE: Clear all demo attendance, invoices, appointments, expenses & balances on startup
-    await pgPool.query(`
-      DELETE FROM invoices;
-      DELETE FROM invoice_items;
-      DELETE FROM appointments;
-      DELETE FROM attendance;
-      DELETE FROM expenses;
-      DELETE FROM staff_commissions;
-      DELETE FROM staff_payrolls;
-      DELETE FROM salary_payments;
-      DELETE FROM product_movements;
-      DELETE FROM daily_balances;
-    `).catch((e) => console.log('[DB] Database reset log:', e.message));
 
     const userRes = await pgPool.query('SELECT COUNT(*) as count FROM users');
     if (parseInt(userRes.rows[0]?.count || 0, 10) === 0) {
@@ -570,7 +610,7 @@ async function initPGTables() {
 
       console.log('[DB] Seeded catalog for PostgreSQL');
     }
-    console.log('[DB] PostgreSQL tables initialized & production demo data wiped cleanly');
+    console.log('[DB] PostgreSQL tables initialized successfully');
   } catch (err) {
     console.error('[DB] PostgreSQL init error:', err.message);
   }

@@ -25,7 +25,7 @@ router.get('/balance', authenticate, async (req, res) => {
     const balanceRecord = balanceQ.rows[0] || {};
 
     const revQ = await db.query(
-      `SELECT COALESCE(SUM(total), 0) AS revenue FROM invoices WHERE created_at::text LIKE $1 || '%' AND (payment_method IS NULL OR (LOWER(payment_method) != 'cancelled' AND LOWER(payment_method) != 'draft' AND LOWER(payment_method) != 'pending'))`,
+      `SELECT COALESCE(SUM(total), 0) AS revenue FROM invoices WHERE (created_at::text LIKE $1 || '%' OR cleared_at::text LIKE $1 || '%') AND (payment_method IS NULL OR (LOWER(payment_method) != 'cancelled' AND LOWER(payment_method) != 'draft' AND LOWER(payment_method) != 'pending'))`,
       [targetDate]
     ).catch(() => ({ rows: [{ revenue: 0 }] }));
 
@@ -94,27 +94,39 @@ router.get('/stats', authenticate, async (req, res) => {
     const todayRevQuery = db.query(
       `SELECT COALESCE(SUM(total), 0) AS revenue
        FROM invoices
-       WHERE (created_at::text LIKE $1 || '%' OR created_at::text LIKE $2 || '%' OR created_at::text LIKE $3 || '%')
-         AND (payment_method IS NULL OR (LOWER(payment_method) != 'cancelled' AND LOWER(payment_method) != 'draft' AND LOWER(payment_method) != 'pending'))`,
+       WHERE (payment_method IS NOT NULL AND LOWER(payment_method) NOT IN ('cancelled', 'draft', 'pending'))
+         AND (
+           (created_at::text LIKE $1 || '%' OR created_at::text LIKE $2 || '%' OR created_at::text LIKE $3 || '%')
+           OR
+           (cleared_at::text LIKE $1 || '%' OR cleared_at::text LIKE $2 || '%' OR cleared_at::text LIKE $3 || '%')
+         )`,
       [d1, d2, d3]
     ).catch(() => ({ rows: [{ revenue: 0 }] }));
 
     const todayCashQuery = db.query(
       `SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS count
        FROM invoices
-       WHERE (created_at::text LIKE $1 || '%' OR created_at::text LIKE $2 || '%' OR created_at::text LIKE $3 || '%')
-         AND (LOWER(COALESCE(payment_method, 'cash')) = 'cash' OR LOWER(payment_method) LIKE '%cash%')`,
+       WHERE (LOWER(COALESCE(payment_method, 'cash')) = 'cash' OR LOWER(payment_method) LIKE '%cash%')
+         AND (
+           (created_at::text LIKE $1 || '%' OR created_at::text LIKE $2 || '%' OR created_at::text LIKE $3 || '%')
+           OR
+           (cleared_at::text LIKE $1 || '%' OR cleared_at::text LIKE $2 || '%' OR cleared_at::text LIKE $3 || '%')
+         )`,
       [d1, d2, d3]
     ).catch(() => ({ rows: [{ total: 0, count: 0 }] }));
 
     const todayOnlineQuery = db.query(
       `SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS count
        FROM invoices
-       WHERE (created_at::text LIKE $1 || '%' OR created_at::text LIKE $2 || '%' OR created_at::text LIKE $3 || '%')
-         AND LOWER(COALESCE(payment_method, '')) != 'cash'
+       WHERE LOWER(COALESCE(payment_method, '')) != 'cash'
          AND LOWER(COALESCE(payment_method, '')) NOT LIKE '%cash%'
          AND LOWER(COALESCE(payment_method, '')) != 'pending'
-         AND LOWER(COALESCE(payment_method, '')) != 'cancelled'`,
+         AND LOWER(COALESCE(payment_method, '')) != 'cancelled'
+         AND (
+           (created_at::text LIKE $1 || '%' OR created_at::text LIKE $2 || '%' OR created_at::text LIKE $3 || '%')
+           OR
+           (cleared_at::text LIKE $1 || '%' OR cleared_at::text LIKE $2 || '%' OR cleared_at::text LIKE $3 || '%')
+         )`,
       [d1, d2, d3]
     ).catch(() => ({ rows: [{ total: 0, count: 0 }] }));
 
@@ -138,6 +150,10 @@ router.get('/stats', authenticate, async (req, res) => {
       `SELECT COALESCE(SUM(total), 0) AS pending FROM invoices WHERE LOWER(payment_method) = 'pending'`
     ).catch(() => ({ rows: [{ pending: 0 }] }));
 
+    const paidPayQuery = db.query(
+      `SELECT COALESCE(SUM(total), 0) AS paid FROM invoices WHERE LOWER(payment_method) IN ('cash', 'upi', 'card')`
+    ).catch(() => ({ rows: [{ paid: 0 }] }));
+
     const staffPresQuery = db.query(
       `SELECT COUNT(*) AS count FROM attendance WHERE (date::text LIKE $1 || '%' OR date::text LIKE $2 || '%' OR date::text LIKE $3 || '%') AND LOWER(status) = 'present'`,
       [d1, d2, d3]
@@ -148,13 +164,14 @@ router.get('/stats', authenticate, async (req, res) => {
     ).catch(() => ({ rows: [{ count: 0 }] }));
 
     const todayInvoicesQuery = db.query(
-      `SELECT i.id, i.invoice_number, i.total, i.payment_method, i.created_at,
+      `SELECT i.id, i.invoice_number, i.total, i.amount_received, i.change_returned, i.payment_method, i.created_at, i.cleared_at,
               c.name AS customer_name, c.phone AS customer_phone,
               s.name AS staff_name
        FROM invoices i
        LEFT JOIN customers c ON c.id::text = i.customer_id::text
        LEFT JOIN staff s ON s.id::text = i.staff_id::text
-       WHERE (i.created_at::text LIKE $1 || '%' OR i.created_at::text LIKE $2 || '%' OR i.created_at::text LIKE $3 || '%')
+       WHERE (i.created_at::text LIKE $1 || '%' OR i.created_at::text LIKE $2 || '%' OR i.created_at::text LIKE $3 || '%'
+              OR i.cleared_at::text LIKE $1 || '%' OR i.cleared_at::text LIKE $2 || '%' OR i.cleared_at::text LIKE $3 || '%')
        ORDER BY i.created_at DESC`,
       [d1, d2, d3]
     ).catch(() => ({ rows: [] }));
@@ -188,6 +205,11 @@ router.get('/stats', authenticate, async (req, res) => {
       [d1, d2, d3]
     ).catch(() => ({ rows: [{ total: 0 }] }));
 
+    const todayStaffWorkQuery = db.query(
+      `SELECT COALESCE(SUM(amount), 0) AS total FROM staff_work_entries WHERE (date::text LIKE $1 || '%' OR date::text LIKE $2 || '%' OR date::text LIKE $3 || '%')`,
+      [d1, d2, d3]
+    ).catch(() => ({ rows: [{ total: 0 }] }));
+
     const dailyBalanceQuery = db.query(
       `SELECT * FROM daily_balances WHERE (date LIKE $1 || '%' OR date LIKE $2 || '%' OR date LIKE $3 || '%') ORDER BY created_at DESC LIMIT 1`,
       [d1, d2, d3]
@@ -200,6 +222,7 @@ router.get('/stats', authenticate, async (req, res) => {
       todayAppts,
       todayCusts,
       pendingPay,
+      paidPay,
       staffPres,
       lowStock,
       todayInvoices,
@@ -207,6 +230,7 @@ router.get('/stats', authenticate, async (req, res) => {
       lowStockItems,
       todayStaff,
       todayExpenses,
+      todayStaffWork,
       dailyBalance,
     ] = await Promise.all([
       todayRevQuery,
@@ -215,6 +239,7 @@ router.get('/stats', authenticate, async (req, res) => {
       todayApptsQuery,
       todayCustsQuery,
       pendingPayQuery,
+      paidPayQuery,
       staffPresQuery,
       lowStockQuery,
       todayInvoicesQuery,
@@ -222,6 +247,7 @@ router.get('/stats', authenticate, async (req, res) => {
       lowStockItemsQuery,
       todayStaffQuery,
       todayExpensesQuery,
+      todayStaffWorkQuery,
       dailyBalanceQuery,
     ]);
 
@@ -231,6 +257,7 @@ router.get('/stats', authenticate, async (req, res) => {
     const onlineCount = Number(todayOnline.rows[0]?.count || 0);
     const totalRevenue = Number(todayRev.rows[0]?.revenue || (cashAmount + onlineAmount));
     const totalExpenses = Number(todayExpenses.rows[0]?.total || 0);
+    const staffWorkValue = Number(todayStaffWork.rows[0]?.total || 0);
 
     const balanceRecord = dailyBalance.rows[0] || {};
     const openingBalance = Number(balanceRecord.opening_balance || 0);
@@ -261,7 +288,7 @@ router.get('/stats', authenticate, async (req, res) => {
     }
 
     const recentInvoices = await db.query(
-      `SELECT i.id, i.invoice_number, i.total, i.payment_method, i.created_at, c.name AS customer_name
+      `SELECT i.id, i.invoice_number, i.total, i.amount_received, i.change_returned, i.payment_method, i.created_at, c.name AS customer_name
        FROM invoices i
        LEFT JOIN customers c ON c.id::text = i.customer_id::text
        ORDER BY i.created_at DESC LIMIT 5`
@@ -285,12 +312,14 @@ router.get('/stats', authenticate, async (req, res) => {
       todayOnlineRevenue: onlineAmount,
       todayOnlineCount: onlineCount,
       todayExpenses: totalExpenses,
+      staffWorkValue,
       todayOpeningBalance: openingBalance,
       todayClosingBalance: closingBalance,
       todayBalanceNotes: balanceRecord.notes || '',
       todayAppointments: Number(todayAppts.rows[0]?.count || 0),
       todayCustomers: Number(todayCusts.rows[0]?.count || 0),
       pendingPayments: Number(pendingPay.rows[0]?.pending || 0),
+      paidPayments: Number(paidPay.rows[0]?.paid || 0),
       staffPresent: Number(staffPres.rows[0]?.count || 0),
       lowStockCount: Number(lowStock.rows[0]?.count || 0),
       todayInvoicesList: todayInvoices.rows || [],

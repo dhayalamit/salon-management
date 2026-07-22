@@ -21,6 +21,7 @@ const settingsRoutes = require('./routes/settings');
 const notificationRoutes = require('./routes/notifications');
 const searchRoutes = require('./routes/search');
 const commissionRoutes = require('./routes/commissions');
+const staffWorkRoutes = require('./routes/staffWork');
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/commissions', commissionRoutes);
+app.use('/api/staff-work', staffWorkRoutes);
 
 // Serve Frontend static production bundle if built
 const frontendDist = path.join(__dirname, '../../frontend/dist');

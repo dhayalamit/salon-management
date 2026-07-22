@@ -60,15 +60,16 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 });
 
-// PUT /api/billing/:id/payment — Settle payment method for pending invoice
+// PUT /api/billing/:id/payment — Clear pending payment & record timestamp
 router.put('/:id/payment', authenticate, async (req, res) => {
   try {
     const { paymentMethod } = req.body;
     if (!paymentMethod) return res.status(400).json({ error: 'Payment method is required' });
 
+    const nowIso = new Date().toISOString();
     const { rows } = await db.query(
-      `UPDATE invoices SET payment_method = $1 WHERE id = $2 RETURNING *`,
-      [paymentMethod, req.params.id]
+      `UPDATE invoices SET payment_method = $1, cleared_at = $2 WHERE id = $3 RETURNING *`,
+      [paymentMethod, nowIso, req.params.id]
     );
 
     if (!rows[0]) return res.status(404).json({ error: 'Invoice not found' });
@@ -82,7 +83,7 @@ router.put('/:id/payment', authenticate, async (req, res) => {
 // POST /api/billing — Create Invoice & Deduct Product Stock
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { customerId, staffId, gstPercent, discount, paymentMethod, nextAppointmentDate, items } = req.body;
+    const { customerId, staffId, gstPercent, discount, paymentMethod, amountReceived, nextAppointmentDate, items } = req.body;
     if (!items || !items.length) {
       return res.status(400).json({ error: 'At least one item is required' });
     }
@@ -123,6 +124,10 @@ router.post('/', authenticate, async (req, res) => {
     const gstAmount = (taxableAmount * gstPct) / 100;
     const total = taxableAmount + gstAmount;
 
+    // Customer Cash Return calculation
+    const amtReceived = Number(amountReceived !== undefined && amountReceived !== null && amountReceived !== '' ? amountReceived : total);
+    const changeRet = Math.max(0, amtReceived - total);
+
     const invoiceNumber = await nextInvoiceNumber();
     const invoiceId = db.generateUUID();
 
@@ -130,8 +135,8 @@ router.post('/', authenticate, async (req, res) => {
     const invoiceQ = await db.query(
       `INSERT INTO invoices
         (id, invoice_number, customer_id, staff_id, subtotal, discount, gst_percent, gst_amount, total,
-         payment_method, commission_amount, next_appointment_date)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+         amount_received, change_returned, payment_method, commission_amount, next_appointment_date)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
       [
         invoiceId,
         invoiceNumber,
@@ -142,6 +147,8 @@ router.post('/', authenticate, async (req, res) => {
         gstPct,
         gstAmount,
         total,
+        amtReceived,
+        changeRet,
         paymentMethod || 'cash',
         totalCommission,
         nextAppointmentDate || null,

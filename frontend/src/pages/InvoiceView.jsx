@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import client from '../api/client';
-import { ArrowLeft, Printer, Download, Sparkles, CheckCircle, Scissors, Package } from 'lucide-react';
+import { Printer, ArrowLeft, Download, Scissors, Package } from 'lucide-react';
 import { useToast } from '../context/ToastContext.jsx';
 
 export default function InvoiceView() {
@@ -10,26 +10,34 @@ export default function InvoiceView() {
   const { showError } = useToast();
 
   const [invoice, setInvoice] = useState(null);
+  const [items, setItems] = useState([]);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchInvoiceAndSettings();
+    fetchInvoiceDetails();
+    fetchSettings();
   }, [id]);
 
-  const fetchInvoiceAndSettings = async () => {
+  const fetchInvoiceDetails = async () => {
     try {
       setLoading(true);
-      const [invRes, setRes] = await Promise.all([
-        client.get(`/billing/${id}`),
-        client.get('/settings'),
-      ]);
-      setInvoice(invRes.data);
-      setSettings(setRes.data);
+      const res = await client.get(`/billing/${id}`);
+      setInvoice(res.data);
+      setItems(res.data.items || []);
     } catch (err) {
       showError('Failed to load tax invoice details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSettings = async () => {
+    try {
+      const res = await client.get('/settings');
+      setSettings(res.data);
+    } catch (err) {
+      console.error('Failed to load salon settings', err);
     }
   };
 
@@ -39,64 +47,61 @@ export default function InvoiceView() {
 
   if (loading) {
     return (
-      <div className="p-12 text-center text-dark/40 animate-pulse font-semibold">
-        Generating POS printable invoice layout...
+      <div className="min-h-[60vh] flex items-center justify-center text-xs text-dark/50 italic">
+        Generating tax invoice...
       </div>
     );
   }
 
   if (!invoice) {
     return (
-      <div className="glass-card p-12 text-center">
-        <p className="text-dark/60 font-semibold">Invoice record not found</p>
-        <button onClick={() => navigate('/billing')} className="mt-4 text-xs font-semibold text-[#D4AF37]">
-          ← Back to Billing History
+      <div className="text-center py-12">
+        <p className="text-sm font-semibold text-dark/60">Tax invoice not found</p>
+        <button
+          onClick={() => navigate('/billing')}
+          className="mt-4 px-4 py-2 rounded-full bg-[#D4AF37] text-white font-semibold text-xs"
+        >
+          Back to Billing
         </button>
       </div>
     );
   }
 
-  const items = invoice.items || [];
-  const hasServices = items.some((i) => i.item_type === 'service');
-  const hasProducts = items.some((i) => i.item_type === 'product');
-
-  const salonLogo = settings?.logo_url || '/logo.png';
   const salonName = settings?.salon_name || 'TRIO THE POSH';
   const tagline = settings?.tagline || 'Redefining Beauty & Elegance';
-  const address = settings?.address || 'Piprali Road, Near MBA Chai Wala, Sikar – 332001';
-  const phone = settings?.phone || '+91 98765 43210';
+  const address = settings?.address || '123 Luxury Avenue, Beverly Hills';
+  const phone = settings?.phone || '+1 800-POSH-SALON';
   const email = settings?.email || 'info@triotheposh.com';
-  const gstNumber = settings?.gst_number || '';
+  const gstNumber = settings?.gst_number || 'GSTIN29AAACT1234F1Z5';
+  const salonLogo = settings?.logo_url || '/logo.png';
+
+  const hasServices = items.some((i) => i.item_type === 'service');
 
   return (
-    <div className="space-y-6">
-      {/* Navigation & Action Bar (Hidden when printing) */}
-      <div className="flex items-center justify-between gap-4 print:hidden">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/billing')}
-            className="p-2.5 rounded-2xl glass-card hover:bg-white text-dark/70 transition-colors"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 className="font-display text-2xl font-bold text-dark">Tax Invoice — {invoice.invoice_number}</h1>
-            <p className="text-xs text-dark/50">Official POS Customer Receipt</p>
-          </div>
-        </div>
-
+    <div className="max-w-3xl mx-auto space-y-6">
+      {/* Top Action Bar (Hidden when printing) */}
+      <div className="flex items-center justify-between print:hidden">
         <button
-          onClick={handlePrint}
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-md"
+          onClick={() => navigate('/billing')}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[#E8DFCF] text-dark font-semibold text-xs hover:bg-[#F4F0E6] transition-colors"
         >
-          <Printer size={16} /> Print / Save PDF Invoice
+          <ArrowLeft size={16} /> Back to Invoices
         </button>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handlePrint}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-md"
+          >
+            <Printer size={16} /> Print Tax Invoice
+          </button>
+        </div>
       </div>
 
-      {/* Printable POS Invoice Container */}
-      <div id="printable-invoice" className="glass-card p-8 sm:p-12 max-w-3xl mx-auto bg-white border border-[#E8DFCF] shadow-luxury">
-        {/* Dynamic Salon Branding Header */}
-        <div className="flex items-start justify-between border-b border-[#E8DFCF] pb-6 mb-6">
+      {/* Printable Invoice Container */}
+      <div className="glass-card p-8 sm:p-10 border border-[#E8DFCF] bg-white print:p-0 print:border-none print:shadow-none font-sans">
+        {/* Salon Branding & Invoice Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[#E8DFCF] pb-6 mb-6 gap-4">
           <div className="flex items-start gap-4">
             <img
               src={salonLogo}
@@ -201,9 +206,9 @@ export default function InvoiceView() {
           </tbody>
         </table>
 
-        {/* Calculation Totals */}
+        {/* Calculation Totals & Cash Return Breakdown */}
         <div className="flex justify-end mb-8">
-          <div className="w-64 space-y-2 text-xs border-t border-[#E8DFCF] pt-4">
+          <div className="w-72 space-y-2 text-xs border-t border-[#E8DFCF] pt-4">
             <div className="flex justify-between text-dark/70">
               <span>Subtotal</span>
               <span className="font-semibold text-dark font-mono">₹{Number(invoice.subtotal).toLocaleString('en-IN')}</span>
@@ -220,11 +225,24 @@ export default function InvoiceView() {
             </div>
             <div className="h-px bg-[#E8DFCF] my-1" />
             <div className="flex justify-between text-sm font-bold text-dark">
-              <span>Grand Total</span>
+              <span>Bill Total / Net Sale</span>
               <span className="font-display text-lg text-[#D4AF37] font-mono">
                 ₹{Number(invoice.total).toLocaleString('en-IN')}
               </span>
             </div>
+
+            {Number(invoice.amount_received || 0) > Number(invoice.total) && (
+              <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 mt-2 space-y-1">
+                <div className="flex justify-between text-dark/70">
+                  <span>Amount Received</span>
+                  <span className="font-semibold text-dark font-mono">₹{Number(invoice.amount_received).toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between text-emerald-800 font-bold">
+                  <span>Change Returned (Cash)</span>
+                  <span className="font-mono text-emerald-700">₹{Number(invoice.change_returned).toLocaleString('en-IN')}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
