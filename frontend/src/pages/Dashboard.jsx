@@ -17,10 +17,14 @@ import {
   Sparkles,
   Phone,
   Eye,
-  CreditCard,
+  Scissors,
+  UserCog,
+  ClipboardCheck,
+  Award,
   Wallet,
-  Smartphone,
-  ExternalLink,
+  BarChart3,
+  Settings as SettingsIcon,
+  LayoutGrid,
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Modal from '../components/ui/Modal.jsx';
@@ -79,6 +83,22 @@ export default function Dashboard() {
           { month: 'Jul', revenue: 0 },
         ];
 
+  // Quick Modules Grid Configuration for direct 1-tap mobile access
+  const allModules = [
+    { title: 'Customers', icon: Users, route: '/customers', color: 'bg-blue-50 text-blue-600', border: 'border-blue-200', desc: 'Client Database' },
+    { title: 'Appointments', icon: Calendar, route: '/appointments', color: 'bg-purple-50 text-purple-600', border: 'border-purple-200', desc: 'Booking Schedule' },
+    { title: 'Services', icon: Scissors, route: '/services', color: 'bg-amber-50 text-amber-600', border: 'border-amber-200', desc: 'Hair & Beauty Menu' },
+    { title: 'Staff Roster', icon: UserCog, route: '/staff', color: 'bg-indigo-50 text-indigo-600', border: 'border-indigo-200', desc: 'Stylist Profiles' },
+    { title: 'Attendance', icon: ClipboardCheck, route: '/attendance', color: 'bg-emerald-50 text-emerald-600', border: 'border-emerald-200', desc: 'Mark Daily Attendance' },
+    { title: 'Staff Salary', icon: DollarSign, route: '/salary', color: 'bg-teal-50 text-teal-600', border: 'border-teal-200', desc: 'Payroll & Adjustments' },
+    { title: 'Staff Commission', icon: Award, route: '/commissions', color: 'bg-orange-50 text-orange-600', border: 'border-orange-200', desc: 'Service Commissions' },
+    { title: 'Products', icon: Package, route: '/products', color: 'bg-rose-50 text-rose-600', border: 'border-rose-200', desc: 'Stock Inventory' },
+    { title: 'Billing / POS', icon: Receipt, route: '/billing', color: 'bg-gold-50 text-[#D4AF37]', border: 'border-[#E8DFCF]', desc: 'New Invoice / POS' },
+    { title: 'Expenses', icon: Wallet, route: '/expenses', color: 'bg-cyan-50 text-cyan-600', border: 'border-cyan-200', desc: 'Salon Expenses' },
+    { title: 'Reports', icon: BarChart3, route: '/reports', color: 'bg-[#F4F0E6] text-dark', border: 'border-[#E8DFCF]', desc: 'Revenue Analytics' },
+    { title: 'Settings', icon: SettingsIcon, route: '/settings', color: 'bg-slate-100 text-slate-700', border: 'border-slate-300', desc: 'Salon Branding' },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -99,7 +119,7 @@ export default function Dashboard() {
             <h1 className="font-display text-xl sm:text-3xl font-bold text-dark tracking-tight">
               Salon Command Center
             </h1>
-            <p className="text-xs text-dark/50 mt-0.5">Real-time salon metrics, click cards to view detailed popups</p>
+            <p className="text-xs text-dark/50 mt-0.5">Direct 1-tap mobile access to all salon modules & live metrics</p>
           </div>
         </div>
 
@@ -260,6 +280,36 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* ===================== DIRECT MOBILE / TABLET MODULE ACCESS HUB ===================== */}
+      <div className="glass-card p-4 sm:p-6 border border-[#E8DFCF] space-y-4">
+        <div className="flex items-center justify-between border-b border-[#E8DFCF] pb-3">
+          <div className="flex items-center gap-2">
+            <LayoutGrid size={18} className="text-[#D4AF37]" />
+            <h3 className="font-display text-lg font-bold text-dark">Quick Module Access Hub</h3>
+          </div>
+          <span className="text-[11px] text-dark/50 font-medium hidden sm:inline">1-Tap Direct Navigation (Mobile & Desktop)</span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {allModules.map((mod, idx) => {
+            const Icon = mod.icon;
+            return (
+              <button
+                key={idx}
+                onClick={() => navigate(mod.route)}
+                className={`p-3.5 rounded-2xl bg-white border ${mod.border} hover:shadow-md transition-all flex flex-col items-center text-center group`}
+              >
+                <div className={`p-3 rounded-2xl ${mod.color} mb-2 group-hover:scale-110 transition-transform`}>
+                  <Icon size={20} />
+                </div>
+                <span className="font-bold text-dark text-xs">{mod.title}</span>
+                <span className="text-[10px] text-dark/40 mt-0.5 leading-tight">{mod.desc}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Main Section: Chart & Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: Revenue Chart */}
@@ -304,14 +354,14 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Right 1 Col: Quick Actions */}
+        {/* Right 1 Col: Quick Operations */}
         <div className="glass-card p-4 sm:p-6 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Sparkles size={18} className="text-[#D4AF37]" />
-              <h3 className="font-display text-lg font-bold text-dark">Quick Actions</h3>
+              <h3 className="font-display text-lg font-bold text-dark">Quick Operations</h3>
             </div>
-            <p className="text-xs text-dark/50 mb-6">Instantly access core salon operations</p>
+            <p className="text-xs text-dark/50 mb-6">Direct access to core salon workflows</p>
 
             <div className="space-y-3">
               <button
