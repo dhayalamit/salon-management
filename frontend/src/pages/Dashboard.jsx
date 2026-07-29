@@ -30,6 +30,7 @@ import {
   PiggyBank,
   Landmark,
   CalendarDays,
+  CalendarCheck,
   FileText,
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
