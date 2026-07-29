@@ -4,78 +4,84 @@ const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Helper: Generate next sequential Visit Number (VIS-00001)
 async function nextVisitNumber() {
-  try {
-    const { rows } = await db.query(
-      `SELECT visit_number FROM customer_visits ORDER BY created_at DESC LIMIT 1`
-    );
-    const last = rows[0]?.visit_number;
-    const lastNum = last ? parseInt(last.replace(/\D/g, ''), 10) : 0;
-    return `VIS-${String(lastNum + 1).padStart(5, '0')}`;
-  } catch (e) {
-    return `VIS-${Date.now().toString().slice(-6)}`;
-  }
+  const { rows } = await db.query('SELECT visit_number FROM customer_visits ORDER BY created_at DESC LIMIT 1');
+  if (!rows.length || !rows[0].visit_number) return 'VIS-00001';
+  const lastNum = parseInt(rows[0].visit_number.replace('VIS-', ''), 10) || 0;
+  return `VIS-${String(lastNum + 1).padStart(5, '0')}`;
 }
 
-// GET /api/visits  — list customer visits
+// GET /api/visits — List all customer visits
 router.get('/', authenticate, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT v.*, c.name AS customer_name, c.phone AS customer_phone, s.name AS staff_name
+      `SELECT v.*,
+              c.name AS customer_name, c.phone AS customer_phone,
+              s.name AS staff_name
        FROM customer_visits v
        LEFT JOIN customers c ON c.id::text = v.customer_id::text
        LEFT JOIN staff s ON s.id::text = v.staff_id::text
-       ORDER BY v.created_at DESC LIMIT 200`
+       ORDER BY v.created_at DESC`
     );
-    res.json(rows || []);
+    res.json(rows);
   } catch (err) {
     console.error('Fetch visits error:', err);
     res.status(500).json({ error: 'Failed to fetch customer visits' });
   }
 });
 
-// GET /api/visits/:id  — full visit with items
+// GET /api/visits/:id — Detailed customer visit view with items
 router.get('/:id', authenticate, async (req, res) => {
   try {
+    const { id } = req.params;
     const visitQ = await db.query(
-      `SELECT v.*, c.name AS customer_name, c.phone AS customer_phone, c.notes AS customer_notes, s.name AS staff_name
+      `SELECT v.*,
+              c.name AS customer_name, c.phone AS customer_phone, c.notes AS customer_notes,
+              s.name AS staff_name
        FROM customer_visits v
        LEFT JOIN customers c ON c.id::text = v.customer_id::text
        LEFT JOIN staff s ON s.id::text = v.staff_id::text
        WHERE v.id = $1`,
-      [req.params.id]
+      [id]
     );
+
     if (!visitQ.rows[0]) return res.status(404).json({ error: 'Customer visit not found' });
+
     const itemsQ = await db.query(
-      `SELECT vi.*, s.name AS staff_name
+      `SELECT vi.*, st.name AS staff_name
        FROM visit_items vi
-       LEFT JOIN staff s ON s.id::text = vi.staff_id::text
-       WHERE vi.visit_id = $1`,
-      [req.params.id]
+       LEFT JOIN staff st ON st.id::text = vi.staff_id::text
+       WHERE vi.visit_id = $1
+       ORDER BY vi.id ASC`,
+      [id]
     );
-    res.json({ ...visitQ.rows[0], items: itemsQ.rows || [] });
+
+    res.json({
+      ...visitQ.rows[0],
+      items: itemsQ.rows || [],
+    });
   } catch (err) {
     console.error('Fetch visit details error:', err);
     res.status(500).json({ error: 'Failed to fetch visit details' });
   }
 });
 
-// PUT /api/visits/:id/payment — Clear/Settle pending or partial payment & record timestamp
+// PUT /api/visits/:id/payment — Settle or update pending payment
 router.put('/:id/payment', authenticate, async (req, res) => {
   try {
     const { paymentMethod, amountPaid } = req.body;
-    if (!paymentMethod) return res.status(400).json({ error: 'Payment method is required' });
-
     const visitQ = await db.query('SELECT * FROM customer_visits WHERE id = $1', [req.params.id]);
-    const visit = visitQ.rows[0];
-    if (!visit) return res.status(404).json({ error: 'Customer visit not found' });
+    if (!visitQ.rows[0]) return res.status(404).json({ error: 'Visit not found' });
 
-    const totalAmt = Number(visit.total || 0);
-    const existingPaid = Number(visit.amount_paid || 0);
-    const newAddition = amountPaid !== undefined && amountPaid !== null && amountPaid !== '' ? Number(amountPaid) : (totalAmt - existingPaid);
-    const updatedAmountPaid = existingPaid + newAddition;
-    const updatedRemaining = Math.max(0, totalAmt - updatedAmountPaid);
-    const updatedStatus = updatedRemaining <= 0 ? 'Paid' : 'Partial';
+    const currentVisit = visitQ.rows[0];
+    const total = Number(currentVisit.total);
+    const prevPaid = Number(currentVisit.amount_paid || 0);
+
+    const additionalPaid = Number(amountPaid || 0);
+    const updatedAmountPaid = prevPaid + additionalPaid >= total ? total : prevPaid + additionalPaid;
+    const updatedRemaining = Math.max(0, total - updatedAmountPaid);
+    const updatedStatus = updatedRemaining === 0 ? 'Paid' : 'Partial';
     const nowIso = new Date().toISOString();
 
     const { rows } = await db.query(
@@ -85,6 +91,12 @@ router.put('/:id/payment', authenticate, async (req, res) => {
       [paymentMethod, updatedAmountPaid, updatedRemaining, updatedStatus, nowIso, req.params.id]
     );
 
+    // Update payment status in linked Staff Work Register entries
+    await db.query(
+      `UPDATE staff_work_entries SET payment_status = $1 WHERE visit_id = $2`,
+      [updatedStatus, req.params.id]
+    );
+
     res.json(rows[0]);
   } catch (err) {
     console.error('Update visit payment error:', err);
@@ -92,7 +104,7 @@ router.put('/:id/payment', authenticate, async (req, res) => {
   }
 });
 
-// POST /api/visits — Create Customer Visit & Update Inventory, Staff Commission, Appointments & Customer Profile
+// POST /api/visits — Create Customer Visit & Automatically Create Staff Work Register Entries
 router.post('/', authenticate, async (req, res) => {
   try {
     const {
@@ -112,6 +124,13 @@ router.post('/', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'At least one service or product item is required' });
     }
 
+    // Fetch customer name for staff work register traceability
+    let custName = 'Walk-in Client';
+    if (customerId) {
+      const cQ = await db.query('SELECT name FROM customers WHERE id = $1', [customerId]);
+      if (cQ.rows[0]?.name) custName = cQ.rows[0].name;
+    }
+
     // Step 1: Pre-verify product stock availability
     for (const item of items) {
       if (item.type === 'product' && item.id) {
@@ -129,7 +148,7 @@ router.post('/', authenticate, async (req, res) => {
       }
     }
 
-    // Step 2: Compute visit totals
+    // Step 2: Compute visit totals & commissions
     let subtotal = 0;
     let totalCommission = 0;
     const computedItems = items.map((item) => {
@@ -196,7 +215,7 @@ router.post('/', authenticate, async (req, res) => {
       ]
     );
 
-    // Step 4: Insert Visit Items & process inventory + commissions
+    // Step 4: Insert Visit Items, Product Movement & AUTOMATIC Staff Work Register Entries
     for (const item of computedItems) {
       const itemId = db.generateUUID();
       const assignedStaffId = item.staffId || staffId || null;
@@ -241,6 +260,29 @@ router.post('/', authenticate, async (req, res) => {
         );
       }
 
+      // AUTOMATIC STAFF WORK REGISTER ENTRY for Services
+      if (assignedStaffId && item.type === 'service') {
+        const workEntryId = db.generateUUID();
+        await db.query(
+          `INSERT INTO staff_work_entries
+            (id, staff_id, visit_id, visit_item_id, customer_name, service_name, description, amount, commission_amount, payment_status, notes, date)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_DATE)`,
+          [
+            workEntryId,
+            assignedStaffId,
+            visitId,
+            itemId,
+            custName,
+            item.name,
+            item.name,
+            item.lineTotal,
+            item.commissionAmount || 0,
+            pStatus,
+            notes || null,
+          ]
+        );
+      }
+
       // Record staff commission if applicable
       if (assignedStaffId && item.commissionAmount > 0) {
         const commId = db.generateUUID();
@@ -281,7 +323,7 @@ router.post('/', authenticate, async (req, res) => {
   }
 });
 
-// DELETE /api/visits/:id — Cancel visit & restore product inventory stock
+// DELETE /api/visits/:id — Cancel visit & remove linked staff work entries
 router.delete('/:id', authenticate, async (req, res) => {
   try {
     const visitId = req.params.id;
@@ -298,6 +340,8 @@ router.delete('/:id', authenticate, async (req, res) => {
       }
     }
 
+    // Automatically remove linked Staff Work Register entries
+    await db.query('DELETE FROM staff_work_entries WHERE visit_id = $1', [visitId]);
     await db.query('DELETE FROM visit_items WHERE visit_id = $1', [visitId]);
     await db.query('DELETE FROM customer_visits WHERE id = $1', [visitId]);
 

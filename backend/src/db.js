@@ -266,8 +266,15 @@ async function initSQLiteTables() {
       CREATE TABLE IF NOT EXISTS staff_work_entries (
         id TEXT PRIMARY KEY,
         staff_id TEXT NOT NULL,
+        visit_id TEXT,
+        visit_item_id TEXT,
+        customer_name TEXT,
+        service_name TEXT,
         description TEXT,
         amount REAL NOT NULL,
+        commission_amount REAL DEFAULT 0,
+        payment_status TEXT DEFAULT 'Paid',
+        notes TEXT,
         date TEXT NOT NULL,
         created_at TEXT DEFAULT (datetime('now'))
       )
@@ -497,11 +504,25 @@ async function initPGTables() {
       CREATE TABLE IF NOT EXISTS staff_work_entries (
         id TEXT PRIMARY KEY,
         staff_id TEXT NOT NULL,
+        visit_id TEXT,
+        visit_item_id TEXT,
+        customer_name TEXT,
+        service_name TEXT,
         description TEXT,
         amount REAL NOT NULL,
+        commission_amount REAL DEFAULT 0,
+        payment_status TEXT DEFAULT 'Paid',
+        notes TEXT,
         date TEXT NOT NULL,
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE staff_work_entries ADD COLUMN IF NOT EXISTS visit_id TEXT;
+      ALTER TABLE staff_work_entries ADD COLUMN IF NOT EXISTS visit_item_id TEXT;
+      ALTER TABLE staff_work_entries ADD COLUMN IF NOT EXISTS customer_name TEXT;
+      ALTER TABLE staff_work_entries ADD COLUMN IF NOT EXISTS service_name TEXT;
+      ALTER TABLE staff_work_entries ADD COLUMN IF NOT EXISTS commission_amount REAL DEFAULT 0;
+      ALTER TABLE staff_work_entries ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'Paid';
+      ALTER TABLE staff_work_entries ADD COLUMN IF NOT EXISTS notes TEXT;
       CREATE TABLE IF NOT EXISTS daily_balances (
         id TEXT PRIMARY KEY,
         date TEXT UNIQUE NOT NULL,

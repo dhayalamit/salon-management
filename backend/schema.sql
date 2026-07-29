@@ -136,6 +136,23 @@ CREATE TABLE IF NOT EXISTS salary_payments (
   note TEXT
 );
 
+-- ---------- STAFF WORK ENTRIES ----------
+CREATE TABLE IF NOT EXISTS staff_work_entries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  staff_id UUID NOT NULL REFERENCES staff(id) ON DELETE CASCADE,
+  visit_id UUID REFERENCES customer_visits(id) ON DELETE CASCADE,
+  visit_item_id UUID REFERENCES visit_items(id) ON DELETE CASCADE,
+  customer_name VARCHAR(120),
+  service_name VARCHAR(160),
+  description TEXT,
+  amount NUMERIC(10,2) NOT NULL DEFAULT 0,
+  commission_amount NUMERIC(10,2) DEFAULT 0,
+  payment_status VARCHAR(20) DEFAULT 'Paid',
+  notes TEXT,
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- ---------- EXPENSES ----------
 CREATE TABLE IF NOT EXISTS expenses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

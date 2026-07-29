@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import {
   UserCheck,
-  Plus,
   Calendar,
   DollarSign,
   Filter,
-  Trash2,
   CheckCircle,
   FileText,
   User,
@@ -14,28 +13,23 @@ import {
   Sparkles,
   TrendingUp,
   Scissors,
+  Eye,
+  Award,
+  CalendarCheck,
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext.jsx';
 import { getTodayDateString } from '../utils/dateUtils.js';
 
 export default function StaffWorkRegister() {
-  const { showSuccess, showError } = useToast();
+  const navigate = useNavigate();
+  const { showError } = useToast();
 
   const [staffList, setStaffList] = useState([]);
-  const [servicesList, setServicesList] = useState([]);
   const [entries, setEntries] = useState([]);
   const [totalWorkAmount, setTotalWorkAmount] = useState(0);
+  const [totalCommission, setTotalCommission] = useState(0);
+  const [completedServicesCount, setCompletedServicesCount] = useState(0);
   const [loading, setLoading] = useState(true);
-
-  // Form State
-  const [selectedServiceId, setSelectedServiceId] = useState('');
-  const [formData, setFormData] = useState({
-    staffId: '',
-    description: '',
-    amount: '',
-    date: getTodayDateString(),
-  });
-  const [submitting, setSubmitting] = useState(false);
 
   // Filter State
   const [filterStaffId, setFilterStaffId] = useState('');
@@ -44,7 +38,6 @@ export default function StaffWorkRegister() {
 
   useEffect(() => {
     fetchStaff();
-    fetchServices();
   }, []);
 
   useEffect(() => {
@@ -55,20 +48,8 @@ export default function StaffWorkRegister() {
     try {
       const res = await client.get('/staff');
       setStaffList(res.data || []);
-      if (res.data && res.data.length > 0 && !formData.staffId) {
-        setFormData((prev) => ({ ...prev, staffId: res.data[0].id }));
-      }
     } catch (err) {
       showError('Failed to load staff list');
-    }
-  };
-
-  const fetchServices = async () => {
-    try {
-      const res = await client.get('/services');
-      setServicesList(res.data || []);
-    } catch (err) {
-      console.error('Failed to load services list', err);
     }
   };
 
@@ -83,325 +64,273 @@ export default function StaffWorkRegister() {
       const res = await client.get('/staff-work', { params });
       setEntries(res.data.entries || []);
       setTotalWorkAmount(res.data.totalWorkAmount || 0);
+      setTotalCommission(res.data.totalCommission || 0);
+      setCompletedServicesCount(res.data.completedServicesCount || 0);
     } catch (err) {
-      showError('Failed to load staff work entries');
+      showError('Failed to load staff work register');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleServiceSelect = (e) => {
-    const sId = e.target.value;
-    setSelectedServiceId(sId);
-    if (sId === 'custom') {
-      // Allow custom typing
-    } else {
-      const s = servicesList.find((srv) => srv.id === sId);
-      if (s) {
-        setFormData((prev) => ({
-          ...prev,
-          description: s.name,
-          amount: s.price,
-        }));
-      }
-    }
+  const handleClearFilters = () => {
+    setFilterStaffId('');
+    setFilterDate('');
+    setFilterMonth('');
   };
-
-  const handleSaveEntry = async (e) => {
-    e.preventDefault();
-    if (!formData.staffId || !formData.amount) {
-      return showError('Please select a staff member and enter work amount');
-    }
-
-    try {
-      setSubmitting(true);
-      await client.post('/staff-work', formData);
-      showSuccess('Staff work entry recorded successfully!');
-      setSelectedServiceId('');
-      setFormData({
-        staffId: staffList[0]?.id || '',
-        description: '',
-        amount: '',
-        date: getTodayDateString(),
-      });
-      window.dispatchEvent(new CustomEvent('dashboard_updated'));
-      fetchEntries();
-    } catch (err) {
-      showError('Failed to save staff work entry');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDeleteEntry = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this staff work entry?')) return;
-    try {
-      await client.delete(`/staff-work/${id}`);
-      showSuccess('Entry deleted');
-      window.dispatchEvent(new CustomEvent('dashboard_updated'));
-      fetchEntries();
-    } catch (err) {
-      showError('Failed to delete work entry');
-    }
-  };
-
-  // Group entries by Staff Member for history display
-  const groupedByStaff = entries.reduce((acc, entry) => {
-    const sName = entry.staff_name || 'Staff Member';
-    if (!acc[sName]) acc[sName] = { staffName: sName, items: [], total: 0 };
-    acc[sName].items.push(entry);
-    acc[sName].total += Number(entry.amount || 0);
-    return acc;
-  }, {});
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
-      {/* Header Banner */}
-      <div className="glass-card p-6 border border-[#E8DFCF] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="space-y-6">
+      {/* Top Banner */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 glass-card p-6 border border-[#E8DFCF]">
         <div className="flex items-center gap-3">
           <div className="p-3 rounded-2xl bg-[#D4AF37]/10 text-[#D4AF37]">
-            <FileText size={24} />
+            <FileText size={26} />
           </div>
           <div>
-            <div className="flex items-center gap-2 mb-0.5">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-widest bg-[#D4AF37] text-white">
-                Daily Register
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-widest bg-emerald-700 text-white">
+                Automated System Log
               </span>
-              <span className="text-xs text-dark/40 font-medium">TRIO The Posh</span>
+              <span className="text-xs text-dark/40 font-medium">Single Source of Truth</span>
             </div>
-            <h1 className="font-display text-2xl font-bold text-dark">Staff Work Register</h1>
-            <p className="text-xs text-dark/50">Record daily manual work entries per stylist with timestamps</p>
+            <h1 className="font-display text-2xl sm:text-3xl font-bold text-dark tracking-tight">
+              Staff Work Register
+            </h1>
+            <p className="text-xs text-dark/50 mt-0.5">
+              Automatically recorded work entries from Customer Visits. Staff work count, revenue, and commissions update instantly.
+            </p>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#F4F0E6] border border-[#E8DFCF] text-right">
-          <p className="text-[11px] font-semibold text-dark/50 uppercase tracking-wider">Total Work Done (Filtered)</p>
-          <h3 className="font-display text-2xl font-bold text-[#D4AF37] mt-0.5">
-            ₹{totalWorkAmount.toLocaleString('en-IN')}
-          </h3>
+        <button
+          onClick={() => navigate('/visits')}
+          className="px-5 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-md flex items-center gap-2 self-end sm:self-auto"
+        >
+          <CalendarCheck size={16} /> Create Customer Visit
+        </button>
+      </div>
+
+      {/* Summary KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="glass-card p-5 border border-[#E8DFCF] flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-dark/40 block mb-1">
+              Services Performed
+            </span>
+            <h3 className="font-display text-2xl font-bold text-dark">{completedServicesCount}</h3>
+          </div>
+          <div className="p-3 rounded-2xl bg-purple-50 text-purple-700 border border-purple-100">
+            <Scissors size={22} />
+          </div>
+        </div>
+
+        <div className="glass-card p-5 border border-[#E8DFCF] flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-dark/40 block mb-1">
+              Total Work Value
+            </span>
+            <h3 className="font-display text-2xl font-bold text-emerald-800">
+              ₹{totalWorkAmount.toLocaleString('en-IN')}
+            </h3>
+          </div>
+          <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-100">
+            <TrendingUp size={22} />
+          </div>
+        </div>
+
+        <div className="glass-card p-5 border border-[#E8DFCF] flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-dark/40 block mb-1">
+              Total Commission
+            </span>
+            <h3 className="font-display text-2xl font-bold text-[#D4AF37]">
+              ₹{totalCommission.toLocaleString('en-IN')}
+            </h3>
+          </div>
+          <div className="p-3 rounded-2xl bg-amber-50 text-[#D4AF37] border border-amber-100">
+            <Award size={22} />
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 1 Col: Record New Work Entry Form */}
-        <div className="glass-card p-6 border border-[#E8DFCF] space-y-4">
-          <div className="flex items-center gap-2 border-b border-[#E8DFCF] pb-3">
-            <Plus size={18} className="text-[#D4AF37]" />
-            <h3 className="font-display text-base font-bold text-dark">Record Staff Work Entry</h3>
-          </div>
+      {/* Filter Control Bar */}
+      <div className="glass-card p-4 border border-[#E8DFCF] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2">
+          <Filter size={16} className="text-[#D4AF37]" />
+          <span className="font-bold text-dark uppercase tracking-wider text-[11px]">Filter Work Register</span>
+        </div>
 
-          <form onSubmit={handleSaveEntry} className="space-y-4 text-xs">
-            <div>
-              <label className="block font-semibold text-dark/70 mb-1.5">Select Staff Member *</label>
-              <select
-                required
-                value={formData.staffId}
-                onChange={(e) => setFormData({ ...formData, staffId: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark font-medium focus:outline-none focus:border-[#D4AF37]"
-              >
-                <option value="">Select Stylist / Staff</option>
-                {staffList.map((st) => (
-                  <option key={st.id} value={st.id}>
-                    {st.name} ({st.phone || 'Stylist'})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block font-semibold text-dark/70 mb-1.5 flex items-center gap-1">
-                <Scissors size={14} className="text-[#D4AF37]" /> Select Service / Work Description *
-              </label>
-
-              {/* Service Dropdown Selector */}
-              <select
-                value={selectedServiceId}
-                onChange={handleServiceSelect}
-                className="w-full px-3.5 py-2.5 bg-[#F4F0E6]/60 border border-[#E8DFCF] rounded-xl text-dark font-semibold focus:outline-none focus:border-[#D4AF37] mb-2"
-              >
-                <option value="">Choose Service from Menu...</option>
-                {servicesList.map((srv) => (
-                  <option key={srv.id} value={srv.id}>
-                    {srv.name} — ₹{srv.price}
-                  </option>
-                ))}
-                <option value="custom">✏️ Custom Description...</option>
-              </select>
-
-              {/* Editable Work Description Field */}
-              <input
-                type="text"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="e.g. Haircut, Beard Trim, Hair Spa"
-                className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark focus:outline-none focus:border-[#D4AF37]"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold text-dark/70 mb-1.5">Work Amount (₹) *</label>
-              <input
-                type="number"
-                step="0.01"
-                min="1"
-                required
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                placeholder="e.g. 150"
-                className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark font-bold text-sm focus:outline-none focus:border-[#D4AF37]"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold text-dark/70 mb-1.5">Date</label>
-              <input
-                type="date"
-                required
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark font-medium focus:outline-none focus:border-[#D4AF37]"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-3 rounded-xl bg-[#D4AF37] text-white font-bold text-xs hover:bg-[#C59F2E] transition-all shadow-md flex items-center justify-center gap-1.5"
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Staff Filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-dark/50 font-medium">Stylist:</span>
+            <select
+              value={filterStaffId}
+              onChange={(e) => setFilterStaffId(e.target.value)}
+              className="px-3 py-1.5 bg-white border border-[#E8DFCF] rounded-xl text-dark font-medium focus:outline-none focus:border-[#D4AF37]"
             >
-              <CheckCircle size={16} /> {submitting ? 'Saving...' : 'Save Work Entry'}
+              <option value="">All Team Members</option>
+              {staffList.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {st.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Date Filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-dark/50 font-medium">Date:</span>
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(e) => {
+                setFilterDate(e.target.value);
+                setFilterMonth('');
+              }}
+              className="px-3 py-1.5 bg-white border border-[#E8DFCF] rounded-xl text-dark font-medium focus:outline-none focus:border-[#D4AF37]"
+            />
+          </div>
+
+          {/* Month Filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-dark/50 font-medium">Month:</span>
+            <input
+              type="month"
+              value={filterMonth}
+              onChange={(e) => {
+                setFilterMonth(e.target.value);
+                setFilterDate('');
+              }}
+              className="px-3 py-1.5 bg-white border border-[#E8DFCF] rounded-xl text-dark font-medium focus:outline-none focus:border-[#D4AF37]"
+            />
+          </div>
+
+          {(filterStaffId || filterDate || filterMonth) && (
+            <button
+              onClick={handleClearFilters}
+              className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-dark/70 font-semibold transition-colors"
+            >
+              Reset Filters
             </button>
-          </form>
+          )}
+        </div>
+      </div>
+
+      {/* Staff Work Register Table */}
+      <div className="glass-card p-6 border border-[#E8DFCF]">
+        <div className="flex items-center justify-between border-b border-[#E8DFCF] pb-4 mb-4">
+          <h3 className="font-display text-base font-bold text-dark flex items-center gap-2">
+            <Scissors size={18} className="text-[#D4AF37]" /> Registered Services History
+          </h3>
+          <span className="text-xs text-dark/50">
+            Showing <strong className="text-dark">{entries.length}</strong> work entries
+          </span>
         </div>
 
-        {/* Right 2 Cols: Staff Work History & Filters */}
-        <div className="lg:col-span-2 glass-card p-6 border border-[#E8DFCF] space-y-6">
-          {/* Filters Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#E8DFCF] pb-4">
-            <div className="flex items-center gap-2">
-              <Filter size={18} className="text-[#D4AF37]" />
-              <h3 className="font-display text-base font-bold text-dark">Staff Work History</h3>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              {/* Staff Filter */}
-              <select
-                value={filterStaffId}
-                onChange={(e) => setFilterStaffId(e.target.value)}
-                className="px-3 py-1.5 bg-white border border-[#E8DFCF] rounded-xl text-dark font-medium"
-              >
-                <option value="">All Staff</option>
-                {staffList.map((st) => (
-                  <option key={st.id} value={st.id}>
-                    {st.name}
-                  </option>
-                ))}
-              </select>
-
-              {/* Date Filter */}
-              <input
-                type="date"
-                value={filterDate}
-                onChange={(e) => {
-                  setFilterDate(e.target.value);
-                  if (e.target.value) setFilterMonth('');
-                }}
-                className="px-3 py-1.5 bg-white border border-[#E8DFCF] rounded-xl text-dark font-medium"
-              />
-
-              {/* Month Filter */}
-              <input
-                type="month"
-                value={filterMonth}
-                onChange={(e) => {
-                  setFilterMonth(e.target.value);
-                  if (e.target.value) setFilterDate('');
-                }}
-                className="px-3 py-1.5 bg-white border border-[#E8DFCF] rounded-xl text-dark font-medium"
-              />
-
-              {(filterStaffId || filterDate || filterMonth) && (
-                <button
-                  onClick={() => {
-                    setFilterStaffId('');
-                    setFilterDate(getTodayDateString());
-                    setFilterMonth('');
-                  }}
-                  className="px-2.5 py-1 rounded-xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200"
-                >
-                  Clear Filters
-                </button>
-              )}
-            </div>
+        {loading ? (
+          <div className="py-12 text-center text-xs text-dark/40 italic">
+            Loading automatic staff work register...
           </div>
+        ) : entries.length === 0 ? (
+          <div className="py-12 text-center space-y-2">
+            <p className="text-xs text-dark/50 font-medium">No completed staff work entries found for the selected filter.</p>
+            <p className="text-[11px] text-dark/40">Work entries are created automatically when Customer Visits are saved.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-[#E8DFCF] text-dark/50 font-semibold uppercase text-[10px] tracking-wider">
+                  <th className="pb-3 px-3">Visit # & Time</th>
+                  <th className="pb-3 px-3">Stylist / Staff</th>
+                  <th className="pb-3 px-3">Client Name</th>
+                  <th className="pb-3 px-3">Service Performed</th>
+                  <th className="pb-3 px-3 text-right">Price (₹)</th>
+                  <th className="pb-3 px-3 text-right">Commission (₹)</th>
+                  <th className="pb-3 px-3">Payment Status</th>
+                  <th className="pb-3 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E8DFCF]/60">
+                {entries.map((entry) => {
+                  const createdDate = new Date(entry.created_at || entry.date);
+                  const timeFormatted = createdDate.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                  });
+                  const dateFormatted = createdDate.toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                  });
 
-          {/* Grouped Staff Work Cards */}
-          <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
-            {loading ? (
-              <p className="text-xs text-dark/40 py-12 text-center italic">Loading staff work history...</p>
-            ) : Object.keys(groupedByStaff).length === 0 ? (
-              <div className="py-12 text-center text-dark/40 text-xs italic">
-                No work entries recorded for the selected filter criteria. Use the form on the left to record work!
-              </div>
-            ) : (
-              Object.values(groupedByStaff).map((group, idx) => (
-                <div key={idx} className="p-4 rounded-2xl bg-white border border-[#E8DFCF] space-y-3">
-                  <div className="flex items-center justify-between border-b border-[#E8DFCF] pb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-[#D4AF37]/15 text-[#D4AF37] flex items-center justify-center font-bold text-xs">
-                        {group.staffName[0]}
-                      </div>
-                      <h4 className="font-bold text-dark text-sm">{group.staffName}</h4>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-[10px] text-dark/50 font-semibold block">Total Work Done</span>
-                      <span className="font-display text-base font-bold text-emerald-700">
-                        ₹{group.total.toLocaleString('en-IN')}
-                      </span>
-                    </div>
-                  </div>
+                  return (
+                    <tr key={entry.id} className="hover:bg-[#F4F0E6]/50 transition-colors">
+                      <td className="py-3 px-3">
+                        <span className="font-mono text-xs font-bold text-dark block">
+                          {entry.visit_number || 'VIS-AUTO'}
+                        </span>
+                        <span className="text-[10px] text-dark/40 flex items-center gap-1 mt-0.5">
+                          <Clock size={10} /> {dateFormatted} at {timeFormatted}
+                        </span>
+                      </td>
 
-                  {/* List of Work Items for this Staff */}
-                  <div className="space-y-1.5 pl-2">
-                    {group.items.map((item) => {
-                      const timeDisplay = item.created_at
-                        ? new Date(item.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
-                        : null;
+                      <td className="py-3 px-3">
+                        <span className="font-bold text-dark">{entry.staff_name || 'Staff Member'}</span>
+                        <span className="text-[10px] text-dark/40 block">{entry.staff_phone || ''}</span>
+                      </td>
 
-                      return (
-                        <div
-                          key={item.id}
-                          className="flex items-center justify-between py-2 px-3 rounded-xl bg-[#F4F0E6]/50 hover:bg-[#F4F0E6] transition-colors text-xs"
+                      <td className="py-3 px-3">
+                        <span className="font-semibold text-dark">{entry.customer_name || 'Walk-in Client'}</span>
+                      </td>
+
+                      <td className="py-3 px-3">
+                        <span className="font-semibold text-dark">{entry.service_name || entry.description || 'Hair & Beauty Service'}</span>
+                      </td>
+
+                      <td className="py-3 px-3 text-right font-mono font-bold text-dark text-sm">
+                        ₹{Number(entry.amount).toLocaleString('en-IN')}
+                      </td>
+
+                      <td className="py-3 px-3 text-right font-mono font-bold text-[#D4AF37]">
+                        ₹{Number(entry.commission_amount || 0).toLocaleString('en-IN')}
+                      </td>
+
+                      <td className="py-3 px-3">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            (entry.display_payment_status || entry.payment_status || 'Paid') === 'Paid'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : (entry.display_payment_status || entry.payment_status) === 'Partial'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}
                         >
-                          <div>
-                            <span className="font-semibold text-dark text-xs sm:text-sm">
-                              {item.description || 'Manual Work Entry'}
-                            </span>
-                            <div className="flex items-center gap-2.5 mt-0.5 text-[10px] text-dark/50">
-                              <span>📅 {item.date}</span>
-                              {timeDisplay && (
-                                <span className="font-semibold text-[#D4AF37]">⏰ {timeDisplay}</span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="font-bold font-mono text-dark text-sm">₹{Number(item.amount).toLocaleString('en-IN')}</span>
-                            <button
-                              onClick={() => handleDeleteEntry(item.id)}
-                              className="text-red-400 hover:text-red-600 p-1"
-                              title="Delete Entry"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))
-            )}
+                          {entry.display_payment_status || entry.payment_status || 'Paid'}
+                        </span>
+                      </td>
+
+                      <td className="py-3 px-3 text-right">
+                        {entry.visit_id && (
+                          <button
+                            onClick={() => navigate(`/visits/${entry.visit_id}`)}
+                            className="px-2.5 py-1 rounded-xl bg-gray-100 hover:bg-[#D4AF37] hover:text-white text-dark/70 transition-all font-semibold text-[11px] inline-flex items-center gap-1"
+                            title="View Linked Visit"
+                          >
+                            <Eye size={12} /> Visit
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

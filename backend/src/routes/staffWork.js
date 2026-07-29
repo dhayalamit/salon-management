@@ -4,15 +4,19 @@ const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
-// GET /api/staff-work — List manual work entries with filters
+// GET /api/staff-work — List auto-generated staff work register entries with filters
 router.get('/', authenticate, async (req, res) => {
   try {
     const { staffId, date, month } = req.query;
 
     let sql = `
-      SELECT swe.*, s.name AS staff_name, s.phone AS staff_phone
+      SELECT swe.*,
+             s.name AS staff_name, s.phone AS staff_phone,
+             v.visit_number,
+             COALESCE(swe.payment_status, v.payment_status, 'Paid') AS display_payment_status
       FROM staff_work_entries swe
       LEFT JOIN staff s ON s.id::text = swe.staff_id::text
+      LEFT JOIN customer_visits v ON v.id::text = swe.visit_id::text
       WHERE 1=1
     `;
     const params = [];
@@ -35,10 +39,14 @@ router.get('/', authenticate, async (req, res) => {
     const { rows } = await db.query(sql, params);
 
     const totalWorkAmount = (rows || []).reduce((acc, row) => acc + Number(row.amount || 0), 0);
+    const totalCommission = (rows || []).reduce((acc, row) => acc + Number(row.commission_amount || 0), 0);
+    const completedServicesCount = (rows || []).length;
 
     res.json({
       entries: rows || [],
       totalWorkAmount,
+      totalCommission,
+      completedServicesCount,
     });
   } catch (err) {
     console.error('Fetch staff work entries error:', err);
@@ -46,39 +54,7 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-// POST /api/staff-work — Record new manual staff work entry
-router.post('/', authenticate, async (req, res) => {
-  try {
-    const { staffId, description, amount, date } = req.body;
-    if (!staffId || !amount) {
-      return res.status(400).json({ error: 'Staff member and amount are required' });
-    }
-
-    const id = db.generateUUID();
-    const entryDate = date || new Date().toISOString().slice(0, 10);
-    const nowIso = new Date().toISOString();
-
-    const { rows } = await db.query(
-      `INSERT INTO staff_work_entries (id, staff_id, description, amount, date, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [id, staffId, description || null, Number(amount), entryDate, nowIso]
-    );
-
-    // Also fetch staff name for immediate UI display
-    const staffQ = await db.query('SELECT name FROM staff WHERE id = $1', [staffId]);
-    const staffName = staffQ.rows[0]?.name || 'Staff';
-
-    res.status(201).json({
-      ...(rows[0] || { id, staff_id: staffId, description, amount, date: entryDate, created_at: nowIso }),
-      staff_name: staffName,
-    });
-  } catch (err) {
-    console.error('Create staff work entry error:', err);
-    res.status(500).json({ error: 'Failed to record staff work entry' });
-  }
-});
-
-// DELETE /api/staff-work/:id — Delete work entry
+// DELETE /api/staff-work/:id — Delete individual work entry
 router.delete('/:id', authenticate, async (req, res) => {
   try {
     await db.query('DELETE FROM staff_work_entries WHERE id = $1', [req.params.id]);
