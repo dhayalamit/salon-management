@@ -9,14 +9,14 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const { rows } = await db.query(
       `SELECT c.*,
-              COALESCE(inv.visit_count, 0) AS visit_count,
-              COALESCE(inv.total_spent, 0) AS total_spent
+              COALESCE(vis.visit_count, 0) AS visit_count,
+              COALESCE(vis.total_spent, 0) AS total_spent
        FROM customers c
        LEFT JOIN (
          SELECT customer_id, COUNT(*) AS visit_count, SUM(total) AS total_spent
-         FROM invoices
+         FROM customer_visits
          GROUP BY customer_id
-       ) inv ON inv.customer_id::text = c.id::text
+       ) vis ON vis.customer_id::text = c.id::text
        ORDER BY c.created_at DESC`
     );
     res.json(rows);
@@ -34,17 +34,17 @@ router.get('/:id', authenticate, async (req, res) => {
     if (!customerQ.rows[0]) return res.status(404).json({ error: 'Customer not found' });
 
     const history = await db.query(
-      `SELECT i.*, s.name AS staff_name
-       FROM invoices i
-       LEFT JOIN staff s ON s.id::text = i.staff_id::text
-       WHERE i.customer_id::text = $1
-       ORDER BY i.created_at DESC`,
+      `SELECT v.*, s.name AS staff_name
+       FROM customer_visits v
+       LEFT JOIN staff s ON s.id::text = v.staff_id::text
+       WHERE v.customer_id::text = $1
+       ORDER BY v.created_at DESC`,
       [id]
     );
 
     const lifetime = await db.query(
       `SELECT COUNT(*) AS visit_count, COALESCE(SUM(total), 0) AS total_spent
-       FROM invoices WHERE customer_id::text = $1`,
+       FROM customer_visits WHERE customer_id::text = $1`,
       [id]
     );
 

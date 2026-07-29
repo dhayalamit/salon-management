@@ -117,8 +117,8 @@ router.put('/profile', authenticate, async (req, res) => {
 // POST /api/settings/reset-data — Complete system data reset
 router.post('/reset-data', authenticate, async (req, res) => {
   try {
-    await db.query('DELETE FROM invoices');
-    await db.query('DELETE FROM invoice_items');
+    await db.query('DELETE FROM customer_visits');
+    await db.query('DELETE FROM visit_items');
     await db.query('DELETE FROM appointments');
     await db.query('DELETE FROM attendance');
     await db.query('DELETE FROM customers');

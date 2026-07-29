@@ -144,30 +144,34 @@ async function initSQLiteTables() {
     `);
 
     sqliteDb.run(`
-      CREATE TABLE IF NOT EXISTS invoices (
+      CREATE TABLE IF NOT EXISTS customer_visits (
         id TEXT PRIMARY KEY,
-        invoice_number TEXT UNIQUE NOT NULL,
+        visit_number TEXT UNIQUE NOT NULL,
         customer_id TEXT,
+        appointment_id TEXT,
         staff_id TEXT,
         subtotal REAL NOT NULL DEFAULT 0,
         discount REAL NOT NULL DEFAULT 0,
         gst_percent REAL DEFAULT 0,
         gst_amount REAL DEFAULT 0,
         total REAL NOT NULL DEFAULT 0,
-        amount_received REAL DEFAULT 0,
-        change_returned REAL DEFAULT 0,
+        amount_paid REAL DEFAULT 0,
+        remaining_amount REAL DEFAULT 0,
         payment_method TEXT,
+        payment_status TEXT NOT NULL DEFAULT 'Paid',
+        notes TEXT,
         commission_amount REAL DEFAULT 0,
         next_appointment_date TEXT,
         cleared_at TEXT,
+        created_by TEXT,
         created_at TEXT DEFAULT (datetime('now'))
       )
     `);
 
     sqliteDb.run(`
-      CREATE TABLE IF NOT EXISTS invoice_items (
+      CREATE TABLE IF NOT EXISTS visit_items (
         id TEXT PRIMARY KEY,
-        invoice_id TEXT NOT NULL,
+        visit_id TEXT NOT NULL,
         item_type TEXT NOT NULL,
         service_id TEXT,
         product_id TEXT,
@@ -299,12 +303,12 @@ async function initSQLiteTables() {
       sqliteDb.run(`ALTER TABLE expenses ADD COLUMN ${col} TEXT`, () => {});
     });
 
-    ['amount_received', 'change_returned'].forEach((col) => {
-      sqliteDb.run(`ALTER TABLE invoices ADD COLUMN ${col} REAL DEFAULT 0`, () => {});
+    ['amount_paid', 'remaining_amount', 'payment_status', 'notes', 'created_by'].forEach((col) => {
+      sqliteDb.run(`ALTER TABLE customer_visits ADD COLUMN ${col} TEXT`, () => {});
     });
 
     ['cleared_at'].forEach((col) => {
-      sqliteDb.run(`ALTER TABLE invoices ADD COLUMN ${col} TEXT`, () => {});
+      sqliteDb.run(`ALTER TABLE customer_visits ADD COLUMN ${col} TEXT`, () => {});
     });
 
     sqliteDb.run(`
@@ -395,27 +399,31 @@ async function initPGTables() {
         status TEXT NOT NULL DEFAULT 'booked',
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
-      CREATE TABLE IF NOT EXISTS invoices (
+      CREATE TABLE IF NOT EXISTS customer_visits (
         id TEXT PRIMARY KEY,
-        invoice_number TEXT UNIQUE NOT NULL,
+        visit_number TEXT UNIQUE NOT NULL,
         customer_id TEXT,
+        appointment_id TEXT,
         staff_id TEXT,
         subtotal REAL NOT NULL DEFAULT 0,
         discount REAL NOT NULL DEFAULT 0,
         gst_percent REAL DEFAULT 0,
         gst_amount REAL DEFAULT 0,
         total REAL NOT NULL DEFAULT 0,
-        amount_received REAL DEFAULT 0,
-        change_returned REAL DEFAULT 0,
+        amount_paid REAL DEFAULT 0,
+        remaining_amount REAL DEFAULT 0,
         payment_method TEXT,
+        payment_status TEXT NOT NULL DEFAULT 'Paid',
+        notes TEXT,
         commission_amount REAL DEFAULT 0,
         next_appointment_date TEXT,
         cleared_at TIMESTAMPTZ,
+        created_by TEXT,
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
-      CREATE TABLE IF NOT EXISTS invoice_items (
+      CREATE TABLE IF NOT EXISTS visit_items (
         id TEXT PRIMARY KEY,
-        invoice_id TEXT NOT NULL,
+        visit_id TEXT NOT NULL,
         item_type TEXT NOT NULL,
         service_id TEXT,
         product_id TEXT,
@@ -521,9 +529,11 @@ async function initPGTables() {
 
     await pgPool.query(`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS title TEXT`).catch(() => {});
     await pgPool.query(`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'cash'`).catch(() => {});
-    await pgPool.query(`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS amount_received REAL DEFAULT 0`).catch(() => {});
-    await pgPool.query(`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS change_returned REAL DEFAULT 0`).catch(() => {});
-    await pgPool.query(`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS cleared_at TIMESTAMPTZ`).catch(() => {});
+    await pgPool.query(`ALTER TABLE customer_visits ADD COLUMN IF NOT EXISTS amount_paid REAL DEFAULT 0`).catch(() => {});
+    await pgPool.query(`ALTER TABLE customer_visits ADD COLUMN IF NOT EXISTS remaining_amount REAL DEFAULT 0`).catch(() => {});
+    await pgPool.query(`ALTER TABLE customer_visits ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'Paid'`).catch(() => {});
+    await pgPool.query(`ALTER TABLE customer_visits ADD COLUMN IF NOT EXISTS notes TEXT`).catch(() => {});
+    await pgPool.query(`ALTER TABLE customer_visits ADD COLUMN IF NOT EXISTS cleared_at TIMESTAMPTZ`).catch(() => {});
     await pgPool.query(`ALTER TABLE services ALTER COLUMN active SET DATA TYPE BOOLEAN USING (active::boolean)`).catch(() => {});
     await pgPool.query(`ALTER TABLE customers ADD COLUMN IF NOT EXISTS next_appointment_date TEXT`).catch(() => {});
     console.log('[DB] PostgreSQL tables initialized successfully');

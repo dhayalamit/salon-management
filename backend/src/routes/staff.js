@@ -44,17 +44,17 @@ router.get('/:id', authenticate, async (req, res) => {
     if (!staffQ.rows[0]) return res.status(404).json({ error: 'Staff member not found' });
 
     const attendanceQ = await db.query('SELECT * FROM attendance WHERE staff_id::text = $1 ORDER BY date DESC LIMIT 30', [id]);
-    const invoicesQ = await db.query(
-      `SELECT i.*, c.name AS customer_name FROM invoices i
-       LEFT JOIN customers c ON c.id::text = i.customer_id::text
-       WHERE i.staff_id::text = $1 ORDER BY i.created_at DESC LIMIT 20`,
+    const visitsQ = await db.query(
+      `SELECT v.*, c.name AS customer_name FROM customer_visits v
+       LEFT JOIN customers c ON c.id::text = v.customer_id::text
+       WHERE v.staff_id::text = $1 ORDER BY v.created_at DESC LIMIT 20`,
       [id]
     );
 
     res.json({
       ...staffQ.rows[0],
       attendance: attendanceQ.rows || [],
-      salesHistory: invoicesQ.rows || [],
+      salesHistory: visitsQ.rows || [],
     });
   } catch (err) {
     console.error('Fetch staff profile error:', err);

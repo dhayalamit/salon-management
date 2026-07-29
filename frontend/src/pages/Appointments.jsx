@@ -155,6 +155,32 @@ export default function Appointments() {
     }
   };
 
+  const handleCompleteVisit = (app) => {
+    const matchedService = services.find((s) => s.id === app.service_id);
+    navigate('/visits', {
+      state: {
+        createVisit: true,
+        appointmentId: app.id,
+        customerId: app.customer_id,
+        staffId: app.staff_id,
+        prefillItems: app.service_id
+          ? [
+              {
+                type: 'service',
+                id: app.service_id,
+                name: app.service_name || matchedService?.name || 'Service',
+                unitPrice: Number(app.service_price || matchedService?.price || 0),
+                quantity: 1,
+                discount: 0,
+                staffId: app.staff_id || '',
+                commissionPercent: Number(matchedService?.commission_percent || 0),
+              },
+            ]
+          : [],
+      },
+    });
+  };
+
   const filteredAppointments = appointments.filter((app) => {
     const term = search.toLowerCase();
     return (
@@ -242,11 +268,11 @@ export default function Appointments() {
 
           {(row.status === 'booked' || row.status === 'in_progress') && (
             <button
-              onClick={() => handleUpdateStatus(row.id, 'completed')}
-              className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold text-xs hover:bg-emerald-600 hover:text-white transition-colors"
-              title="Mark Service Completed"
+              onClick={() => handleCompleteVisit(row)}
+              className="px-2.5 py-1 rounded-full bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 transition-colors shadow-xs flex items-center gap-1"
+              title="Complete Visit & Record Payment"
             >
-              Complete
+              Complete Visit
             </button>
           )}
 

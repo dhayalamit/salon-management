@@ -89,7 +89,7 @@ export default function Topbar({ onMenuClick }) {
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             onFocus={() => searchQuery.length >= 2 && setIsSearchOpen(true)}
-            placeholder="Search clients, bills, staff, products..."
+            placeholder="Search clients, visits, staff, products..."
             className="w-full pl-10 pr-8 py-2.5 bg-white border border-[#E8DFCF] rounded-full text-xs text-dark placeholder:text-dark/40 focus:outline-none focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/30 transition-all shadow-xs"
           />
           {searchQuery && (
@@ -166,27 +166,27 @@ export default function Topbar({ onMenuClick }) {
                 </div>
               )}
 
-              {/* Invoices */}
-              {searchResults.invoices?.length > 0 && (
+              {/* Customer Visits */}
+              {(searchResults.visits?.length > 0 || searchResults.invoices?.length > 0) && (
                 <div>
                   <p className="font-bold text-dark/60 uppercase text-[10px] tracking-wider mb-1.5 flex items-center gap-1">
-                    <Receipt size={12} className="text-emerald-600" /> Invoices ({searchResults.invoices.length})
+                    <Calendar size={12} className="text-emerald-600" /> Customer Visits ({(searchResults.visits || searchResults.invoices).length})
                   </p>
                   <div className="space-y-1">
-                    {searchResults.invoices.map((inv) => (
+                    {(searchResults.visits || searchResults.invoices).map((v) => (
                       <div
-                        key={inv.id}
+                        key={v.id}
                         onClick={() => {
-                          navigate(`/billing/${inv.id}`);
+                          navigate(`/visits/${v.id}`);
                           setIsSearchOpen(false);
                         }}
                         className="p-2 rounded-xl hover:bg-emerald-50 cursor-pointer flex justify-between items-center transition-colors"
                       >
                         <div>
-                          <p className="font-semibold text-dark">{inv.invoice_number}</p>
-                          <p className="text-[10px] text-dark/50">{inv.customer_name || 'Walk-in Client'}</p>
+                          <p className="font-semibold text-dark">{v.visit_number || v.invoice_number}</p>
+                          <p className="text-[10px] text-dark/50">{v.customer_name || 'Walk-in Client'}</p>
                         </div>
-                        <span className="font-display font-bold text-emerald-700">₹{Number(inv.total).toLocaleString()}</span>
+                        <span className="font-display font-bold text-emerald-700">₹{Number(v.total).toLocaleString()}</span>
                       </div>
                     ))}
                   </div>

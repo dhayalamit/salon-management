@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import client from '../api/client';
-import { ArrowLeft, Phone, Calendar, Award, Receipt, Clock, Sparkles } from 'lucide-react';
+import { ArrowLeft, Phone, Calendar, Award, CalendarCheck, Clock, Sparkles } from 'lucide-react';
 import { useToast } from '../context/ToastContext.jsx';
 
 export default function CustomerProfile() {
@@ -112,17 +112,17 @@ export default function CustomerProfile() {
       {/* Visit History Section */}
       <div className="glass-card p-6">
         <h3 className="font-display text-lg font-bold text-dark mb-4 flex items-center gap-2">
-          <Receipt size={18} className="text-[#D4AF37]" /> Invoice & Visit History
+          <CalendarCheck size={18} className="text-[#D4AF37]" /> Customer Visit History
         </h3>
 
         {!profile.history || profile.history.length === 0 ? (
-          <p className="text-xs text-dark/40 py-8 text-center">No billing transactions recorded for this client</p>
+          <p className="text-xs text-dark/40 py-8 text-center">No customer visits recorded for this client</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-[#E8DFCF] text-dark/50 font-semibold uppercase">
-                  <th className="pb-3 px-2">Invoice #</th>
+                  <th className="pb-3 px-2">Visit #</th>
                   <th className="pb-3 px-2">Date</th>
                   <th className="pb-3 px-2">Staff</th>
                   <th className="pb-3 px-2">Payment Method</th>
@@ -131,23 +131,23 @@ export default function CustomerProfile() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E8DFCF]/60">
-                {profile.history.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-[#F4F0E6]/50 transition-colors">
-                    <td className="py-3 px-2 font-semibold text-dark">{inv.invoice_number}</td>
-                    <td className="py-3 px-2 text-dark/60">{new Date(inv.created_at).toLocaleDateString()}</td>
-                    <td className="py-3 px-2 text-dark/70">{inv.staff_name || 'Standard Staff'}</td>
+                {profile.history.map((vis) => (
+                  <tr key={vis.id} className="hover:bg-[#F4F0E6]/50 transition-colors">
+                    <td className="py-3 px-2 font-mono font-bold text-dark">{vis.visit_number || vis.invoice_number}</td>
+                    <td className="py-3 px-2 text-dark/60">{new Date(vis.created_at).toLocaleDateString()}</td>
+                    <td className="py-3 px-2 text-dark/70">{vis.staff_name || 'Standard Staff'}</td>
                     <td className="py-3 px-2 capitalize">
                       <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">
-                        {inv.payment_method || 'Cash'}
+                        {vis.payment_method || 'Cash'}
                       </span>
                     </td>
-                    <td className="py-3 px-2 text-right font-bold text-dark">₹{Number(inv.total).toLocaleString('en-IN')}</td>
+                    <td className="py-3 px-2 text-right font-bold text-dark">₹{Number(vis.total).toLocaleString('en-IN')}</td>
                     <td className="py-3 px-2 text-right">
                       <button
-                        onClick={() => navigate(`/billing/${inv.id}`)}
+                        onClick={() => navigate(`/visits/${vis.id}`)}
                         className="px-3 py-1 rounded-full bg-[#F4F0E6] text-dark font-semibold hover:bg-[#D4AF37] hover:text-white transition-colors"
                       >
-                        View Tax Invoice
+                        View Visit
                       </button>
                     </td>
                   </tr>

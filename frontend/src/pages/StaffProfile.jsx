@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import client from '../api/client';
-import { ArrowLeft, Phone, Calendar, DollarSign, Percent, Award, Receipt, Clock } from 'lucide-react';
+import { ArrowLeft, Phone, Calendar, DollarSign, Percent, Award, CalendarCheck, Clock } from 'lucide-react';
 import { useToast } from '../context/ToastContext.jsx';
 
 export default function StaffProfile() {
@@ -16,10 +16,10 @@ export default function StaffProfile() {
     fetchProfile();
     const handleUpdate = () => fetchProfile();
     window.addEventListener('attendance_updated', handleUpdate);
-    window.addEventListener('billing_updated', handleUpdate);
+    window.addEventListener('dashboard_updated', handleUpdate);
     return () => {
       window.removeEventListener('attendance_updated', handleUpdate);
-      window.removeEventListener('billing_updated', handleUpdate);
+      window.removeEventListener('dashboard_updated', handleUpdate);
     };
   }, [id]);
 
@@ -110,10 +110,10 @@ export default function StaffProfile() {
         </div>
       </div>
 
-      {/* Performed Services / Invoices History */}
+      {/* Performed Services / Visits History */}
       <div className="glass-card p-6">
         <h3 className="font-display text-lg font-bold text-dark mb-4 flex items-center gap-2">
-          <Receipt size={18} className="text-[#D4AF37]" /> Sales & Service History
+          <CalendarCheck size={18} className="text-[#D4AF37]" /> Customer Visits & Service History
         </h3>
 
         {!profile.salesHistory || profile.salesHistory.length === 0 ? (
@@ -123,21 +123,21 @@ export default function StaffProfile() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-[#E8DFCF] text-dark/50 font-semibold uppercase">
-                  <th className="pb-3 px-2">Invoice #</th>
+                  <th className="pb-3 px-2">Visit #</th>
                   <th className="pb-3 px-2">Client</th>
                   <th className="pb-3 px-2">Date</th>
-                  <th className="pb-3 px-2 text-right">Bill Total</th>
+                  <th className="pb-3 px-2 text-right">Visit Total</th>
                   <th className="pb-3 px-2 text-right">Commission</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E8DFCF]/60">
-                {profile.salesHistory.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-[#F4F0E6]/50 transition-colors">
-                    <td className="py-3 px-2 font-semibold text-dark">{inv.invoice_number}</td>
-                    <td className="py-3 px-2 text-dark/70">{inv.customer_name || 'Select Customer / Client'}</td>
-                    <td className="py-3 px-2 text-dark/50">{new Date(inv.created_at).toLocaleDateString()}</td>
-                    <td className="py-3 px-2 text-right font-bold text-dark">₹{Number(inv.total).toLocaleString('en-IN')}</td>
-                    <td className="py-3 px-2 text-right font-bold text-emerald-600">₹{Number(inv.commission_amount || 0).toLocaleString('en-IN')}</td>
+                {profile.salesHistory.map((vis) => (
+                  <tr key={vis.id} className="hover:bg-[#F4F0E6]/50 transition-colors">
+                    <td className="py-3 px-2 font-mono font-bold text-dark">{vis.visit_number || vis.invoice_number}</td>
+                    <td className="py-3 px-2 text-dark/70">{vis.customer_name || 'Select Customer / Client'}</td>
+                    <td className="py-3 px-2 text-dark/50">{new Date(vis.created_at).toLocaleDateString()}</td>
+                    <td className="py-3 px-2 text-right font-bold text-dark">₹{Number(vis.total).toLocaleString('en-IN')}</td>
+                    <td className="py-3 px-2 text-right font-bold text-emerald-600">₹{Number(vis.commission_amount || 0).toLocaleString('en-IN')}</td>
                   </tr>
                 ))}
               </tbody>

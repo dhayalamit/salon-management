@@ -84,27 +84,34 @@ CREATE TABLE IF NOT EXISTS appointments (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- ---------- INVOICES (bill header) ----------
-CREATE TABLE IF NOT EXISTS invoices (
+-- ---------- CUSTOMER VISITS ----------
+CREATE TABLE IF NOT EXISTS customer_visits (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  invoice_number VARCHAR(30) UNIQUE NOT NULL,
+  visit_number VARCHAR(30) UNIQUE NOT NULL,
   customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+  appointment_id UUID REFERENCES appointments(id) ON DELETE SET NULL,
   staff_id UUID REFERENCES staff(id) ON DELETE SET NULL,
   subtotal NUMERIC(10,2) NOT NULL DEFAULT 0,
   discount NUMERIC(10,2) NOT NULL DEFAULT 0,
   gst_percent NUMERIC(5,2) DEFAULT 0,
   gst_amount NUMERIC(10,2) DEFAULT 0,
   total NUMERIC(10,2) NOT NULL DEFAULT 0,
-  payment_method VARCHAR(10) CHECK (payment_method IN ('cash', 'upi', 'card')),
+  amount_paid NUMERIC(10,2) DEFAULT 0,
+  remaining_amount NUMERIC(10,2) DEFAULT 0,
+  payment_method VARCHAR(20) CHECK (payment_method IN ('cash', 'upi', 'card', 'pending')),
+  payment_status VARCHAR(20) DEFAULT 'Paid' CHECK (payment_status IN ('Paid', 'Partial', 'Pending')),
+  notes TEXT,
   commission_amount NUMERIC(10,2) DEFAULT 0,
   next_appointment_date DATE,
+  cleared_at TIMESTAMPTZ,
+  created_by VARCHAR(120),
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- ---------- INVOICE ITEMS (services or products on a bill) ----------
-CREATE TABLE IF NOT EXISTS invoice_items (
+-- ---------- VISIT ITEMS ----------
+CREATE TABLE IF NOT EXISTS visit_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  invoice_id UUID NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+  visit_id UUID NOT NULL REFERENCES customer_visits(id) ON DELETE CASCADE,
   item_type VARCHAR(10) NOT NULL CHECK (item_type IN ('service', 'product')),
   service_id UUID REFERENCES services(id),
   product_id UUID REFERENCES products(id),

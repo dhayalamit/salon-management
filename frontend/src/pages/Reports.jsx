@@ -111,8 +111,8 @@ export default function Reports() {
       render: (row) => <span className="font-semibold text-dark">{row.staff_name}</span>,
     },
     {
-      header: 'Bills Processed',
-      render: (row) => <span className="font-mono text-xs text-dark/70 font-semibold">{row.bills_count || 0}</span>,
+      header: 'Customer Visits Completed',
+      render: (row) => <span className="font-mono text-xs text-dark/70 font-semibold">{row.visits_count || row.bills_count || 0}</span>,
     },
     {
       header: 'Total Revenue Generated',

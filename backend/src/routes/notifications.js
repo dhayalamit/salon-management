@@ -9,13 +9,13 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const today = new Date().toLocaleDateString('en-CA');
 
-    const [appts, lowStock, outOfStock, pendingBills, customers] = await Promise.all([
+    const [appts, lowStock, outOfStock, pendingVisits, customers] = await Promise.all([
       db.query(
         `SELECT a.*, c.name AS customer_name, s.name AS staff_name, sv.name AS service_name
          FROM appointments a
-         LEFT JOIN customers c ON c.id = a.customer_id
-         LEFT JOIN staff s ON s.id = a.staff_id
-         LEFT JOIN services sv ON sv.id = a.service_id
+         LEFT JOIN customers c ON c.id::text = a.customer_id::text
+         LEFT JOIN staff s ON s.id::text = a.staff_id::text
+         LEFT JOIN services sv ON sv.id::text = a.service_id::text
          WHERE a.appointment_date = $1
          ORDER BY a.appointment_time ASC`,
         [today]
@@ -25,7 +25,7 @@ router.get('/', authenticate, async (req, res) => {
       ),
       db.query(`SELECT * FROM products WHERE stock_quantity <= 0 ORDER BY name ASC`),
       db.query(
-        `SELECT i.*, c.name AS customer_name FROM invoices i LEFT JOIN customers c ON c.id = i.customer_id WHERE i.payment_method = 'pending'`
+        `SELECT v.*, c.name AS customer_name FROM customer_visits v LEFT JOIN customers c ON c.id::text = v.customer_id::text WHERE v.remaining_amount > 0 OR v.payment_status IN ('Pending', 'Partial')`
       ),
       db.query(`SELECT * FROM customers WHERE birthday IS NOT NULL`),
     ]);
@@ -73,11 +73,11 @@ router.get('/', authenticate, async (req, res) => {
       message: `Product is completely out of stock!`,
     }));
 
-    const pendingPayAlerts = (pendingBills.rows || []).map((b) => ({
-      id: `pay-${b.id}`,
+    const pendingPayAlerts = (pendingVisits.rows || []).map((v) => ({
+      id: `pay-${v.id}`,
       type: 'pending_payment',
-      title: `Pending Payment: Invoice #${b.invoice_number}`,
-      message: `${b.customer_name || 'Client'} — ₹${b.total}`,
+      title: `Pending Visit Payment: Visit #${v.visit_number}`,
+      message: `${v.customer_name || 'Client'} — Remaining ₹${v.remaining_amount || v.total}`,
     }));
 
     // Customer Birthday Reminders
@@ -101,8 +101,8 @@ router.get('/', authenticate, async (req, res) => {
     ];
 
     res.json({
-      count: notifications.length,
       notifications,
+      unreadCount: notifications.length,
     });
   } catch (err) {
     console.error('Fetch notifications error:', err);

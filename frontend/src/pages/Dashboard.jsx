@@ -90,14 +90,12 @@ export default function Dashboard() {
     const handleUpdate = () => fetchStats();
     window.addEventListener('dashboard_updated', handleUpdate);
     window.addEventListener('attendance_updated', handleUpdate);
-    window.addEventListener('billing_updated', handleUpdate);
     window.addEventListener('appointment_updated', handleUpdate);
     window.addEventListener('customers_updated', handleUpdate);
     window.addEventListener('products_updated', handleUpdate);
     return () => {
       window.removeEventListener('dashboard_updated', handleUpdate);
       window.removeEventListener('attendance_updated', handleUpdate);
-      window.removeEventListener('billing_updated', handleUpdate);
       window.removeEventListener('appointment_updated', handleUpdate);
       window.removeEventListener('customers_updated', handleUpdate);
       window.removeEventListener('products_updated', handleUpdate);
@@ -158,10 +156,12 @@ export default function Dashboard() {
     e.preventDefault();
     if (!settleInvoice) return;
     try {
-      await client.put(`/billing/${settleInvoice.id}/payment`, { paymentMethod: settleMethod });
+      await client.put(`/visits/${settleInvoice.id}/payment`, {
+        paymentMethod: settleMethod,
+        amountPaid: settleInvoice.remaining_amount || settleInvoice.total,
+      });
       showSuccess(`Payment collected via ${settleMethod.toUpperCase()} successfully`);
       setSettleInvoice(null);
-      window.dispatchEvent(new CustomEvent('billing_updated'));
       window.dispatchEvent(new CustomEvent('dashboard_updated'));
       fetchStats();
     } catch (err) {
@@ -193,13 +193,15 @@ export default function Dashboard() {
     { title: 'Staff Commission', icon: Award, route: '/commissions', color: 'bg-orange-50 text-orange-600', border: 'border-orange-200', desc: 'Service Commissions' },
     { title: 'Staff Work Register', icon: FileText, route: '/staff-work', color: 'bg-indigo-50 text-indigo-700', border: 'border-indigo-200', desc: 'Manual Work Entries' },
     { title: 'Products', icon: Package, route: '/products', color: 'bg-rose-50 text-rose-600', border: 'border-rose-200', desc: 'Stock Inventory' },
-    { title: 'Billing / POS', icon: Receipt, route: '/billing', color: 'bg-gold-50 text-[#D4AF37]', border: 'border-[#E8DFCF]', desc: 'New Invoice / POS' },
+    { title: 'Customer Visits', icon: CalendarCheck, route: '/visits', color: 'bg-[#F4F0E6] text-[#D4AF37]', border: 'border-[#E8DFCF]', desc: 'Customer Visits & Payments' },
     { title: 'Expenses', icon: Wallet, route: '/expenses', color: 'bg-cyan-50 text-cyan-600', border: 'border-cyan-200', desc: 'Salon Expenses' },
     { title: 'Reports', icon: BarChart3, route: '/reports', color: 'bg-[#F4F0E6] text-dark', border: 'border-[#E8DFCF]', desc: 'Revenue Analytics' },
     { title: 'Settings', icon: SettingsIcon, route: '/settings', color: 'bg-slate-100 text-slate-700', border: 'border-slate-300', desc: 'Salon Branding' },
   ];
 
-  const pendingInvoicesList = stats.todayInvoicesList.filter((inv) => (inv.payment_method || '').toLowerCase() === 'pending');
+  const pendingVisitsList = (stats.todayVisitsList || stats.todayInvoicesList || []).filter(
+    (v) => Number(v.remaining_amount || 0) > 0 || (v.payment_status || '').toLowerCase() === 'pending' || (v.payment_method || '').toLowerCase() === 'pending'
+  );
 
   return (
     <div className="space-y-6">
@@ -235,10 +237,10 @@ export default function Dashboard() {
           </button>
 
           <button
-            onClick={() => navigate('/billing')}
+            onClick={() => navigate('/visits')}
             className="px-5 py-2.5 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-md flex items-center gap-1.5"
           >
-            <Receipt size={16} /> POS Terminal
+            <CalendarCheck size={16} /> Customer Visits
           </button>
         </div>
       </div>
@@ -530,11 +532,11 @@ export default function Dashboard() {
 
             <div className="space-y-3">
               <button
-                onClick={() => navigate('/billing')}
+                onClick={() => navigate('/visits')}
                 className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#D4AF37] text-white font-semibold text-sm hover:bg-[#C59F2E] transition-all shadow-md"
               >
                 <span className="flex items-center gap-2.5">
-                  <Receipt size={18} /> New POS Billing
+                  <CalendarCheck size={18} /> Create Customer Visit
                 </span>
                 <ChevronRight size={16} />
               </button>
@@ -766,29 +768,29 @@ export default function Dashboard() {
             <button
               onClick={() => {
                 setActiveModal(null);
-                navigate('/billing');
+                navigate('/visits');
               }}
               className="px-4 py-2 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] flex items-center gap-1.5 shadow-sm"
             >
-              <Receipt size={14} /> Open POS Terminal
+              <CalendarCheck size={14} /> View All Customer Visits
             </button>
           </div>
 
           <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-            {pendingInvoicesList.length === 0 ? (
+            {pendingVisitsList.length === 0 ? (
               <p className="text-xs text-emerald-700 py-8 text-center font-semibold">🎉 All payments are up-to-date! No pending balances.</p>
             ) : (
-              pendingInvoicesList.map((inv) => (
-                <div key={inv.id} className="p-3.5 rounded-2xl bg-white border border-amber-200 flex items-center justify-between text-xs">
+              pendingVisitsList.map((v) => (
+                <div key={v.id} className="p-3.5 rounded-2xl bg-white border border-amber-200 flex items-center justify-between text-xs">
                   <div>
-                    <p className="font-bold text-dark text-sm">{inv.invoice_number}</p>
-                    <p className="text-xs text-dark/70 font-semibold">{inv.customer_name || 'Walk-in Client'} {inv.customer_phone ? `(${inv.customer_phone})` : ''}</p>
-                    <p className="text-[10px] text-dark/40">Stylist: {inv.staff_name || 'Staff'}</p>
+                    <p className="font-bold text-dark text-sm">{v.visit_number || v.invoice_number}</p>
+                    <p className="text-xs text-dark/70 font-semibold">{v.customer_name || 'Walk-in Client'} {v.customer_phone ? `(${v.customer_phone})` : ''}</p>
+                    <p className="text-[10px] text-dark/40">Stylist: {v.staff_name || 'Staff'}</p>
                   </div>
                   <div className="text-right flex flex-col items-end gap-1">
-                    <span className="font-display font-bold text-amber-700 text-base">₹{Number(inv.total).toLocaleString('en-IN')}</span>
+                    <span className="font-display font-bold text-amber-700 text-base">₹{Number(v.remaining_amount || v.total).toLocaleString('en-IN')}</span>
                     <button
-                      onClick={() => setSettleInvoice(inv)}
+                      onClick={() => setSettleInvoice(v)}
                       className="px-3 py-1 rounded-full bg-emerald-600 text-white font-bold text-[11px] hover:bg-emerald-700 transition-colors shadow-xs"
                     >
                       Clear Payment →

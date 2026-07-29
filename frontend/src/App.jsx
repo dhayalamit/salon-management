@@ -13,8 +13,8 @@ import CustomerProfile from './pages/CustomerProfile.jsx';
 import Services from './pages/Services.jsx';
 import Products from './pages/Products.jsx';
 import Appointments from './pages/Appointments.jsx';
-import Billing from './pages/Billing.jsx';
-import InvoiceView from './pages/InvoiceView.jsx';
+import CustomerVisits from './pages/CustomerVisits.jsx';
+import VisitDetailsView from './pages/VisitDetailsView.jsx';
 import Expenses from './pages/Expenses.jsx';
 import Reports from './pages/Reports.jsx';
 import Settings from './pages/Settings.jsx';
@@ -54,8 +54,10 @@ export default function App() {
         <Route path="/services" element={<Services />} />
         <Route path="/products" element={<Products />} />
         <Route path="/appointments" element={<Appointments />} />
-        <Route path="/billing" element={<Billing />} />
-        <Route path="/billing/:id" element={<InvoiceView />} />
+        <Route path="/visits" element={<CustomerVisits />} />
+        <Route path="/visits/:id" element={<VisitDetailsView />} />
+        <Route path="/billing" element={<Navigate to="/visits" replace />} />
+        <Route path="/billing/:id" element={<Navigate to="/visits" replace />} />
         <Route path="/expenses" element={<Expenses />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />

@@ -41,16 +41,16 @@ router.get('/monthly', authenticate, async (req, res) => {
       `SELECT COALESCE(SUM(total), 0) AS total_revenue,
               COALESCE(SUM(gst_amount), 0) AS total_gst,
               COALESCE(SUM(discount), 0) AS total_discount,
-              COUNT(*) AS invoice_count
-       FROM invoices
+              COUNT(*) AS visits_count
+       FROM customer_visits
        WHERE substr(created_at::text, 1, 10) >= $1 AND substr(created_at::text, 1, 10) <= $2`,
       [startDate, endDate]
     );
 
     const prevRevRes = await db.query(
       `SELECT COALESCE(SUM(total), 0) AS total_revenue,
-              COUNT(*) AS invoice_count
-       FROM invoices
+              COUNT(*) AS visits_count
+       FROM customer_visits
        WHERE substr(created_at::text, 1, 10) >= $1 AND substr(created_at::text, 1, 10) <= $2`,
       [prevStartDate, prevEndDate]
     );
@@ -99,14 +99,14 @@ router.get('/monthly', authenticate, async (req, res) => {
     // 3. Customer Metrics (New vs Returning for month)
     const custServedRes = await db.query(
       `SELECT COUNT(DISTINCT customer_id) AS total_served
-       FROM invoices
+       FROM customer_visits
        WHERE substr(created_at::text, 1, 10) >= $1 AND substr(created_at::text, 1, 10) <= $2 AND customer_id IS NOT NULL`,
       [startDate, endDate]
     );
 
     const prevCustServedRes = await db.query(
       `SELECT COUNT(DISTINCT customer_id) AS total_served
-       FROM invoices
+       FROM customer_visits
        WHERE substr(created_at::text, 1, 10) >= $1 AND substr(created_at::text, 1, 10) <= $2 AND customer_id IS NOT NULL`,
       [prevStartDate, prevEndDate]
     );
@@ -125,11 +125,11 @@ router.get('/monthly', authenticate, async (req, res) => {
 
     // 4. Service Breakdown
     const serviceBreakdown = await db.query(
-      `SELECT ii.name, COUNT(*) AS bookings_count, COALESCE(SUM(ii.line_total), 0) AS total_revenue
-       FROM invoice_items ii
-       JOIN invoices i ON i.id = ii.invoice_id
-       WHERE substr(i.created_at::text, 1, 10) >= $1 AND substr(i.created_at::text, 1, 10) <= $2 AND ii.item_type = 'service'
-       GROUP BY ii.name
+      `SELECT vi.name, COUNT(*) AS bookings_count, COALESCE(SUM(vi.line_total), 0) AS total_revenue
+       FROM visit_items vi
+       JOIN customer_visits v ON v.id = vi.visit_id
+       WHERE substr(v.created_at::text, 1, 10) >= $1 AND substr(v.created_at::text, 1, 10) <= $2 AND vi.item_type = 'service'
+       GROUP BY vi.name
        ORDER BY total_revenue DESC`,
       [startDate, endDate]
     );
@@ -140,20 +140,20 @@ router.get('/monthly', authenticate, async (req, res) => {
 
     // 5. Retail Products Breakdown
     const productBreakdown = await db.query(
-      `SELECT ii.name, COALESCE(SUM(ii.quantity), 0) AS total_qty, COALESCE(SUM(ii.line_total), 0) AS total_revenue
-       FROM invoice_items ii
-       JOIN invoices i ON i.id = ii.invoice_id
-       WHERE substr(i.created_at::text, 1, 10) >= $1 AND substr(i.created_at::text, 1, 10) <= $2 AND ii.item_type = 'product'
-       GROUP BY ii.name
+      `SELECT vi.name, COALESCE(SUM(vi.quantity), 0) AS total_qty, COALESCE(SUM(vi.line_total), 0) AS total_revenue
+       FROM visit_items vi
+       JOIN customer_visits v ON v.id = vi.visit_id
+       WHERE substr(v.created_at::text, 1, 10) >= $1 AND substr(v.created_at::text, 1, 10) <= $2 AND vi.item_type = 'product'
+       GROUP BY vi.name
        ORDER BY total_revenue DESC`,
       [startDate, endDate]
     );
 
     const prevProductRes = await db.query(
-      `SELECT COALESCE(SUM(ii.line_total), 0) AS total_revenue
-       FROM invoice_items ii
-       JOIN invoices i ON i.id = ii.invoice_id
-       WHERE substr(i.created_at::text, 1, 10) >= $1 AND substr(i.created_at::text, 1, 10) <= $2 AND ii.item_type = 'product'`,
+      `SELECT COALESCE(SUM(vi.line_total), 0) AS total_revenue
+       FROM visit_items vi
+       JOIN customer_visits v ON v.id = vi.visit_id
+       WHERE substr(v.created_at::text, 1, 10) >= $1 AND substr(v.created_at::text, 1, 10) <= $2 AND vi.item_type = 'product'`,
       [prevStartDate, prevEndDate]
     );
 
@@ -186,9 +186,9 @@ router.get('/monthly', authenticate, async (req, res) => {
     );
 
     const staffPerformance = await db.query(
-      `SELECT s.name AS staff_name, COUNT(i.id) AS bills_count, COALESCE(SUM(i.total), 0) AS total_sales
+      `SELECT s.name AS staff_name, COUNT(v.id) AS visits_count, COUNT(v.id) AS bills_count, COALESCE(SUM(v.total), 0) AS total_sales
        FROM staff s
-       LEFT JOIN invoices i ON i.staff_id = s.id AND substr(i.created_at::text, 1, 10) >= $1 AND substr(i.created_at::text, 1, 10) <= $2
+       LEFT JOIN customer_visits v ON v.staff_id = s.id AND substr(v.created_at::text, 1, 10) >= $1 AND substr(v.created_at::text, 1, 10) <= $2
        GROUP BY s.id, s.name
        ORDER BY total_sales DESC`,
       [startDate, endDate]
@@ -200,7 +200,7 @@ router.get('/monthly', authenticate, async (req, res) => {
     // 7. Payment Mode Breakdown
     const paymentBreakdownRes = await db.query(
       `SELECT payment_method, COALESCE(SUM(total), 0) AS total_amount, COUNT(*) AS count
-       FROM invoices
+       FROM customer_visits
        WHERE substr(created_at::text, 1, 10) >= $1 AND substr(created_at::text, 1, 10) <= $2
        GROUP BY payment_method`,
       [startDate, endDate]
