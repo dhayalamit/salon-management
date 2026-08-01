@@ -98,7 +98,7 @@ export default function StaffWorkRegister() {
               Staff Work Register
             </h1>
             <p className="text-xs text-dark/50 mt-0.5">
-              Automatically recorded work entries from Customer Visits. Staff work count, revenue, and commissions update instantly.
+              Automatically recorded work entries from Customer Visits. Staff work count and revenue update instantly.
             </p>
           </div>
         </div>
@@ -112,7 +112,7 @@ export default function StaffWorkRegister() {
       </div>
 
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="glass-card p-5 border border-[#E8DFCF] flex items-center justify-between">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-dark/40 block mb-1">
@@ -136,20 +136,6 @@ export default function StaffWorkRegister() {
           </div>
           <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-100">
             <TrendingUp size={22} />
-          </div>
-        </div>
-
-        <div className="glass-card p-5 border border-[#E8DFCF] flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-dark/40 block mb-1">
-              Total Commission
-            </span>
-            <h3 className="font-display text-2xl font-bold text-[#D4AF37]">
-              ₹{totalCommission.toLocaleString('en-IN')}
-            </h3>
-          </div>
-          <div className="p-3 rounded-2xl bg-amber-50 text-[#D4AF37] border border-amber-100">
-            <Award size={22} />
           </div>
         </div>
       </div>
@@ -248,7 +234,6 @@ export default function StaffWorkRegister() {
                   <th className="pb-3 px-3">Client Name</th>
                   <th className="pb-3 px-3">Service Performed</th>
                   <th className="pb-3 px-3 text-right">Price (₹)</th>
-                  <th className="pb-3 px-3 text-right">Commission (₹)</th>
                   <th className="pb-3 px-3">Payment Status</th>
                   <th className="pb-3 px-3 text-right">Action</th>
                 </tr>
@@ -293,10 +278,6 @@ export default function StaffWorkRegister() {
 
                       <td className="py-3 px-3 text-right font-mono font-bold text-dark text-sm">
                         ₹{Number(entry.amount).toLocaleString('en-IN')}
-                      </td>
-
-                      <td className="py-3 px-3 text-right font-mono font-bold text-[#D4AF37]">
-                        ₹{Number(entry.commission_amount || 0).toLocaleString('en-IN')}
                       </td>
 
                       <td className="py-3 px-3">
