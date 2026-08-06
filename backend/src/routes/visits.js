@@ -167,6 +167,10 @@ router.post('/', authenticate, async (req, res) => {
     const gstAmount = (taxableAmount * gstPct) / 100;
     const total = taxableAmount + gstAmount;
 
+    const visitNumber = await nextVisitNumber();
+    const visitId = db.generateUUID();
+    const createdBy = req.user?.name || 'Admin';
+
     // Payment calculations (Advance Wallet, Cash, UPI, Card, Split, Pending)
     let pMethod = paymentMethod || 'cash';
     let advanceUsed = 0;
