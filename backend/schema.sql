@@ -195,7 +195,7 @@ CREATE TABLE IF NOT EXISTS settings (
 INSERT INTO settings (id, salon_name) VALUES (1, 'My Salon') ON CONFLICT (id) DO NOTHING;
 
 -- ---------- Helpful indexes ----------
-CREATE INDEX IF NOT EXISTS idx_invoices_created_at ON invoices (created_at);
+CREATE INDEX IF NOT EXISTS idx_customer_visits_created_at ON customer_visits (created_at);
 CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance (date);
 CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments (appointment_date);
 CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers (phone);

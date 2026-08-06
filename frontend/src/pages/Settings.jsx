@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import client from '../api/client';
-import { Settings as SettingsIcon, Save, Key, User, Sparkles } from 'lucide-react';
+import { Settings as SettingsIcon, Save, Key, User, Sparkles, RotateCcw, Trash2, AlertTriangle } from 'lucide-react';
 import { useToast } from '../context/ToastContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import ConfirmModal from '../components/ui/ConfirmModal.jsx';
 
 export default function Settings() {
   const { showSuccess, showError } = useToast();
@@ -21,6 +22,8 @@ export default function Settings() {
 
   const [loading, setLoading] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resettingData, setResettingData] = useState(false);
 
   // User Profile state
   const [profileData, setProfileData] = useState({
@@ -99,9 +102,21 @@ export default function Settings() {
       showSuccess('Password updated successfully');
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
-      showError(err.response?.data?.error || 'Failed to change password');
-    } finally {
       setChangingPassword(false);
+    }
+  };
+
+  const handleResetData = async () => {
+    try {
+      setResettingData(true);
+      const res = await client.post('/settings/reset-data');
+      showSuccess(res.data?.message || 'All counts & system transaction data have been reset to zero!');
+      setShowResetConfirm(false);
+      window.dispatchEvent(new CustomEvent('dashboard_updated'));
+    } catch (err) {
+      showError(err.response?.data?.error || 'Failed to reset system counts and data');
+    } finally {
+      setResettingData(false);
     }
   };
 
@@ -333,6 +348,49 @@ export default function Settings() {
           </div>
         </form>
       </div>
+
+      {/* 4. Danger Zone — Reset All Counts & Data */}
+      <div className="glass-card p-6 border border-red-200 bg-red-50/40 space-y-4">
+        <div className="flex items-center gap-3 border-b border-red-200 pb-4">
+          <div className="p-2 rounded-xl bg-red-100 text-red-700">
+            <RotateCcw size={18} />
+          </div>
+          <div>
+            <h3 className="font-display text-lg font-bold text-red-900">Reset All System Counts & Data</h3>
+            <p className="text-xs text-red-700/80">
+              Clear all Customer Visits, Customers, Permanent Customers, Wallet Balances, Staff Work Register, Appointments, and Expenses to start with 0 counts.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">
+          <div className="text-xs text-dark/70 space-y-1">
+            <p className="font-semibold text-red-800 flex items-center gap-1">
+              <AlertTriangle size={14} /> Warning: This action will zero out all counts and delete transaction records.
+            </p>
+            <p className="text-dark/50">Services menu, staff roster, products catalog, and login credentials will be preserved.</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowResetConfirm(true)}
+            className="px-5 py-2.5 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition-all shadow-md flex items-center gap-2 shrink-0 self-end sm:self-auto"
+          >
+            <Trash2 size={15} /> Reset All Counts to Zero
+          </button>
+        </div>
+      </div>
+
+      {/* CONFIRM RESET MODAL */}
+      <ConfirmModal
+        isOpen={showResetConfirm}
+        onClose={() => setShowResetConfirm(false)}
+        onConfirm={handleResetData}
+        title="Reset All System Counts & Data?"
+        message="Are you sure you want to clear all customer visits, customers, advance wallet balances, staff work entries, appointments, and revenue counts? All system counts will become ZERO. This action cannot be undone."
+        confirmText={resettingData ? 'Resetting...' : 'Yes, Reset All to Zero'}
+        danger
+      />
     </div>
   );
 }

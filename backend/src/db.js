@@ -3,6 +3,8 @@ const { Pool } = require('pg');
 const path = require('path');
 const fs = require('fs');
 
+const bcrypt = require('bcryptjs');
+
 let pgPool = null;
 let sqliteDb = null;
 let mode = 'sqlite';
@@ -11,9 +13,11 @@ if (process.env.DATABASE_URL) {
   mode = 'pg';
   pgPool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
+    ssl: process.env.DATABASE_URL.includes('localhost')
+      ? false
+      : { rejectUnauthorized: false },
   });
-  console.log('[DB] Connected to PostgreSQL Database');
+  console.log('[DB] PostgreSQL Pool configured.');
 } else {
   mode = 'sqlite';
   const dataDir = path.join(__dirname, '../data');
@@ -598,6 +602,20 @@ async function initPGTables() {
     await pgPool.query(`ALTER TABLE customer_visits ADD COLUMN IF NOT EXISTS cleared_at TIMESTAMPTZ`).catch(() => {});
     await pgPool.query(`ALTER TABLE services ALTER COLUMN active SET DATA TYPE BOOLEAN USING (active::boolean)`).catch(() => {});
     await pgPool.query(`ALTER TABLE customers ADD COLUMN IF NOT EXISTS next_appointment_date TEXT`).catch(() => {});
+
+    // Seed default admin user if no users exist
+    const userCountRes = await pgPool.query('SELECT COUNT(*) FROM users').catch(() => null);
+    if (userCountRes && parseInt(userCountRes.rows[0].count, 10) === 0) {
+      const passwordHash = await bcrypt.hash('admin123', 10);
+      const adminId = generateUUID();
+      await pgPool.query(
+        `INSERT INTO users (id, name, email, password_hash, role)
+         VALUES ($1, 'Salon Admin', 'admin@salon.com', $2, 'admin')`,
+        [adminId, passwordHash]
+      );
+      console.log('[DB] Default admin user created: admin@salon.com / admin123');
+    }
+
     console.log('[DB] PostgreSQL tables initialized successfully');
   } catch (err) {
     console.error('[DB] PostgreSQL init error:', err.message);
@@ -605,7 +623,23 @@ async function initPGTables() {
 }
 
 initSQLiteTables();
-initPGTables();
+
+async function verifyConnection() {
+  if (mode === 'pg') {
+    try {
+      const res = await pgPool.query('SELECT NOW()');
+      console.log('[DB] PostgreSQL connected successfully at:', res.rows[0].now);
+      await initPGTables();
+      return true;
+    } catch (err) {
+      console.error('[DB ERROR] Failed to connect to PostgreSQL Database:', err.message);
+      throw err;
+    }
+  } else {
+    console.log('[DB] Operating in SQLite mode');
+    return true;
+  }
+}
 
 // Polyfill query method for unified SQL execution across postgres / sqlite
 async function query(sqlText, params = []) {
@@ -688,4 +722,5 @@ async function query(sqlText, params = []) {
 module.exports = {
   query,
   generateUUID,
+  verifyConnection,
 };

@@ -5,6 +5,8 @@ const morgan = require('morgan');
 const path = require('path');
 const fs = require('fs');
 
+const db = require('./db');
+
 const authRoutes = require('./routes/auth');
 const dashboardRoutes = require('./routes/dashboard');
 const staffRoutes = require('./routes/staff');
@@ -26,11 +28,39 @@ const permanentCustomerRoutes = require('./routes/permanentCustomers');
 
 const app = express();
 
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
+// Production CORS Configuration
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+  : ['*'];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS policy restriction for origin: ${origin}`));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
+
 app.use(express.json());
 app.use(morgan('dev'));
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+// Health check endpoints for Railway and monitoring
+const healthHandler = (req, res) =>
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || 'development',
+  });
+
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
@@ -56,22 +86,42 @@ const frontendDist = path.join(__dirname, '../../frontend/dist');
 if (fs.existsSync(frontendDist)) {
   app.use(express.static(frontendDist));
   app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api')) {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/health')) {
       res.sendFile(path.join(frontendDist, 'index.html'));
     } else {
       res.status(404).json({ error: 'Not found' });
     }
   });
 } else {
-  app.use((req, res) => res.status(404).json({ error: 'Not found' }));
+  app.use((req, res) => {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/health')) {
+      res.status(404).json({ error: 'Route not found' });
+    } else {
+      res.status(404).json({ error: 'API endpoint not found' });
+    }
+  });
 }
 
 // Global error handler
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ error: 'Internal server error' });
+  console.error('[SERVER ERROR]', err);
+  res.status(500).json({ error: err.message || 'Internal server error' });
 });
 
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => console.log(`Salon API running on http://localhost:${PORT}`));
+
+async function startServer() {
+  try {
+    await db.verifyConnection();
+    app.listen(PORT, () => {
+      console.log(`[SERVER] Salon API listening on port ${PORT}`);
+      console.log(`[SERVER] Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+  } catch (err) {
+    console.error('[FATAL] Could not start server due to database connection error:', err.message);
+    process.exit(1);
+  }
+}
+
+startServer();

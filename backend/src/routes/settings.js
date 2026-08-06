@@ -119,6 +119,8 @@ router.post('/reset-data', authenticate, async (req, res) => {
   try {
     await db.query('DELETE FROM customer_visits');
     await db.query('DELETE FROM visit_items');
+    await db.query('DELETE FROM advance_transactions');
+    await db.query('DELETE FROM staff_work_entries');
     await db.query('DELETE FROM appointments');
     await db.query('DELETE FROM attendance');
     await db.query('DELETE FROM customers');
@@ -129,14 +131,14 @@ router.post('/reset-data', authenticate, async (req, res) => {
     await db.query('DELETE FROM product_movements');
     await db.query('DELETE FROM daily_balances');
 
-    // Reset product stock quantities
-    await db.query('UPDATE products SET stock_quantity = 25 WHERE name LIKE \'%Shampoo%\' OR name LIKE \'%Luxe%\'');
-    await db.query('UPDATE products SET stock_quantity = 15 WHERE name LIKE \'%Serum%\' OR name LIKE \'%Keratin%\'');
-    await db.query('UPDATE products SET stock_quantity = 30 WHERE name LIKE \'%Wax%\' OR name LIKE \'%Styling%\'');
-    await db.query('UPDATE products SET stock_quantity = 20 WHERE name LIKE \'%Mask%\' OR name LIKE \'%Face%\'');
-    await db.query('UPDATE products SET stock_quantity = 10 WHERE name LIKE \'%Elixir%\' OR name LIKE \'%Beard%\'');
+    // Reset product stock quantities to default demo levels
+    await db.query("UPDATE products SET stock_quantity = 25 WHERE LOWER(name) LIKE '%shampoo%' OR LOWER(name) LIKE '%luxe%'");
+    await db.query("UPDATE products SET stock_quantity = 15 WHERE LOWER(name) LIKE '%serum%' OR LOWER(name) LIKE '%keratin%'");
+    await db.query("UPDATE products SET stock_quantity = 30 WHERE LOWER(name) LIKE '%wax%' OR LOWER(name) LIKE '%styling%'");
+    await db.query("UPDATE products SET stock_quantity = 20 WHERE LOWER(name) LIKE '%mask%' OR LOWER(name) LIKE '%face%'");
+    await db.query("UPDATE products SET stock_quantity = 10 WHERE LOWER(name) LIKE '%elixir%' OR LOWER(name) LIKE '%beard%'");
 
-    res.json({ message: 'All salon transaction & demo data has been reset successfully.' });
+    res.json({ message: 'All salon transaction, customer & visit data has been reset to zero successfully.' });
   } catch (err) {
     console.error('Reset data error:', err);
     res.status(500).json({ error: 'Failed to reset system data' });
