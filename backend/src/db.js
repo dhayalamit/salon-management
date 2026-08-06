@@ -84,9 +84,29 @@ async function initSQLiteTables() {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         phone TEXT UNIQUE,
+        alternate_phone TEXT,
         gender TEXT,
         birthday TEXT,
         notes TEXT,
+        is_permanent INTEGER DEFAULT 0,
+        advance_balance REAL DEFAULT 0,
+        total_advance_deposited REAL DEFAULT 0,
+        total_advance_used REAL DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+    `);
+
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS advance_transactions (
+        id TEXT PRIMARY KEY,
+        customer_id TEXT NOT NULL,
+        visit_id TEXT,
+        type TEXT NOT NULL,
+        amount REAL NOT NULL,
+        balance_after REAL NOT NULL,
+        payment_method TEXT,
+        notes TEXT,
+        performed_by TEXT,
         created_at TEXT DEFAULT (datetime('now'))
       )
     `);
@@ -161,6 +181,7 @@ async function initSQLiteTables() {
         payment_status TEXT NOT NULL DEFAULT 'Paid',
         notes TEXT,
         commission_amount REAL DEFAULT 0,
+        advance_used REAL DEFAULT 0,
         next_appointment_date TEXT,
         cleared_at TEXT,
         created_by TEXT,
@@ -521,8 +542,28 @@ async function initPGTables() {
       ALTER TABLE staff_work_entries ADD COLUMN IF NOT EXISTS customer_name TEXT;
       ALTER TABLE staff_work_entries ADD COLUMN IF NOT EXISTS service_name TEXT;
       ALTER TABLE staff_work_entries ADD COLUMN IF NOT EXISTS commission_amount REAL DEFAULT 0;
-      ALTER TABLE staff_work_entries ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'Paid';
       ALTER TABLE staff_work_entries ADD COLUMN IF NOT EXISTS notes TEXT;
+
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS alternate_phone TEXT;
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS is_permanent INTEGER DEFAULT 0;
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS advance_balance REAL DEFAULT 0;
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS total_advance_deposited REAL DEFAULT 0;
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS total_advance_used REAL DEFAULT 0;
+
+      ALTER TABLE customer_visits ADD COLUMN IF NOT EXISTS advance_used REAL DEFAULT 0;
+
+      CREATE TABLE IF NOT EXISTS advance_transactions (
+        id TEXT PRIMARY KEY,
+        customer_id TEXT NOT NULL,
+        visit_id TEXT,
+        type TEXT NOT NULL,
+        amount REAL NOT NULL,
+        balance_after REAL NOT NULL,
+        payment_method TEXT,
+        notes TEXT,
+        performed_by TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
       CREATE TABLE IF NOT EXISTS daily_balances (
         id TEXT PRIMARY KEY,
         date TEXT UNIQUE NOT NULL,

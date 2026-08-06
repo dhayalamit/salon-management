@@ -167,32 +167,70 @@ router.post('/', authenticate, async (req, res) => {
     const gstAmount = (taxableAmount * gstPct) / 100;
     const total = taxableAmount + gstAmount;
 
-    // Payment calculations (Full, Partial, Pending)
+    // Payment calculations (Advance Wallet, Cash, UPI, Card, Split, Pending)
     let pMethod = paymentMethod || 'cash';
-    let pStatus = 'Paid';
-    let amtPaid = Number(amountPaid !== undefined && amountPaid !== null && amountPaid !== '' ? amountPaid : total);
+    let advanceUsed = 0;
 
-    if (pMethod === 'pending' || amtPaid <= 0) {
-      pStatus = 'Pending';
-      amtPaid = 0;
-    } else if (amtPaid < total) {
-      pStatus = 'Partial';
-    } else {
-      pStatus = 'Paid';
-      amtPaid = Math.min(amtPaid, total);
+    // Check if Customer has available Advance Wallet balance
+    if (customerId && (pMethod === 'advance' || pMethod === 'split' || req.body.useAdvance)) {
+      const custQ = await db.query('SELECT * FROM customers WHERE id = $1', [customerId]);
+      const cust = custQ.rows[0];
+      if (cust) {
+        const availAdvance = Number(cust.advance_balance || 0);
+        const requestedAdvance = pMethod === 'advance' ? total : Number(req.body.advanceAmountUsed || total);
+        advanceUsed = Math.min(availAdvance, Math.min(requestedAdvance, total));
+
+        if (advanceUsed > 0) {
+          const newAdvanceBal = availAdvance - advanceUsed;
+          const newTotalUsed = Number(cust.total_advance_used || 0) + advanceUsed;
+
+          await db.query(
+            `UPDATE customers SET advance_balance = $1, total_advance_used = $2 WHERE id = $3`,
+            [newAdvanceBal, newTotalUsed, customerId]
+          );
+
+          // Record in Advance Transaction Ledger
+          const txId = db.generateUUID();
+          await db.query(
+            `INSERT INTO advance_transactions
+               (id, customer_id, visit_id, type, amount, balance_after, payment_method, notes, performed_by)
+             VALUES ($1, $2, $3, 'deduction', $4, $5, 'advance', $6, $7)`,
+            [
+              txId,
+              customerId,
+              visitId,
+              advanceUsed,
+              newAdvanceBal,
+              `Deducted for Visit #${visitNumber}`,
+              createdBy,
+            ]
+          );
+        }
+      }
     }
 
-    const remainingAmount = Math.max(0, total - amtPaid);
-    const visitNumber = await nextVisitNumber();
-    const visitId = db.generateUUID();
-    const createdBy = req.user?.name || 'Admin';
+    const netPayable = Math.max(0, total - advanceUsed);
+    let additionalPaid = Number(amountPaid !== undefined && amountPaid !== null && amountPaid !== '' ? amountPaid : (pMethod === 'advance' ? 0 : netPayable));
+    if (pMethod === 'pending') additionalPaid = 0;
+
+    const totalPaid = advanceUsed + additionalPaid;
+    const remainingAmount = Math.max(0, total - totalPaid);
+
+    let pStatus = 'Paid';
+    if (remainingAmount <= 0) {
+      pStatus = 'Paid';
+    } else if (totalPaid > 0) {
+      pStatus = 'Partial';
+    } else {
+      pStatus = 'Pending';
+    }
 
     // Step 3: Insert Customer Visit
     const visitQ = await db.query(
       `INSERT INTO customer_visits
         (id, visit_number, customer_id, appointment_id, staff_id, subtotal, discount, gst_percent, gst_amount, total,
-         amount_paid, remaining_amount, payment_method, payment_status, notes, commission_amount, next_appointment_date, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
+         amount_paid, remaining_amount, payment_method, payment_status, notes, commission_amount, advance_used, next_appointment_date, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
       [
         visitId,
         visitNumber,
@@ -204,12 +242,13 @@ router.post('/', authenticate, async (req, res) => {
         gstPct,
         gstAmount,
         total,
-        amtPaid,
+        totalPaid,
         remainingAmount,
         pMethod,
         pStatus,
         notes || null,
         totalCommission,
+        advanceUsed,
         nextAppointmentDate || null,
         createdBy,
       ]

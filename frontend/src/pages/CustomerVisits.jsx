@@ -723,26 +723,61 @@ export default function CustomerVisits() {
                 Payment Collection
               </h4>
 
+              {/* Advance Balance Banner for Selected Customer */}
+              {selectedCustomerId && (() => {
+                const selectedCustObj = customers.find((c) => String(c.id) === String(selectedCustomerId));
+                const advBal = Number(selectedCustObj?.advance_balance || 0);
+                if (advBal > 0) {
+                  return (
+                    <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="font-bold text-emerald-800 block">
+                          Prepaid Wallet Available: ₹{advBal.toLocaleString('en-IN')}
+                        </span>
+                        <span className="text-[10px] text-emerald-700/80">Select "ADVANCE" below to deduct automatically</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('advance')}
+                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-[10px]"
+                      >
+                        Use Wallet
+                      </button>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               <div>
                 <label className="block font-bold text-dark/70 mb-1">Payment Method *</label>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {['cash', 'upi', 'card', 'pending'].map((pm) => (
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[
+                    { id: 'cash', label: 'Cash' },
+                    { id: 'advance', label: 'Use Advance' },
+                    { id: 'upi', label: 'UPI' },
+                    { id: 'card', label: 'Card' },
+                    { id: 'split', label: 'Split Pay' },
+                    { id: 'pending', label: 'Pending' },
+                  ].map((pm) => (
                     <button
-                      key={pm}
+                      key={pm.id}
                       type="button"
                       onClick={() => {
-                        setPaymentMethod(pm);
-                        if (pm === 'pending') setAmountPaidInput(0);
+                        setPaymentMethod(pm.id);
+                        if (pm.id === 'pending') setAmountPaidInput(0);
                       }}
                       className={`py-2 rounded-xl font-bold uppercase text-[11px] transition-all ${
-                        paymentMethod === pm
-                          ? pm === 'pending'
+                        paymentMethod === pm.id
+                          ? pm.id === 'pending'
                             ? 'bg-red-600 text-white shadow-md'
+                            : pm.id === 'advance'
+                            ? 'bg-emerald-600 text-white shadow-md'
                             : 'bg-[#D4AF37] text-white shadow-md'
                           : 'bg-white text-dark/70 border border-[#E8DFCF]'
                       }`}
                     >
-                      {pm}
+                      {pm.label}
                     </button>
                   ))}
                 </div>

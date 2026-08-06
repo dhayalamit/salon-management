@@ -238,6 +238,40 @@ router.get('/stats', authenticate, async (req, res) => {
       )
       .catch(() => ({ rows: [] }));
 
+    const totalPermanentCustsQuery = db
+      .query(`SELECT COUNT(*) AS count FROM customers WHERE is_permanent::text IN ('true', '1') OR COALESCE(advance_balance, 0) > 0`)
+      .catch(() => ({ rows: [{ count: 0 }] }));
+
+    const totalAdvancePoolQuery = db
+      .query(`SELECT COALESCE(SUM(advance_balance), 0) AS total FROM customers`)
+      .catch(() => ({ rows: [{ total: 0 }] }));
+
+    const advanceUsedTodayQuery = db
+      .query(
+        `SELECT COALESCE(SUM(amount), 0) AS total FROM advance_transactions WHERE type = 'deduction' AND (created_at::text LIKE $1 || '%' OR created_at::text LIKE $2 || '%' OR created_at::text LIKE $3 || '%')`,
+        [d1, d2, d3]
+      )
+      .catch(() => ({ rows: [{ total: 0 }] }));
+
+    const advanceAddedTodayQuery = db
+      .query(
+        `SELECT COALESCE(SUM(amount), 0) AS total FROM advance_transactions WHERE type = 'deposit' AND (created_at::text LIKE $1 || '%' OR created_at::text LIKE $2 || '%' OR created_at::text LIKE $3 || '%')`,
+        [d1, d2, d3]
+      )
+      .catch(() => ({ rows: [{ total: 0 }] }));
+
+    const lowAdvanceCustsQuery = db
+      .query(
+        `SELECT id, name, phone, advance_balance FROM customers WHERE (is_permanent::text IN ('true', '1') OR advance_balance > 0) AND advance_balance < 500 ORDER BY advance_balance ASC LIMIT 5`
+      )
+      .catch(() => ({ rows: [] }));
+
+    const topPermanentCustsQuery = db
+      .query(
+        `SELECT id, name, phone, advance_balance, total_advance_deposited, total_advance_used FROM customers WHERE is_permanent::text IN ('true', '1') OR advance_balance > 0 ORDER BY advance_balance DESC LIMIT 5`
+      )
+      .catch(() => ({ rows: [] }));
+
     const [
       todayRev,
       todayCash,
@@ -255,6 +289,12 @@ router.get('/stats', authenticate, async (req, res) => {
       todayExpenses,
       todayStaffWork,
       dailyBalance,
+      totalPermCusts,
+      totalAdvancePool,
+      advanceUsedToday,
+      advanceAddedToday,
+      lowAdvanceCusts,
+      topPermanentCusts,
     ] = await Promise.all([
       todayRevQuery,
       todayCashQuery,
@@ -272,6 +312,12 @@ router.get('/stats', authenticate, async (req, res) => {
       todayExpensesQuery,
       todayStaffWorkQuery,
       dailyBalanceQuery,
+      totalPermanentCustsQuery,
+      totalAdvancePoolQuery,
+      advanceUsedTodayQuery,
+      advanceAddedTodayQuery,
+      lowAdvanceCustsQuery,
+      topPermanentCustsQuery,
     ]);
 
     const cashAmount = Number(todayCash.rows[0]?.total || 0);
@@ -354,6 +400,12 @@ router.get('/stats', authenticate, async (req, res) => {
       paidPayments: Number(paidPay.rows[0]?.paid || 0),
       staffPresent: Number(staffPres.rows[0]?.count || 0),
       lowStockCount: Number(lowStock.rows[0]?.count || 0),
+      totalPermanentCustomers: Number(totalPermCusts.rows[0]?.count || 0),
+      totalAdvanceBalance: Number(totalAdvancePool.rows[0]?.total || 0),
+      advanceUsedToday: Number(advanceUsedToday.rows[0]?.total || 0),
+      advanceAddedToday: Number(advanceAddedToday.rows[0]?.total || 0),
+      lowAdvanceCustomersList: lowAdvanceCusts.rows || [],
+      topPermanentCustomersList: topPermanentCusts.rows || [],
       todayVisitsList: todayVisits.rows || [],
       todayInvoicesList: todayVisits.rows || [], // backwards compatibility alias
       todayAppointmentsList: todayAppointments.rows || [],

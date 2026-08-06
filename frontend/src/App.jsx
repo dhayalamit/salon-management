@@ -10,6 +10,8 @@ import StaffProfile from './pages/StaffProfile.jsx';
 import Attendance from './pages/Attendance.jsx';
 import Customers from './pages/Customers.jsx';
 import CustomerProfile from './pages/CustomerProfile.jsx';
+import PermanentCustomers from './pages/PermanentCustomers.jsx';
+import PermanentCustomerProfile from './pages/PermanentCustomerProfile.jsx';
 import Services from './pages/Services.jsx';
 import Products from './pages/Products.jsx';
 import Appointments from './pages/Appointments.jsx';
@@ -51,6 +53,8 @@ export default function App() {
         <Route path="/staff-work" element={<StaffWorkRegister />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/customers/:id" element={<CustomerProfile />} />
+        <Route path="/permanent-customers" element={<PermanentCustomers />} />
+        <Route path="/permanent-customers/:id" element={<PermanentCustomerProfile />} />
         <Route path="/services" element={<Services />} />
         <Route path="/products" element={<Products />} />
         <Route path="/appointments" element={<Appointments />} />

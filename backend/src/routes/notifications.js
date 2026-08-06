@@ -9,7 +9,7 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const today = new Date().toLocaleDateString('en-CA');
 
-    const [appts, lowStock, outOfStock, pendingVisits, customers] = await Promise.all([
+    const [appts, lowStock, outOfStock, pendingVisits, customers, lowAdvanceCusts] = await Promise.all([
       db.query(
         `SELECT a.*, c.name AS customer_name, s.name AS staff_name, sv.name AS service_name
          FROM appointments a
@@ -28,6 +28,7 @@ router.get('/', authenticate, async (req, res) => {
         `SELECT v.*, c.name AS customer_name FROM customer_visits v LEFT JOIN customers c ON c.id::text = v.customer_id::text WHERE v.remaining_amount > 0 OR v.payment_status IN ('Pending', 'Partial')`
       ),
       db.query(`SELECT * FROM customers WHERE birthday IS NOT NULL`),
+      db.query(`SELECT * FROM customers WHERE (is_permanent::text IN ('true', '1') OR COALESCE(advance_balance, 0) > 0) AND advance_balance <= 500`),
     ]);
 
     // Calculate 30 min reminders
@@ -91,10 +92,19 @@ router.get('/', authenticate, async (req, res) => {
         message: `Wish ${c.name} a Happy Birthday today! Phone: ${c.phone || 'N/A'}`,
       }));
 
+    // Advance Wallet Reminders
+    const advanceAlerts = (lowAdvanceCusts.rows || []).map((c) => ({
+      id: `adv-${c.id}`,
+      type: 'low_advance',
+      title: Number(c.advance_balance || 0) === 0 ? `⚠️ Zero Advance Balance: ${c.name}` : `⚠️ Low Advance Balance: ${c.name}`,
+      message: `Current Advance Balance: ₹${Number(c.advance_balance || 0).toLocaleString('en-IN')}. Phone: ${c.phone || 'N/A'}`,
+    }));
+
     const notifications = [
       ...reminders,
       ...outStockAlerts,
       ...stockAlerts,
+      ...advanceAlerts,
       ...birthdayReminders,
       ...pendingPayAlerts,
       ...newBookings,

@@ -45,9 +45,28 @@ CREATE TABLE IF NOT EXISTS customers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(120) NOT NULL,
   phone VARCHAR(20) UNIQUE,
+  alternate_phone VARCHAR(20),
   gender VARCHAR(10) CHECK (gender IN ('male', 'female', 'other')),
   birthday DATE,
   notes TEXT,
+  is_permanent BOOLEAN DEFAULT false,
+  advance_balance NUMERIC(10,2) DEFAULT 0,
+  total_advance_deposited NUMERIC(10,2) DEFAULT 0,
+  total_advance_used NUMERIC(10,2) DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ---------- ADVANCE TRANSACTIONS ----------
+CREATE TABLE IF NOT EXISTS advance_transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+  visit_id UUID REFERENCES customer_visits(id) ON DELETE SET NULL,
+  type VARCHAR(20) NOT NULL CHECK (type IN ('deposit', 'deduction', 'refund', 'adjustment')),
+  amount NUMERIC(10,2) NOT NULL,
+  balance_after NUMERIC(10,2) NOT NULL,
+  payment_method VARCHAR(30),
+  notes TEXT,
+  performed_by VARCHAR(120),
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

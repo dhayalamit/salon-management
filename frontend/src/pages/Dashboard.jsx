@@ -185,7 +185,8 @@ export default function Dashboard() {
 
   // Quick Modules Grid Configuration for direct 1-tap mobile access
   const allModules = [
-    { title: 'Customers', icon: Users, route: '/customers', color: 'bg-blue-50 text-blue-600', border: 'border-blue-200', desc: 'Client Database' },
+    { title: 'Clients', icon: Users, route: '/customers', color: 'bg-blue-50 text-blue-600', border: 'border-blue-200', desc: 'Client Database' },
+    { title: 'Permanent Customers', icon: UserCheck, route: '/permanent-customers', color: 'bg-amber-50 text-[#D4AF37]', border: 'border-amber-200', desc: 'Prepaid Wallet & Visits' },
     { title: 'Appointments', icon: Calendar, route: '/appointments', color: 'bg-purple-50 text-purple-600', border: 'border-purple-200', desc: 'Booking Schedule' },
     { title: 'Services', icon: Scissors, route: '/services', color: 'bg-amber-50 text-amber-600', border: 'border-amber-200', desc: 'Hair & Beauty Menu' },
     { title: 'Staff Roster', icon: UserCog, route: '/staff', color: 'bg-indigo-50 text-indigo-600', border: 'border-indigo-200', desc: 'Stylist Profiles' },

@@ -22,6 +22,7 @@ const notificationRoutes = require('./routes/notifications');
 const searchRoutes = require('./routes/search');
 const commissionRoutes = require('./routes/commissions');
 const staffWorkRoutes = require('./routes/staffWork');
+const permanentCustomerRoutes = require('./routes/permanentCustomers');
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/customers', customerRoutes);
+app.use('/api/permanent-customers', permanentCustomerRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/appointments', appointmentRoutes);
