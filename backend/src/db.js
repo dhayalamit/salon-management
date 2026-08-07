@@ -116,6 +116,98 @@ async function initSQLiteTables() {
     `);
 
     sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS whatsapp_templates (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        language TEXT DEFAULT 'en_US',
+        category TEXT DEFAULT 'MARKETING',
+        components TEXT,
+        status TEXT DEFAULT 'APPROVED',
+        meta_template_id TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+    `);
+
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS whatsapp_campaigns (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT DEFAULT 'promotional',
+        target_audience TEXT DEFAULT 'all',
+        filter_criteria TEXT,
+        template_name TEXT,
+        custom_message TEXT,
+        status TEXT DEFAULT 'draft',
+        scheduled_at TEXT,
+        sent_count INTEGER DEFAULT 0,
+        delivered_count INTEGER DEFAULT 0,
+        failed_count INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+    `);
+
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS scheduled_messages (
+        id TEXT PRIMARY KEY,
+        customer_id TEXT,
+        customer_name TEXT,
+        phone TEXT NOT NULL,
+        message_type TEXT NOT NULL,
+        template_name TEXT,
+        message_text TEXT,
+        media_url TEXT,
+        scheduled_at TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        campaign_id TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+    `);
+
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS message_logs (
+        id TEXT PRIMARY KEY,
+        recipient_phone TEXT NOT NULL,
+        customer_name TEXT,
+        customer_id TEXT,
+        message_type TEXT NOT NULL,
+        template_name TEXT,
+        message_body TEXT,
+        status TEXT NOT NULL DEFAULT 'sent',
+        meta_message_id TEXT,
+        error_message TEXT,
+        retry_count INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+    `);
+
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS automation_rules (
+        id TEXT PRIMARY KEY,
+        rule_type TEXT UNIQUE NOT NULL,
+        is_enabled INTEGER DEFAULT 1,
+        timing_config TEXT,
+        template_name TEXT,
+        custom_message TEXT,
+        discount_offer TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+    `);
+
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS marketing_settings (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        whatsapp_token TEXT,
+        phone_number_id TEXT,
+        business_account_id TEXT,
+        webhook_verify_token TEXT DEFAULT 'trio_whatsapp_webhook_secret',
+        google_review_link TEXT DEFAULT 'https://g.page/r/triotheposh/review',
+        auto_send_enabled INTEGER DEFAULT 1,
+        daily_birthday_time TEXT DEFAULT '09:00',
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+    `);
+
+    sqliteDb.run(`
       CREATE TABLE IF NOT EXISTS services (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -588,8 +680,92 @@ async function initPGTables() {
         default_gst_percent REAL DEFAULT 0,
         business_hours TEXT
       );
+      CREATE TABLE IF NOT EXISTS whatsapp_templates (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        language TEXT DEFAULT 'en_US',
+        category TEXT DEFAULT 'MARKETING',
+        components TEXT,
+        status TEXT DEFAULT 'APPROVED',
+        meta_template_id TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS whatsapp_campaigns (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT DEFAULT 'promotional',
+        target_audience TEXT DEFAULT 'all',
+        filter_criteria TEXT,
+        template_name TEXT,
+        custom_message TEXT,
+        status TEXT DEFAULT 'draft',
+        scheduled_at TEXT,
+        sent_count INTEGER DEFAULT 0,
+        delivered_count INTEGER DEFAULT 0,
+        failed_count INTEGER DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS scheduled_messages (
+        id TEXT PRIMARY KEY,
+        customer_id TEXT,
+        customer_name TEXT,
+        phone TEXT NOT NULL,
+        message_type TEXT NOT NULL,
+        template_name TEXT,
+        message_text TEXT,
+        media_url TEXT,
+        scheduled_at TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        campaign_id TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS message_logs (
+        id TEXT PRIMARY KEY,
+        recipient_phone TEXT NOT NULL,
+        customer_name TEXT,
+        customer_id TEXT,
+        message_type TEXT NOT NULL,
+        template_name TEXT,
+        message_body TEXT,
+        status TEXT NOT NULL DEFAULT 'sent',
+        meta_message_id TEXT,
+        error_message TEXT,
+        retry_count INTEGER DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS automation_rules (
+        id TEXT PRIMARY KEY,
+        rule_type TEXT UNIQUE NOT NULL,
+        is_enabled INTEGER DEFAULT 1,
+        timing_config TEXT,
+        template_name TEXT,
+        custom_message TEXT,
+        discount_offer TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS marketing_settings (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        whatsapp_token TEXT,
+        phone_number_id TEXT,
+        business_account_id TEXT,
+        webhook_verify_token TEXT DEFAULT 'trio_whatsapp_webhook_secret',
+        google_review_link TEXT DEFAULT 'https://g.page/r/triotheposh/review',
+        auto_send_enabled INTEGER DEFAULT 1,
+        daily_birthday_time TEXT DEFAULT '09:00',
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+
       INSERT INTO settings (id, salon_name, tagline, address, phone, email, gst_number, default_gst_percent)
       VALUES (1, 'TRIO THE POSH', 'Redefining Beauty & Elegance', '123 Luxury Avenue, Beverly Hills', '+1 800-POSH-SALON', 'info@triotheposh.com', 'GSTIN29AAACT1234F1Z5', 18)
+      ON CONFLICT (id) DO NOTHING;
+
+      INSERT INTO marketing_settings (id, auto_send_enabled)
+      VALUES (1, 1)
       ON CONFLICT (id) DO NOTHING;
     `);
 

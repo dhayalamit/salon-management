@@ -25,6 +25,8 @@ const searchRoutes = require('./routes/search');
 const commissionRoutes = require('./routes/commissions');
 const staffWorkRoutes = require('./routes/staffWork');
 const permanentCustomerRoutes = require('./routes/permanentCustomers');
+const whatsappRoutes = require('./routes/whatsapp');
+const { initCronScheduler } = require('./services/cronScheduler');
 
 const app = express();
 
@@ -80,6 +82,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/commissions', commissionRoutes);
 app.use('/api/staff-work', staffWorkRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
 
 // Serve Frontend static production bundle if built
 const frontendDist = path.join(__dirname, '../../frontend/dist');
@@ -114,6 +117,7 @@ const PORT = process.env.PORT || 5001;
 async function startServer() {
   try {
     await db.verifyConnection();
+    initCronScheduler();
     app.listen(PORT, () => {
       console.log(`[SERVER] Salon API listening on port ${PORT}`);
       console.log(`[SERVER] Environment: ${process.env.NODE_ENV || 'development'}`);

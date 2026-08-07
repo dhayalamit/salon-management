@@ -23,6 +23,12 @@ import Settings from './pages/Settings.jsx';
 import StaffSalary from './pages/StaffSalary.jsx';
 import StaffCommissions from './pages/StaffCommissions.jsx';
 import StaffWorkRegister from './pages/StaffWorkRegister.jsx';
+import WhatsAppDashboard from './pages/marketing/WhatsAppDashboard.jsx';
+import MessageTemplates from './pages/marketing/MessageTemplates.jsx';
+import CampaignsBroadcast from './pages/marketing/CampaignsBroadcast.jsx';
+import AutomationRules from './pages/marketing/AutomationRules.jsx';
+import DeliveryLogs from './pages/marketing/DeliveryLogs.jsx';
+import WhatsAppSettings from './pages/marketing/WhatsAppSettings.jsx';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -51,6 +57,12 @@ export default function App() {
         <Route path="/salary" element={<StaffSalary />} />
         <Route path="/commissions" element={<StaffCommissions />} />
         <Route path="/staff-work" element={<StaffWorkRegister />} />
+        <Route path="/marketing/whatsapp" element={<WhatsAppDashboard />} />
+        <Route path="/marketing/templates" element={<MessageTemplates />} />
+        <Route path="/marketing/campaigns" element={<CampaignsBroadcast />} />
+        <Route path="/marketing/automations" element={<AutomationRules />} />
+        <Route path="/marketing/logs" element={<DeliveryLogs />} />
+        <Route path="/marketing/settings" element={<WhatsAppSettings />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/customers/:id" element={<CustomerProfile />} />
         <Route path="/permanent-customers" element={<PermanentCustomers />} />

@@ -20,6 +20,9 @@ import {
   Award,
   DollarSign,
   FileText,
+  MessageSquare,
+  Megaphone,
+  Zap,
   X,
 } from 'lucide-react';
 
@@ -36,9 +39,15 @@ const navItems = [
   { to: '/salary', label: 'Staff Salary', icon: DollarSign },
   { to: '/commissions', label: 'Staff Commission', icon: Award },
   { to: '/staff-work', label: 'Staff Work Register', icon: FileText },
+  { to: '/marketing/whatsapp', label: 'WhatsApp Dashboard', icon: MessageSquare },
+  { to: '/marketing/templates', label: 'Message Templates', icon: FileText },
+  { to: '/marketing/campaigns', label: 'Campaigns & Broadcast', icon: Megaphone },
+  { to: '/marketing/automations', label: 'Automation Rules', icon: Zap },
+  { to: '/marketing/logs', label: 'WhatsApp Delivery Logs', icon: FileText },
+  { to: '/marketing/settings', label: 'WhatsApp API Settings', icon: Settings },
   { to: '/expenses', label: 'Expenses', icon: Wallet },
   { to: '/reports', label: 'Reports', icon: BarChart3 },
-  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/settings', label: 'Salon Settings', icon: Settings },
 ];
 
 export default function Sidebar({ open, onClose }) {

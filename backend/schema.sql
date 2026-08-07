@@ -194,8 +194,95 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 INSERT INTO settings (id, salon_name) VALUES (1, 'My Salon') ON CONFLICT (id) DO NOTHING;
 
+-- ---------- WHATSAPP AUTOMATION & MARKETING ----------
+CREATE TABLE IF NOT EXISTS whatsapp_templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(120) NOT NULL,
+  language VARCHAR(20) DEFAULT 'en_US',
+  category VARCHAR(40) DEFAULT 'MARKETING',
+  components JSONB,
+  status VARCHAR(30) DEFAULT 'APPROVED',
+  meta_template_id VARCHAR(120),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS whatsapp_campaigns (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(160) NOT NULL,
+  type VARCHAR(40) DEFAULT 'promotional',
+  target_audience VARCHAR(60) DEFAULT 'all',
+  filter_criteria JSONB,
+  template_name VARCHAR(120),
+  custom_message TEXT,
+  status VARCHAR(30) DEFAULT 'draft',
+  scheduled_at TIMESTAMPTZ,
+  sent_count INT DEFAULT 0,
+  delivered_count INT DEFAULT 0,
+  failed_count INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS scheduled_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+  customer_name VARCHAR(120),
+  phone VARCHAR(30) NOT NULL,
+  message_type VARCHAR(60) NOT NULL,
+  template_name VARCHAR(120),
+  message_text TEXT,
+  media_url TEXT,
+  scheduled_at TIMESTAMPTZ NOT NULL,
+  status VARCHAR(30) DEFAULT 'pending',
+  campaign_id UUID REFERENCES whatsapp_campaigns(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS message_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  recipient_phone VARCHAR(30) NOT NULL,
+  customer_name VARCHAR(120),
+  customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+  message_type VARCHAR(60) NOT NULL,
+  template_name VARCHAR(120),
+  message_body TEXT,
+  status VARCHAR(30) NOT NULL DEFAULT 'sent',
+  meta_message_id VARCHAR(160),
+  error_message TEXT,
+  retry_count INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS automation_rules (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  rule_type VARCHAR(60) UNIQUE NOT NULL,
+  is_enabled BOOLEAN DEFAULT true,
+  timing_config JSONB,
+  template_name VARCHAR(120),
+  custom_message TEXT,
+  discount_offer TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS marketing_settings (
+  id INT PRIMARY KEY DEFAULT 1,
+  whatsapp_token TEXT,
+  phone_number_id VARCHAR(100),
+  business_account_id VARCHAR(100),
+  webhook_verify_token VARCHAR(120) DEFAULT 'trio_whatsapp_webhook_secret',
+  google_review_link TEXT DEFAULT 'https://g.page/r/triotheposh/review',
+  auto_send_enabled BOOLEAN DEFAULT true,
+  daily_birthday_time VARCHAR(10) DEFAULT '09:00',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT single_marketing_row CHECK (id = 1)
+);
+INSERT INTO marketing_settings (id, auto_send_enabled) VALUES (1, true) ON CONFLICT (id) DO NOTHING;
+
 -- ---------- Helpful indexes ----------
 CREATE INDEX IF NOT EXISTS idx_customer_visits_created_at ON customer_visits (created_at);
 CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance (date);
 CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments (appointment_date);
 CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers (phone);
+CREATE INDEX IF NOT EXISTS idx_message_logs_recipient ON message_logs (recipient_phone);
+CREATE INDEX IF NOT EXISTS idx_message_logs_created ON message_logs (created_at);
+CREATE INDEX IF NOT EXISTS idx_scheduled_messages_scheduled ON scheduled_messages (scheduled_at);
+
