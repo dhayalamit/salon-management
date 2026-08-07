@@ -10,6 +10,10 @@ import {
   Zap,
   Globe,
   Copy,
+  Activity,
+  AlertTriangle,
+  RefreshCw,
+  Lock,
 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext.jsx';
 
@@ -18,10 +22,16 @@ export default function WhatsAppSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // Connection Test State
+  const [testingConn, setTestingConn] = useState(false);
+  const [connStatus, setConnStatus] = useState(null);
+
   const [formData, setFormData] = useState({
     whatsapp_token: '',
+    whatsapp_token_masked: '',
     phone_number_id: '',
     business_account_id: '',
+    default_country_code: '91',
     google_review_link: 'https://g.page/r/triotheposh/review',
     auto_send_enabled: true,
     daily_birthday_time: '09:00',
@@ -38,8 +48,10 @@ export default function WhatsAppSettings() {
       if (res.data) {
         setFormData({
           whatsapp_token: res.data.whatsapp_token || '',
+          whatsapp_token_masked: res.data.whatsapp_token_masked || '',
           phone_number_id: res.data.phone_number_id || '',
           business_account_id: res.data.business_account_id || '',
+          default_country_code: res.data.default_country_code || '91',
           google_review_link: res.data.google_review_link || 'https://g.page/r/triotheposh/review',
           auto_send_enabled: Boolean(res.data.auto_send_enabled),
           daily_birthday_time: res.data.daily_birthday_time || '09:00',
@@ -52,12 +64,29 @@ export default function WhatsAppSettings() {
     }
   };
 
+  const handleTestConnection = async () => {
+    try {
+      setTestingConn(true);
+      const res = await client.post('/whatsapp/test-connection');
+      setConnStatus(res.data);
+      if (res.data.connected) {
+        showSuccess(`Connected! Phone: ${res.data.displayPhoneNumber || 'Verified'} (${res.data.verifiedName})`);
+      } else {
+        showError(res.data.message || 'Connection test failed');
+      }
+    } catch (err) {
+      showError(err.response?.data?.error || 'Failed to test Meta API connection');
+    } finally {
+      setTestingConn(false);
+    }
+  };
+
   const handleSaveSettings = async (e) => {
     e.preventDefault();
     try {
       setSaving(true);
       await client.put('/whatsapp/settings', formData);
-      showSuccess('WhatsApp Meta Cloud API credentials saved successfully!');
+      showSuccess('WhatsApp Meta Cloud API credentials saved securely!');
       fetchSettings();
     } catch (err) {
       showError('Failed to save WhatsApp credentials');
@@ -83,18 +112,42 @@ export default function WhatsAppSettings() {
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-widest bg-emerald-700 text-white">
-                Official Meta Cloud API Integration
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-widest bg-emerald-700 text-white flex items-center gap-1">
+                <Lock size={10} /> Secure Meta Cloud API
               </span>
-              <span className="text-xs text-dark/40 font-medium">Production Credentials</span>
+              <span className="text-xs text-dark/40 font-medium">Backend Originated Requests Only</span>
             </div>
             <h1 className="font-display text-2xl sm:text-3xl font-bold text-dark tracking-tight">
               WhatsApp API & Marketing Settings
             </h1>
             <p className="text-xs text-dark/50 mt-0.5">
-              Configure your Meta WhatsApp Access Token, Phone Number ID, Webhooks & Google Review links
+              Configure your Meta WhatsApp Access Token, Phone Number ID, Webhook endpoints & Google Review links
             </p>
           </div>
+        </div>
+
+        {/* Test Connection Button & Badge */}
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          {connStatus && (
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-bold uppercase flex items-center gap-1.5 ${
+                connStatus.connected
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                  : 'bg-red-100 text-red-800 border border-red-300'
+              }`}
+            >
+              {connStatus.connected ? <CheckCircle size={14} /> : <AlertTriangle size={14} />}
+              {connStatus.connected ? 'Connected' : 'Disconnected'}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={handleTestConnection}
+            disabled={testingConn}
+            className="px-4 py-2.5 rounded-full bg-dark hover:bg-dark/80 text-white font-bold text-xs transition-all shadow-md flex items-center gap-2"
+          >
+            <Activity size={15} /> {testingConn ? 'Testing API...' : 'Test Connection'}
+          </button>
         </div>
       </div>
 
@@ -102,13 +155,18 @@ export default function WhatsAppSettings() {
       <form onSubmit={handleSaveSettings} className="space-y-6 text-xs">
         {/* Meta Credentials Card */}
         <div className="glass-card p-6 border border-[#E8DFCF] space-y-4">
-          <div className="flex items-center gap-2.5 border-b border-[#E8DFCF] pb-3">
-            <ShieldCheck size={20} className="text-emerald-700" />
-            <h3 className="font-display text-base font-bold text-dark">Meta WhatsApp Cloud API Credentials</h3>
+          <div className="flex items-center justify-between border-b border-[#E8DFCF] pb-3">
+            <div className="flex items-center gap-2.5">
+              <ShieldCheck size={20} className="text-emerald-700" />
+              <h3 className="font-display text-base font-bold text-dark">Meta WhatsApp Cloud API Credentials</h3>
+            </div>
+            <span className="text-[10px] text-emerald-800 font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
+              <Lock size={12} /> Backend Encrypted Storage
+            </span>
           </div>
 
           <div>
-            <label className="block font-bold text-dark/80 mb-1">Temporary / Permanent Meta Access Token *</label>
+            <label className="block font-bold text-dark/80 mb-1">Permanent Meta Access Token *</label>
             <textarea
               rows={3}
               value={formData.whatsapp_token}
@@ -116,12 +174,17 @@ export default function WhatsAppSettings() {
               placeholder="EAAG..."
               className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark font-mono text-xs focus:outline-none focus:border-emerald-600"
             />
+            {formData.whatsapp_token_masked && (
+              <span className="text-[10px] text-emerald-700 font-mono mt-1 block">
+                Security Masked Token: {formData.whatsapp_token_masked}
+              </span>
+            )}
             <span className="text-[10px] text-dark/40 mt-1 block">
-              Generated from your Meta Developer Portal under WhatsApp &gt; API Setup.
+              Generated from your Meta Developer Portal under WhatsApp &gt; API Setup. Never exposed to browser.
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block font-bold text-dark/80 mb-1">Phone Number ID *</label>
               <input
@@ -140,6 +203,17 @@ export default function WhatsAppSettings() {
                 value={formData.business_account_id}
                 onChange={(e) => setFormData({ ...formData, business_account_id: e.target.value })}
                 placeholder="e.g. 109827364518273"
+                className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark font-mono text-xs focus:outline-none focus:border-emerald-600"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-dark/80 mb-1">Default Country Code</label>
+              <input
+                type="text"
+                value={formData.default_country_code}
+                onChange={(e) => setFormData({ ...formData, default_country_code: e.target.value })}
+                placeholder="e.g. 91"
                 className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark font-mono text-xs focus:outline-none focus:border-emerald-600"
               />
             </div>

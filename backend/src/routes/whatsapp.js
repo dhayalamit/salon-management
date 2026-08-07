@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { authenticate } = require('../middleware/auth');
-const { sendTextMessage, sendTemplateMessage, retryFailedMessage, formatPhoneNumber } = require('../services/whatsappService');
+const { sendTextMessage, sendTemplateMessage, retryFailedMessage, formatPhoneNumber, testWhatsAppConnection } = require('../services/whatsappService');
 const { processDailyBirthdays } = require('../services/cronScheduler');
 
 const router = express.Router();
@@ -319,10 +319,30 @@ router.get('/settings', authenticate, async (req, res) => {
       auto_send_enabled: 1,
       daily_birthday_time: '09:00',
     };
-    res.json(settings);
+
+    // Mask sensitive token for security
+    const maskedToken = settings.whatsapp_token
+      ? `${settings.whatsapp_token.slice(0, 6)}...${settings.whatsapp_token.slice(-4)}`
+      : '';
+
+    res.json({
+      ...settings,
+      whatsapp_token_masked: maskedToken,
+    });
   } catch (err) {
     console.error('Fetch marketing settings error:', err);
     res.status(500).json({ error: 'Failed to fetch marketing settings' });
+  }
+});
+
+// POST /api/whatsapp/test-connection — Validate Meta Cloud API Credentials & Status
+router.post('/test-connection', authenticate, async (req, res) => {
+  try {
+    const result = await testWhatsAppConnection();
+    res.json(result);
+  } catch (err) {
+    console.error('Test WhatsApp connection error:', err);
+    res.status(500).json({ connected: false, status: 'error', message: err.message });
   }
 });
 

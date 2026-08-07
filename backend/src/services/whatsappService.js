@@ -279,6 +279,189 @@ async function sendTemplateMessage({
 }
 
 /**
+ * Send WhatsApp Image Message via Meta Cloud API v19.0
+ */
+async function sendImageMessage({ to, imageUrl, caption, customerName, customerId, messageType = 'image' }) {
+  const formattedPhone = formatPhoneNumber(to);
+  if (!formattedPhone) return { success: false, error: 'Invalid phone number' };
+
+  const config = await getWhatsAppConfig();
+
+  if (!config.isConfigured) {
+    await logMessage({
+      recipientPhone: formattedPhone,
+      customerName,
+      customerId,
+      messageType,
+      messageBody: `[Image: ${imageUrl}] ${caption || ''}`,
+      status: 'sent',
+      metaMessageId: `wamid.demo.${Date.now()}`,
+    });
+    return { success: true, mode: 'demo', messageId: `wamid.demo.${Date.now()}` };
+  }
+
+  try {
+    const url = `https://graph.facebook.com/v19.0/${config.phoneNumberId}/messages`;
+    const payload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: formattedPhone,
+      type: 'image',
+      image: { link: imageUrl, caption: caption || '' },
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    if (response.ok && data.messages && data.messages[0]) {
+      const metaId = data.messages[0].id;
+      await logMessage({
+        recipientPhone: formattedPhone,
+        customerName,
+        customerId,
+        messageType,
+        messageBody: `[Image: ${imageUrl}] ${caption || ''}`,
+        status: 'sent',
+        metaMessageId: metaId,
+      });
+      return { success: true, messageId: metaId };
+    } else {
+      const errorMsg = data.error ? data.error.message : 'Image message failed';
+      await logMessage({
+        recipientPhone: formattedPhone,
+        customerName,
+        customerId,
+        messageType,
+        messageBody: `[Image: ${imageUrl}]`,
+        status: 'failed',
+        errorMessage: errorMsg,
+      });
+      return { success: false, error: errorMsg };
+    }
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Send WhatsApp Document (PDF) Message via Meta Cloud API v19.0
+ */
+async function sendDocumentMessage({ to, documentUrl, filename, caption, customerName, customerId, messageType = 'document' }) {
+  const formattedPhone = formatPhoneNumber(to);
+  if (!formattedPhone) return { success: false, error: 'Invalid phone number' };
+
+  const config = await getWhatsAppConfig();
+
+  if (!config.isConfigured) {
+    await logMessage({
+      recipientPhone: formattedPhone,
+      customerName,
+      customerId,
+      messageType,
+      messageBody: `[Document: ${filename || 'file.pdf'}] ${caption || ''}`,
+      status: 'sent',
+      metaMessageId: `wamid.demo.${Date.now()}`,
+    });
+    return { success: true, mode: 'demo', messageId: `wamid.demo.${Date.now()}` };
+  }
+
+  try {
+    const url = `https://graph.facebook.com/v19.0/${config.phoneNumberId}/messages`;
+    const payload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: formattedPhone,
+      type: 'document',
+      document: { link: documentUrl, filename: filename || 'Invoice.pdf', caption: caption || '' },
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    if (response.ok && data.messages && data.messages[0]) {
+      const metaId = data.messages[0].id;
+      await logMessage({
+        recipientPhone: formattedPhone,
+        customerName,
+        customerId,
+        messageType,
+        messageBody: `[Document: ${filename || 'file.pdf'}] ${caption || ''}`,
+        status: 'sent',
+        metaMessageId: metaId,
+      });
+      return { success: true, messageId: metaId };
+    } else {
+      const errorMsg = data.error ? data.error.message : 'Document message failed';
+      return { success: false, error: errorMsg };
+    }
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Validate Meta Cloud API Connection & Credentials
+ */
+async function testWhatsAppConnection() {
+  const config = await getWhatsAppConfig();
+  if (!config.isConfigured) {
+    return {
+      connected: false,
+      status: 'not_configured',
+      message: 'Meta WhatsApp Token or Phone Number ID is not configured yet.',
+    };
+  }
+
+  try {
+    const url = `https://graph.facebook.com/v19.0/${config.phoneNumberId}`;
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${config.token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.id) {
+      return {
+        connected: true,
+        status: 'connected',
+        phoneNumberId: data.id,
+        displayPhoneNumber: data.display_phone_number || 'Registered Phone Number',
+        qualityRating: data.quality_rating || 'GREEN',
+        verifiedName: data.verified_name || 'TRIO The Posh',
+      };
+    } else {
+      return {
+        connected: false,
+        status: 'disconnected',
+        message: data.error ? data.error.message : 'Invalid Meta API Access Token or Phone Number ID',
+      };
+    }
+  } catch (err) {
+    return {
+      connected: false,
+      status: 'disconnected',
+      message: err.message || 'Network error connecting to Meta Graph API',
+    };
+  }
+}
+
+/**
  * Retry Failed WhatsApp Messages from Log
  */
 async function retryFailedMessage(logId) {
@@ -312,5 +495,8 @@ module.exports = {
   logMessage,
   sendTextMessage,
   sendTemplateMessage,
+  sendImageMessage,
+  sendDocumentMessage,
+  testWhatsAppConnection,
   retryFailedMessage,
 };
