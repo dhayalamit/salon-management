@@ -12,6 +12,7 @@ import {
   MessageSquare,
   ShieldCheck,
   TrendingUp,
+  Sparkles,
 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext.jsx';
 
