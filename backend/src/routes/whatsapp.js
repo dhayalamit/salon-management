@@ -42,7 +42,7 @@ router.get('/dashboard', authenticate, async (req, res) => {
       db.query(`SELECT COUNT(*) AS total FROM whatsapp_messages WHERE message_type = 'festival' AND CAST(created_at AS TEXT) LIKE $1 || '%'`, [todayStr]),
       db.query(`SELECT COUNT(*) AS total FROM whatsapp_messages`),
       db.query(`SELECT COUNT(*) AS total FROM whatsapp_campaigns`),
-      db.query(`SELECT COUNT(*) AS total FROM automation_rules WHERE is_enabled IN (1, '1', true, 'true')`),
+      db.query(`SELECT COUNT(*) AS total FROM automation_rules WHERE is_enabled IS NOT NULL AND is_enabled != '0' AND is_enabled != 'false'`),
       db.query(`SELECT * FROM whatsapp_messages ORDER BY created_at DESC LIMIT 10`),
     ]);
 

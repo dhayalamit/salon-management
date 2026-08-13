@@ -325,25 +325,6 @@ router.post('/', authenticate, async (req, res) => {
           ]
         );
       }
-
-      // Record staff commission if applicable
-      if (assignedStaffId && item.commissionAmount > 0) {
-        const commId = db.generateUUID();
-        await db.query(
-          `INSERT INTO staff_commissions
-            (id, staff_id, customer_id, service_name, commission_type, commission_rate, base_amount, commission_amount, status, date)
-           VALUES ($1,$2,$3,$4,'percent',$5,$6,$7,'Pending',CURRENT_DATE)`,
-          [
-            commId,
-            assignedStaffId,
-            customerId || null,
-            item.name,
-            item.commissionPercent,
-            item.lineTotal,
-            item.commissionAmount,
-          ]
-        );
-      }
     }
 
     // Step 5: Automatically complete appointment if linked

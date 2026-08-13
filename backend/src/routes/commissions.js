@@ -10,8 +10,8 @@ router.get('/', authenticate, async (req, res) => {
     const { rows } = await db.query(
       `SELECT sc.*, s.name AS staff_name, s.phone AS staff_phone, c.name AS customer_name, c.phone AS customer_phone
        FROM staff_commissions sc
-       JOIN staff s ON s.id::text = sc.staff_id::text
-       LEFT JOIN customers c ON c.id::text = sc.customer_id::text
+       JOIN staff s ON CAST(s.id AS TEXT) = CAST(sc.staff_id AS TEXT)
+       LEFT JOIN customers c ON CAST(c.id AS TEXT) = CAST(sc.customer_id AS TEXT)
        ORDER BY sc.date DESC, sc.created_at DESC`
     );
 
