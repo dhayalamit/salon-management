@@ -32,6 +32,7 @@ import {
   Search,
   RotateCcw,
   Paperclip,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext.jsx';
 import Modal from '../../components/ui/Modal.jsx';

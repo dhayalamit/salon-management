@@ -259,6 +259,16 @@ router.delete('/template/:id', authenticate, async (req, res) => {
   }
 });
 
+// GET /api/whatsapp/automations — Automation Rules List
+router.get('/automations', authenticate, async (req, res) => {
+  try {
+    const { rows } = await db.query(`SELECT * FROM automation_rules ORDER BY created_at DESC`);
+    res.json(rows || []);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch automation rules' });
+  }
+});
+
 // GET /api/whatsapp/history & /logs — Message History Audit Trail
 router.get('/history', authenticate, async (req, res) => {
   try {
