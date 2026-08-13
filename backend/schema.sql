@@ -237,7 +237,7 @@ CREATE TABLE IF NOT EXISTS scheduled_messages (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS message_logs (
+CREATE TABLE IF NOT EXISTS whatsapp_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   recipient_phone VARCHAR(30) NOT NULL,
   customer_name VARCHAR(120),
@@ -245,10 +245,44 @@ CREATE TABLE IF NOT EXISTS message_logs (
   message_type VARCHAR(60) NOT NULL,
   template_name VARCHAR(120),
   message_body TEXT,
+  media_url TEXT,
   status VARCHAR(30) NOT NULL DEFAULT 'sent',
   meta_message_id VARCHAR(160),
   error_message TEXT,
   retry_count INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS whatsapp_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  action VARCHAR(100) NOT NULL,
+  details TEXT,
+  status VARCHAR(30) DEFAULT 'info',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS scheduled_jobs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+  customer_name VARCHAR(120),
+  phone VARCHAR(30) NOT NULL,
+  job_type VARCHAR(60) NOT NULL,
+  template_name VARCHAR(120),
+  message_text TEXT,
+  media_url TEXT,
+  scheduled_at TIMESTAMPTZ NOT NULL,
+  status VARCHAR(30) DEFAULT 'pending',
+  campaign_id UUID REFERENCES whatsapp_campaigns(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS delivery_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  meta_message_id VARCHAR(160) NOT NULL,
+  recipient_phone VARCHAR(30),
+  status VARCHAR(30) NOT NULL,
+  event_timestamp TIMESTAMPTZ,
+  raw_payload JSONB,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -263,26 +297,27 @@ CREATE TABLE IF NOT EXISTS automation_rules (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS marketing_settings (
+CREATE TABLE IF NOT EXISTS whatsapp_settings (
   id INT PRIMARY KEY DEFAULT 1,
   whatsapp_token TEXT,
   phone_number_id VARCHAR(100),
   business_account_id VARCHAR(100),
-  webhook_verify_token VARCHAR(120) DEFAULT 'trio_whatsapp_webhook_secret',
+  default_country_code VARCHAR(10) DEFAULT '91',
+  webhook_verify_token VARCHAR(120) DEFAULT 'trio_whatsapp_center_secret',
   google_review_link TEXT DEFAULT 'https://g.page/r/triotheposh/review',
   auto_send_enabled BOOLEAN DEFAULT true,
   daily_birthday_time VARCHAR(10) DEFAULT '09:00',
   created_at TIMESTAMPTZ DEFAULT now(),
-  CONSTRAINT single_marketing_row CHECK (id = 1)
+  CONSTRAINT single_whatsapp_center_row CHECK (id = 1)
 );
-INSERT INTO marketing_settings (id, auto_send_enabled) VALUES (1, true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO whatsapp_settings (id, auto_send_enabled) VALUES (1, true) ON CONFLICT (id) DO NOTHING;
 
 -- ---------- Helpful indexes ----------
 CREATE INDEX IF NOT EXISTS idx_customer_visits_created_at ON customer_visits (created_at);
 CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance (date);
 CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments (appointment_date);
 CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers (phone);
-CREATE INDEX IF NOT EXISTS idx_message_logs_recipient ON message_logs (recipient_phone);
-CREATE INDEX IF NOT EXISTS idx_message_logs_created ON message_logs (created_at);
-CREATE INDEX IF NOT EXISTS idx_scheduled_messages_scheduled ON scheduled_messages (scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_recipient ON whatsapp_messages (recipient_phone);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_created ON whatsapp_messages (created_at);
+CREATE INDEX IF NOT EXISTS idx_scheduled_jobs_scheduled ON scheduled_jobs (scheduled_at);
 

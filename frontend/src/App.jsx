@@ -23,6 +23,7 @@ import Settings from './pages/Settings.jsx';
 import StaffSalary from './pages/StaffSalary.jsx';
 import StaffCommissions from './pages/StaffCommissions.jsx';
 import StaffWorkRegister from './pages/StaffWorkRegister.jsx';
+import WhatsAppCenter from './pages/whatsapp/WhatsAppCenter.jsx';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -45,6 +46,7 @@ export default function App() {
         }
       >
         <Route path="/" element={<Dashboard />} />
+        <Route path="/whatsapp-center" element={<WhatsAppCenter />} />
         <Route path="/staff" element={<Staff />} />
         <Route path="/staff/:id" element={<StaffProfile />} />
         <Route path="/attendance" element={<Attendance />} />

@@ -20,11 +20,13 @@ import {
   Award,
   DollarSign,
   FileText,
+  MessageSquare,
   X,
 } from 'lucide-react';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/whatsapp-center', label: 'WhatsApp Center', icon: MessageSquare },
   { to: '/appointments', label: 'Appointments', icon: CalendarDays },
   { to: '/customers', label: 'Clients', icon: Users },
   { to: '/permanent-customers', label: 'Permanent Customers', icon: UserCheck },
