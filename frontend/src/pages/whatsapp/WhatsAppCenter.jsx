@@ -463,7 +463,7 @@ export default function WhatsAppCenter() {
             <h3 className="font-display text-base font-bold text-dark mb-4 flex items-center gap-2">
               <Clock size={18} className="text-emerald-700" /> Recent Dispatch Activity
             </h3>
-            {stats.recentActivity.length === 0 ? (
+            {(!stats.recentActivity || stats.recentActivity.length === 0) ? (
               <p className="text-xs text-dark/40 italic py-6 text-center">No recent messages sent.</p>
             ) : (
               <div className="overflow-x-auto text-xs">
@@ -478,7 +478,7 @@ export default function WhatsAppCenter() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#E8DFCF]/60">
-                    {stats.recentActivity.map((r) => (
+                    {(stats.recentActivity || []).map((r) => (
                       <tr key={r.id}>
                         <td className="py-2.5 px-3 font-bold text-dark">{r.customer_name} ({r.recipient_phone})</td>
                         <td className="py-2.5 px-3 uppercase text-[10px] font-bold text-emerald-800">{r.message_type}</td>

@@ -37,7 +37,7 @@ async function processDailyBirthdays() {
       // Check duplicate send today
       const checkLog = await db.query(
         `SELECT id FROM whatsapp_messages
-         WHERE recipient_phone = $1 AND message_type = 'birthday' AND (created_at::text LIKE $2 || '%')`,
+         WHERE recipient_phone = $1 AND message_type = 'birthday' AND (CAST(created_at AS TEXT) LIKE $2 || '%')`,
         [phone, todayStr]
       );
 
@@ -76,9 +76,9 @@ async function processAppointmentReminders() {
       `SELECT a.*, c.name AS customer_name, c.phone AS customer_phone,
               s.name AS staff_name, sv.name AS service_name
        FROM appointments a
-       LEFT JOIN customers c ON c.id::text = a.customer_id::text
-       LEFT JOIN staff s ON s.id::text = a.staff_id::text
-       LEFT JOIN services sv ON sv.id::text = a.service_id::text
+       LEFT JOIN customers c ON CAST(c.id AS TEXT) = CAST(a.customer_id AS TEXT)
+       LEFT JOIN staff s ON CAST(s.id AS TEXT) = CAST(a.staff_id AS TEXT)
+       LEFT JOIN services sv ON CAST(sv.id AS TEXT) = CAST(a.service_id AS TEXT)
        WHERE a.appointment_date >= $1 AND LOWER(a.status) IN ('booked', 'confirmed')`,
       [todayStr]
     );
@@ -113,7 +113,7 @@ async function processAppointmentReminders() {
 
       const phone = formatPhoneNumber(app.customer_phone, config.defaultCountryCode);
       const checkLog = await db.query(
-        `SELECT id FROM whatsapp_messages WHERE recipient_phone = $1 AND message_type = $2 AND (created_at::text LIKE $3 || '%')`,
+        `SELECT id FROM whatsapp_messages WHERE recipient_phone = $1 AND message_type = $2 AND (CAST(created_at AS TEXT) LIKE $3 || '%')`,
         [phone, reminderType, todayStr]
       );
       if (checkLog.rows && checkLog.rows.length > 0) continue;
@@ -146,8 +146,8 @@ async function processReviewRequests() {
     const { rows: visits } = await db.query(
       `SELECT v.*, c.name AS customer_name, c.phone AS customer_phone
        FROM customer_visits v
-       LEFT JOIN customers c ON c.id::text = v.customer_id::text
-       WHERE (v.created_at::text LIKE $1 || '%') AND c.phone IS NOT NULL`,
+       LEFT JOIN customers c ON CAST(c.id AS TEXT) = CAST(v.customer_id AS TEXT)
+       WHERE (CAST(v.created_at AS TEXT) LIKE $1 || '%') AND c.phone IS NOT NULL`,
       [yesterdayStr]
     );
 

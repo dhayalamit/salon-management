@@ -32,17 +32,17 @@ router.get('/dashboard', authenticate, async (req, res) => {
       activeRulesCount,
       recentActivity,
     ] = await Promise.all([
-      db.query(`SELECT COUNT(*) AS total FROM whatsapp_messages WHERE created_at::text LIKE $1 || '%'`, [todayStr]),
+      db.query(`SELECT COUNT(*) AS total FROM whatsapp_messages WHERE CAST(created_at AS TEXT) LIKE $1 || '%'`, [todayStr]),
       db.query(`SELECT COUNT(*) AS total FROM whatsapp_messages WHERE LOWER(status) = 'delivered'`),
       db.query(`SELECT COUNT(*) AS total FROM whatsapp_messages WHERE LOWER(status) = 'failed'`),
       db.query(`SELECT COUNT(*) AS total FROM scheduled_jobs WHERE status = 'pending'`),
       db.query(`SELECT COUNT(*) AS total FROM whatsapp_campaigns WHERE status = 'scheduled'`),
-      db.query(`SELECT COUNT(*) AS total FROM whatsapp_messages WHERE message_type = 'birthday' AND created_at::text LIKE $1 || '%'`, [todayStr]),
-      db.query(`SELECT COUNT(*) AS total FROM whatsapp_messages WHERE message_type LIKE 'appointment%' AND created_at::text LIKE $1 || '%'`, [todayStr]),
-      db.query(`SELECT COUNT(*) AS total FROM whatsapp_messages WHERE message_type = 'festival' AND created_at::text LIKE $1 || '%'`, [todayStr]),
+      db.query(`SELECT COUNT(*) AS total FROM whatsapp_messages WHERE message_type = 'birthday' AND CAST(created_at AS TEXT) LIKE $1 || '%'`, [todayStr]),
+      db.query(`SELECT COUNT(*) AS total FROM whatsapp_messages WHERE message_type LIKE 'appointment%' AND CAST(created_at AS TEXT) LIKE $1 || '%'`, [todayStr]),
+      db.query(`SELECT COUNT(*) AS total FROM whatsapp_messages WHERE message_type = 'festival' AND CAST(created_at AS TEXT) LIKE $1 || '%'`, [todayStr]),
       db.query(`SELECT COUNT(*) AS total FROM whatsapp_messages`),
       db.query(`SELECT COUNT(*) AS total FROM whatsapp_campaigns`),
-      db.query(`SELECT COUNT(*) AS total FROM automation_rules WHERE is_enabled::text IN ('true', '1')`),
+      db.query(`SELECT COUNT(*) AS total FROM automation_rules WHERE is_enabled IN (1, '1', true, 'true')`),
       db.query(`SELECT * FROM whatsapp_messages ORDER BY created_at DESC LIMIT 10`),
     ]);
 
@@ -136,14 +136,14 @@ router.post('/broadcast', authenticate, async (req, res) => {
     const params = [];
 
     if (targetAudience === 'vip') {
-      audienceSql += ` AND (is_permanent::text IN ('true', '1') OR COALESCE(advance_balance, 0) > 0)`;
+      audienceSql += ` AND (is_permanent IN (1, '1', true, 'true') OR COALESCE(advance_balance, 0) > 0)`;
     } else if (targetAudience === 'female') {
       audienceSql += ` AND LOWER(gender) = 'female'`;
     } else if (targetAudience === 'male') {
       audienceSql += ` AND LOWER(gender) = 'male'`;
     } else if (targetAudience === 'inactive_30d') {
       const d30 = new Date(Date.now() - 30 * 86400 * 1000).toISOString().slice(0, 10);
-      audienceSql += ` AND id NOT IN (SELECT DISTINCT customer_id FROM customer_visits WHERE created_at::text >= '${d30}')`;
+      audienceSql += ` AND id NOT IN (SELECT DISTINCT customer_id FROM customer_visits WHERE CAST(created_at AS TEXT) >= '${d30}')`;
     }
 
     const { rows: recipients } = await db.query(audienceSql, params);
