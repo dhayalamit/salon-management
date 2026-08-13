@@ -32,6 +32,7 @@ import {
   CalendarDays,
   CalendarCheck,
   FileText,
+  MessageSquare,
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Modal from '../components/ui/Modal.jsx';
