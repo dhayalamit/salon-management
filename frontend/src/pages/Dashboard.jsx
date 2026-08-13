@@ -185,6 +185,7 @@ export default function Dashboard() {
 
   // Quick Modules Grid Configuration for direct 1-tap mobile access
   const allModules = [
+    { title: 'WhatsApp Center', icon: MessageSquare, route: '/whatsapp-center', color: 'bg-emerald-50 text-emerald-700', border: 'border-emerald-200', desc: 'Meta API & Automation' },
     { title: 'Clients', icon: Users, route: '/customers', color: 'bg-blue-50 text-blue-600', border: 'border-blue-200', desc: 'Client Database' },
     { title: 'Permanent Customers', icon: UserCheck, route: '/permanent-customers', color: 'bg-amber-50 text-[#D4AF37]', border: 'border-amber-200', desc: 'Prepaid Wallet & Visits' },
     { title: 'Appointments', icon: Calendar, route: '/appointments', color: 'bg-purple-50 text-purple-600', border: 'border-purple-200', desc: 'Booking Schedule' },
