@@ -359,28 +359,6 @@ router.post('/', authenticate, async (req, res) => {
       ]);
     }
 
-    // Step 7: Trigger Automated WhatsApp Thank You Message
-    if (customerId) {
-      try {
-        const custQ = await db.query('SELECT name, phone FROM customers WHERE id = $1', [customerId]);
-        const cust = custQ.rows[0];
-        if (cust && cust.phone) {
-          const { sendTextMessage } = require('../services/whatsappService');
-          const thankYouMsg = `✨ Thank You for Visiting TRIO The Posh!\n\nDear ${cust.name || 'Client'},\nThank you for choosing us today! Your Customer Visit #${visitNumber} has been saved successfully.\nTotal Bill: ₹${total.toLocaleString('en-IN')}\n\nWe look forward to pampering you again soon! 💖`;
-          
-          sendTextMessage({
-            to: cust.phone,
-            body: thankYouMsg,
-            customerName: cust.name,
-            customerId,
-            messageType: 'thank_you',
-          }).catch((err) => console.error('[WhatsApp Visit Trigger Exception]', err.message));
-        }
-      } catch (waErr) {
-        console.error('[WhatsApp Trigger Fetch Error]', waErr.message);
-      }
-    }
-
     res.status(201).json(visitQ.rows[0]);
   } catch (err) {
     console.error('Create visit error:', err);
