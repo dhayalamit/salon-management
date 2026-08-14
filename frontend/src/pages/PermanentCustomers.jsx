@@ -408,19 +408,47 @@ export default function PermanentCustomers() {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#F4F0E6] border border-[#E8DFCF]">
-            <label className="block font-bold text-dark/80 mb-1">Initial Advance Deposit (₹)</label>
-            <input
-              type="number"
-              min="0"
-              value={regData.initialDeposit}
-              onChange={(e) => setRegData({ ...regData, initialDeposit: e.target.value })}
-              placeholder="e.g. 5000"
-              className="w-full px-3.5 py-2 bg-white border border-[#E8DFCF] rounded-xl text-dark font-bold text-sm focus:outline-none focus:border-[#D4AF37]"
-            />
-            <span className="text-[10px] text-dark/50 mt-1 block">
-              This initial deposit will be added directly to the customer's prepaid wallet.
-            </span>
+          <div className="p-4 rounded-2xl bg-[#F4F0E6] border border-[#E8DFCF] space-y-3">
+            <div>
+              <label className="block font-bold text-dark/80 mb-1">Initial Advance Deposit (₹)</label>
+              <input
+                type="number"
+                min="0"
+                value={regData.initialDeposit}
+                onChange={(e) => setRegData({ ...regData, initialDeposit: e.target.value })}
+                placeholder="e.g. 5000"
+                className="w-full px-3.5 py-2 bg-white border border-[#E8DFCF] rounded-xl text-dark font-bold text-sm focus:outline-none focus:border-[#D4AF37]"
+              />
+              <span className="text-[10px] text-dark/50 mt-1 block">
+                This initial deposit will be added directly to the customer's prepaid wallet.
+              </span>
+            </div>
+
+            {Number(regData.initialDeposit || 0) > 0 && (
+              <div>
+                <label className="block font-bold text-dark/80 mb-1">Deposit Payment Method / Source *</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'cash', label: '💵 Cash' },
+                    { id: 'upi', label: '📱 UPI' },
+                    { id: 'card', label: '💳 Card' },
+                  ].map((pm) => (
+                    <button
+                      key={pm.id}
+                      type="button"
+                      onClick={() => setRegData({ ...regData, paymentMethod: pm.id })}
+                      className={`py-2 rounded-xl font-bold text-xs transition-all ${
+                        (regData.paymentMethod || 'cash') === pm.id
+                          ? 'bg-[#D4AF37] text-white shadow-sm'
+                          : 'bg-white text-dark/70 border border-[#E8DFCF]'
+                      }`}
+                    >
+                      {pm.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div>

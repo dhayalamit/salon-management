@@ -155,30 +155,34 @@ export default function Appointments() {
     }
   };
 
-  const handleCompleteVisit = (app) => {
-    const matchedService = services.find((s) => s.id === app.service_id);
-    navigate('/visits', {
-      state: {
-        createVisit: true,
-        appointmentId: app.id,
-        customerId: app.customer_id,
-        staffId: app.staff_id,
-        prefillItems: app.service_id
-          ? [
-              {
-                type: 'service',
-                id: app.service_id,
-                name: app.service_name || matchedService?.name || 'Service',
-                unitPrice: Number(app.service_price || matchedService?.price || 0),
-                quantity: 1,
-                discount: 0,
-                staffId: app.staff_id || '',
-                commissionPercent: Number(matchedService?.commission_percent || 0),
-              },
-            ]
-          : [],
-      },
-    });
+  const handleCompleteVisit = async (app) => {
+    try {
+      const matchedService = services.find((s) => String(s.id) === String(app.service_id));
+      navigate('/visits', {
+        state: {
+          createVisit: true,
+          appointmentId: app.id,
+          customerId: app.customer_id,
+          staffId: app.staff_id,
+          prefillItems: app.service_id
+            ? [
+                {
+                  type: 'service',
+                  id: app.service_id,
+                  name: app.service_name || matchedService?.name || 'Service',
+                  unitPrice: Number(app.service_price || matchedService?.price || 0),
+                  quantity: 1,
+                  discount: 0,
+                  staffId: app.staff_id || '',
+                  commissionPercent: Number(matchedService?.commission_percent || 0),
+                },
+              ]
+            : [],
+        },
+      });
+    } catch (err) {
+      showError('Failed to complete appointment');
+    }
   };
 
   const filteredAppointments = appointments.filter((app) => {

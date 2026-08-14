@@ -602,13 +602,15 @@ export default function CustomerVisits() {
                       </div>
 
                       <div>
-                        <label className="text-[10px] text-dark/50 block">Assigned Staff</label>
+                        <label className="text-[10px] text-dark/50 block font-semibold">
+                          {item.type === 'product' ? 'Sold By (Staff)' : 'Assigned Stylist'}
+                        </label>
                         <select
                           value={item.staffId}
                           onChange={(e) => handleItemChange(idx, 'staffId', e.target.value)}
                           className="px-2 py-1 bg-white border border-[#E8DFCF] rounded-lg text-xs"
                         >
-                          <option value="">Primary Staff</option>
+                          <option value="">{item.type === 'product' ? 'Select Seller...' : 'Primary Stylist'}</option>
                           {staff.map((st) => (
                             <option key={st.id} value={st.id}>
                               {st.name}

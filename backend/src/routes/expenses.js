@@ -97,8 +97,8 @@ router.get('/', authenticate, async (req, res) => {
 router.post('/', authenticate, async (req, res) => {
   try {
     const { category, amount, expenseDate, paymentMethod, note } = req.body;
-    if (!category || amount === undefined) {
-      return res.status(400).json({ error: 'Category and amount are required' });
+    if (!category || amount === undefined || amount === null || amount === '') {
+      return res.status(400).json({ error: 'Category and valid amount are required' });
     }
 
     const id = db.generateUUID();
@@ -106,16 +106,33 @@ router.post('/', authenticate, async (req, res) => {
     const pMethod = paymentMethod || 'cash';
     const expTitle = category;
 
-    const { rows } = await db.query(
-      `INSERT INTO expenses (id, title, category, amount, expense_date, payment_method, note)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [id, expTitle, category, Number(amount), date, pMethod, note || null]
-    );
+    // Ensure columns exist on legacy tables
+    await db.query(`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS title TEXT`).catch(() => {});
+    await db.query(`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'cash'`).catch(() => {});
+    await db.query(`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS note TEXT`).catch(() => {});
 
-    res.status(201).json(rows[0] || { id, title: expTitle, category, amount, expense_date: date, payment_method: pMethod, note });
+    let resultRows = [];
+    try {
+      const { rows } = await db.query(
+        `INSERT INTO expenses (id, title, category, amount, expense_date, payment_method, note)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [id, expTitle, category, Number(amount), date, pMethod, note || null]
+      );
+      resultRows = rows || [];
+    } catch (insertErr) {
+      // Fallback query if RETURNING or title causes an issue
+      const { rows } = await db.query(
+        `INSERT INTO expenses (id, category, amount, expense_date, payment_method, note)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [id, category, Number(amount), date, pMethod, note || null]
+      );
+      resultRows = rows || [];
+    }
+
+    res.status(201).json(resultRows[0] || { id, title: expTitle, category, amount: Number(amount), expense_date: date, payment_method: pMethod, note });
   } catch (err) {
     console.error('Create expense error:', err);
-    res.status(500).json({ error: 'Failed to create expense' });
+    res.status(500).json({ error: err.message || 'Failed to create expense' });
   }
 });
 

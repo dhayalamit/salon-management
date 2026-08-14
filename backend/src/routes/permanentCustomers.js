@@ -75,7 +75,7 @@ router.get('/:id', authenticate, async (req, res) => {
 // POST /api/permanent-customers — Register permanent customer
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { name, phone, alternatePhone, gender, birthday, initialDeposit, notes } = req.body;
+    const { name, phone, alternatePhone, gender, birthday, initialDeposit, paymentMethod, notes } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ error: 'Customer name is required' });
     }
@@ -87,6 +87,7 @@ router.post('/', authenticate, async (req, res) => {
     const cleanBirthday = birthday && birthday.trim() !== '' ? birthday.trim() : null;
     const cleanNotes = notes && notes.trim() !== '' ? notes.trim() : null;
     const depositAmt = Math.max(0, Number(initialDeposit || 0));
+    const cleanPaymentMethod = paymentMethod && paymentMethod.trim() !== '' ? paymentMethod.trim() : 'cash';
 
     if (cleanPhone) {
       const existing = await db.query('SELECT id FROM customers WHERE phone = $1', [cleanPhone]);
@@ -110,8 +111,8 @@ router.post('/', authenticate, async (req, res) => {
       await db.query(
         `INSERT INTO advance_transactions
            (id, customer_id, type, amount, balance_after, payment_method, notes, performed_by)
-         VALUES ($1, $2, 'deposit', $3, $3, 'cash', 'Initial Advance Deposit', $4)`,
-        [txId, id, depositAmt, performedBy]
+         VALUES ($1, $2, 'deposit', $3, $3, $4, 'Initial Advance Deposit', $5)`,
+        [txId, id, depositAmt, cleanPaymentMethod, performedBy]
       );
     }
 

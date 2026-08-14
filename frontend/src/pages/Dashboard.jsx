@@ -668,7 +668,7 @@ export default function Dashboard() {
       {/* 1. Today's Revenue Modal */}
       <Modal isOpen={activeModal === 'revenue'} onClose={() => setActiveModal(null)} title="Today's Revenue Breakdown">
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
               <p className="text-[11px] font-bold uppercase text-emerald-800 tracking-wider">Cash Revenue</p>
               <h4 className="font-display text-xl font-bold text-emerald-700 mt-1">₹{stats.todayCashRevenue.toLocaleString('en-IN')}</h4>
@@ -678,6 +678,11 @@ export default function Dashboard() {
               <p className="text-[11px] font-bold uppercase text-blue-800 tracking-wider">Online / Card Revenue</p>
               <h4 className="font-display text-xl font-bold text-blue-700 mt-1">₹{stats.todayOnlineRevenue.toLocaleString('en-IN')}</h4>
               <p className="text-[10px] text-blue-600 mt-0.5">{stats.todayOnlineCount} Digital Invoices</p>
+            </div>
+            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200">
+              <p className="text-[11px] font-bold uppercase text-amber-800 tracking-wider">Advance Wallet Adjusted</p>
+              <h4 className="font-display text-xl font-bold text-amber-700 mt-1">₹{(stats.advanceUsedToday || 0).toLocaleString('en-IN')}</h4>
+              <p className="text-[10px] text-amber-600 mt-0.5">Prepaid Advance Adjustments</p>
             </div>
           </div>
 
