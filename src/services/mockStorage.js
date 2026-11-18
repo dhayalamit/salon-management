@@ -597,6 +597,10 @@ export function getDb() {
   if (!db.salary_payments) db.salary_payments = [];
   if (!db.expenses || db.expenses.length === 0) db.expenses = [...defaultSeedData.expenses];
   if (!db.expense_categories) db.expense_categories = ['Rent', 'Utilities', 'Inventory', 'Salary', 'Marketing', 'Maintenance'];
+  if (!db.settings) db.settings = { ...defaultSeedData.settings };
+  if (!db.whatsapp) db.whatsapp = JSON.parse(JSON.stringify(defaultSeedData.whatsapp));
+  if (!db.daily_balance) db.daily_balance = { ...defaultSeedData.daily_balance };
+  if (!db.daily_balances) db.daily_balances = {};
 
   checkAndGenerateNotifications(db);
   return db;

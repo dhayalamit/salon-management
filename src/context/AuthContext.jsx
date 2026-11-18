@@ -5,8 +5,14 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem('salon_user');
-    return stored ? JSON.parse(stored) : null;
+    try {
+      const stored = localStorage.getItem('salon_user');
+      return stored && stored !== 'undefined' && stored !== 'null' ? JSON.parse(stored) : null;
+    } catch (e) {
+      console.warn('Failed to parse salon_user from localStorage, resetting:', e);
+      localStorage.removeItem('salon_user');
+      return null;
+    }
   });
   const [loading, setLoading] = useState(false);
 
