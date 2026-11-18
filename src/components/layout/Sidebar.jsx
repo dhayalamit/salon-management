@@ -44,8 +44,15 @@ const navItems = [
 ];
 
 export default function Sidebar({ open, onClose }) {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  // Filter items: Staff cannot see Staff Roster, Salary, Commission, Expenses, Reports, or Settings
+  const visibleNavItems = navItems.filter((item) => {
+    if (isAdmin) return true;
+    const adminOnlyRoutes = ['/staff', '/salary', '/commissions', '/expenses', '/reports', '/settings'];
+    return !adminOnlyRoutes.includes(item.to);
+  });
 
   return (
     <>
@@ -96,7 +103,7 @@ export default function Sidebar({ open, onClose }) {
 
             {/* Nav List */}
             <nav className="space-y-1 overflow-y-auto max-h-[calc(100vh-230px)] pr-1">
-              {navItems.map((item) => {
+              {visibleNavItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <NavLink

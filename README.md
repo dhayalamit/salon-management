@@ -6,20 +6,47 @@
 [![Architecture](https://img.shields.io/badge/Architecture-100%25%20Pure%20Frontend%20SPA-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://react.dev/)
 [![Vercel](https://img.shields.io/badge/Vercel-Deploy%20Ready-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 
-An enterprise-grade, luxury salon and spa management platform designed for high-end unisex salons. Built as a **100% pure client-side Single Page Application (SPA)** with zero backend server dependencies, persistent browser storage, dual-role access (Admin / Owner & Staff Portal), 1-click live demo logins, client billing, staff commissions, VIP permanent customer deposit wallets, WhatsApp automated notifications, inventory, expenses, and financial analytics.
+An enterprise-grade, luxury salon and spa management platform designed for high-end unisex salons. Built as a **100% pure client-side Single Page Application (SPA)** with zero backend server dependencies, persistent browser storage, dual-tier role access (Executive Admin/Owner & Staff Workstation), 1-click live demo logins, client billing, VIP permanent customer deposit wallets, WhatsApp automated notifications, inventory, expenses, and financial analytics.
+
+> [!NOTE]
+> **Active Production Pilot & Working Demo Notice:**
+> This web application is **currently in active daily use at TRIO The Posh Salon** (Piprali Road, Sikar) for managing live appointments, client checkout, and stylist work registers. This public deployment serves as an interactive **working client-side demonstration prototype**. Because it is an actively evolving production testbed, you may encounter minor edge-case bugs or ongoing UI refinements. We welcome your feedback!
 
 ---
 
 ## ⚡ Instant Live Demo & Login Credentials
 
-Anyone visiting the deployed app or evaluating the repository can log in instantly using the built-in **1-Click Quick Demo** buttons on the login screen, or with the demo credentials below:
+Anyone visiting the deployed app or evaluating the repository can log in instantly using the built-in **1-Click Quick Demo** buttons on the login screen, or with the credentials below:
 
-| Portal | Email / ID | Password | Access Level |
+| Portal | Email / ID | Password | Access Level & Scope |
 | :--- | :--- | :--- | :--- |
-| 👑 **Admin / Owner** | `admin@salon.com` | `admin123` | Full Master Access (Finances, Staff, Reports, Settings, WhatsApp) |
-| ✂️ **Staff Portal** | `staff@salon.com` | `staff123` | Staff Workspace (Work Register, Attendance, Services, Commissions) |
+| 👑 **Admin / Owner** | `admin@salon.com` | `admin123` | **Full Executive Command:** Total Revenue, Daily Balances, Expenses, Reports, Staff Salaries & Settings |
+| ✂️ **Staff Portal** | `staff@salon.com` | `staff123` | **Staff Workstation:** Daily Appointments, Customer Visits, Attendance, Clients & Work Register *(Financials & Reports strictly restricted)* |
 
 > 💡 **100% Frontend — Zero Backend / Database Setup Needed:** The app includes a persistent offline mock database pre-populated with realistic staff, clients, appointments, and financial records. Everything works natively inside the browser with localStorage persistence across refreshes.
+
+---
+
+## 🛡️ Role-Based Access Control (RBAC)
+
+The application enforces strict visual and route-level segregation between **Salon Owners** and **Staff Members**:
+
+| Feature / Workspace | 👑 Executive Admin / Owner | ✂️ Staff Workstation |
+| :--- | :---: | :---: |
+| **Today's Appointments & Booking** | ✅ Full Access | ✅ Full Access |
+| **Customer Visits & Checkout** | ✅ Full Access | ✅ Full Access |
+| **Clients & VIP Permanent Wallets** | ✅ Full Access | ✅ Full Access |
+| **Daily Attendance Register** | ✅ Full Access | ✅ Mark Attendance |
+| **Staff Work Register** | ✅ Full Access | ✅ Log Work Entries |
+| **Products & Inventory** | ✅ Full Access | ✅ View Stock |
+| **WhatsApp Center & Automations** | ✅ Full Access | ✅ View Automations |
+| **Today's Salon Revenue & Cash Inflow** | ✅ Visible | 🔒 **Restricted (Hidden)** |
+| **Daily Multi-Method Register Balances** | ✅ Visible | 🔒 **Restricted (Hidden)** |
+| **Monthly Revenue Trend Analytics Chart** | ✅ Visible | 🔒 **Restricted (Replaced by Appointments Schedule)** |
+| **Salon Expenses Manager** | ✅ Full Access | 🔒 **Restricted (Hidden & Route Guarded)** |
+| **Financial Reports & Audit** | ✅ Full Access | 🔒 **Restricted (Hidden & Route Guarded)** |
+| **Staff Team Roster & Salaries** | ✅ Full Access | 🔒 **Restricted (Hidden & Route Guarded)** |
+| **Branding & System Settings** | ✅ Full Access | 🔒 **Restricted (Hidden & Route Guarded)** |
 
 ---
 

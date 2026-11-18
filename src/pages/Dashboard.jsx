@@ -37,11 +37,13 @@ import {
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Modal from '../components/ui/Modal.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { getTodayDateString } from '../utils/dateUtils.js';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
+  const { user, isAdmin } = useAuth();
 
   const [stats, setStats] = useState({
     todayRevenue: 0,
@@ -200,7 +202,7 @@ export default function Dashboard() {
 
   // Quick Modules Grid Configuration for direct 1-tap mobile access
   const allModules = [
-    { title: 'WhatsApp Center', icon: MessageSquare, route: '/whatsapp-center', color: 'bg-emerald-50 text-emerald-700', border: 'border-emerald-200', desc: 'Meta API & Automation' },
+    { title: 'WhatsApp Center', icon: MessageSquare, route: '/whatsapp-center', color: 'bg-emerald-50 text-emerald-700', border: 'border-emerald-200', desc: 'Messaging & Automations' },
     { title: 'Clients', icon: Users, route: '/customers', color: 'bg-blue-50 text-blue-600', border: 'border-blue-200', desc: 'Client Database' },
     { title: 'Permanent Customers', icon: UserCheck, route: '/permanent-customers', color: 'bg-amber-50 text-[#D4AF37]', border: 'border-amber-200', desc: 'Prepaid Wallet & Visits' },
     { title: 'Appointments', icon: Calendar, route: '/appointments', color: 'bg-purple-50 text-purple-600', border: 'border-purple-200', desc: 'Booking Schedule' },
@@ -216,6 +218,13 @@ export default function Dashboard() {
     { title: 'Reports', icon: BarChart3, route: '/reports', color: 'bg-[#F4F0E6] text-dark', border: 'border-[#E8DFCF]', desc: 'Revenue Analytics' },
     { title: 'Settings', icon: SettingsIcon, route: '/settings', color: 'bg-slate-100 text-slate-700', border: 'border-slate-300', desc: 'Salon Branding' },
   ];
+
+  // Filter modules: Staff cannot see Staff Roster, Salary, Commission, Expenses, Reports, or Settings
+  const visibleModules = allModules.filter((mod) => {
+    if (isAdmin) return true;
+    const adminOnlyRoutes = ['/staff', '/salary', '/commissions', '/expenses', '/reports', '/settings'];
+    return !adminOnlyRoutes.includes(mod.route);
+  });
 
   const pendingVisitsList = (stats.todayVisitsList || stats.todayInvoicesList || []).filter(
     (v) => Number(v.remaining_amount || 0) > 0 || (v.payment_status || '').toLowerCase() === 'pending' || (v.payment_method || '').toLowerCase() === 'pending'
@@ -233,15 +242,25 @@ export default function Dashboard() {
           />
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-widest bg-[#D4AF37] text-white">
-                Executive View
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-widest ${
+                isAdmin
+                  ? 'bg-[#D4AF37] text-white'
+                  : 'bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1'
+              }`}>
+                {isAdmin ? 'Executive View' : <><Scissors size={11} /> Staff Workstation</>}
               </span>
               <span className="text-xs text-dark/40 font-medium">TRIO The Posh</span>
             </div>
             <h1 className="font-display text-xl sm:text-3xl font-bold text-dark tracking-tight">
-              Salon Command Center
+              {isAdmin
+                ? 'Salon Command Center'
+                : `Welcome, ${user?.name ? user.name.split(' ')[0].toLowerCase() : 'staff'}`}
             </h1>
-            <p className="text-xs text-dark/50 mt-0.5">Real-time salon metrics, daily balances & instant module shortcuts</p>
+            <p className="text-xs text-dark/50 mt-0.5">
+              {isAdmin
+                ? 'Real-time salon metrics, daily balances & instant module shortcuts'
+                : 'Manage appointments, customer visits, clients & daily work'}
+            </p>
           </div>
         </div>
 
@@ -263,76 +282,80 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Unified Register Balance Card (Automated Live Multi-Method Register) */}
-      <div
-        onClick={() => setActiveModal('balance')}
-        className="glass-card p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-l-4 border-l-[#D4AF37] cursor-pointer hover:border-[#D4AF37] transition-all group"
-      >
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 rounded-2xl bg-[#D4AF37]/10 text-[#D4AF37] shrink-0">
-            <Landmark size={22} />
+      {/* Unified Register Balance Card (Automated Live Multi-Method Register) - ADMIN ONLY */}
+      {isAdmin && (
+        <div
+          onClick={() => setActiveModal('balance')}
+          className="glass-card p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-l-4 border-l-[#D4AF37] cursor-pointer hover:border-[#D4AF37] transition-all group"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 rounded-2xl bg-[#D4AF37]/10 text-[#D4AF37] shrink-0">
+              <Landmark size={22} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-dark text-sm">Automated Daily Register Balances</h4>
+                <span className="text-[10px] bg-emerald-100 px-2.5 py-0.5 rounded-full text-emerald-800 font-bold border border-emerald-300">
+                  ⚡ Multi-Method Live Sync (Cash, UPI, Card & Advance)
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs">
+                <div>
+                  <span className="text-dark/50 font-medium text-[11px]">Opening Balance: </span>
+                  <span className="font-bold text-blue-700">₹{Number(stats.todayOpeningBalance || 0).toLocaleString('en-IN')}</span>
+                </div>
+                <span className="text-dark/30 hidden sm:inline">•</span>
+                <div>
+                  <span className="text-dark/50 font-medium text-[11px]">Total Inflow (+): </span>
+                  <span className="font-bold text-emerald-600">₹{Number(stats.todayRevenue || 0).toLocaleString('en-IN')}</span>
+                </div>
+                <span className="text-dark/30 hidden sm:inline">•</span>
+                <div>
+                  <span className="text-dark/50 font-medium text-[11px]">Total Outflows (-): </span>
+                  <span className="font-bold text-red-600">₹{Number(stats.todayExpenses || 0).toLocaleString('en-IN')}</span>
+                </div>
+                <span className="text-dark/30 hidden sm:inline">•</span>
+                <div>
+                  <span className="text-dark/50 font-medium text-[11px]">Automated Closing Register: </span>
+                  <span className="font-bold text-[#D4AF37] text-sm">₹{Number(stats.todayClosingBalance || 0).toLocaleString('en-IN')}</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h4 className="font-bold text-dark text-sm">Automated Daily Register Balances</h4>
-              <span className="text-[10px] bg-emerald-100 px-2.5 py-0.5 rounded-full text-emerald-800 font-bold border border-emerald-300">
-                ⚡ Multi-Method Live Sync (Cash, UPI, Card & Advance)
+
+          <button className="px-4 py-2 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-xs shrink-0 self-end sm:self-auto">
+            Manage Register Balances →
+          </button>
+        </div>
+      )}
+
+      {/* Top Cards Grid - 7 for Admin (includes Revenue) / 6 for Staff (Revenue hidden) */}
+      <div className={`grid grid-cols-2 sm:grid-cols-3 ${isAdmin ? 'xl:grid-cols-7' : 'xl:grid-cols-6'} gap-3 sm:gap-4`}>
+        {/* Card 1: Today's Revenue (ADMIN ONLY) */}
+        {isAdmin && (
+          <div
+            onClick={() => setActiveModal('revenue')}
+            className="glass-card glass-card-hover p-4 sm:p-5 flex flex-col justify-between cursor-pointer group hover:border-[#D4AF37] transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <div className="p-2 sm:p-2.5 rounded-2xl bg-amber-50 text-[#D4AF37]">
+                <TrendingUp size={18} />
+              </div>
+              <span className="text-[10px] text-[#D4AF37] bg-[#F4F0E6] px-2 py-0.5 rounded-full font-bold border border-[#E8DFCF]">
+                View
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs">
-              <div>
-                <span className="text-dark/50 font-medium text-[11px]">Opening Balance: </span>
-                <span className="font-bold text-blue-700">₹{Number(stats.todayOpeningBalance || 0).toLocaleString('en-IN')}</span>
-              </div>
-              <span className="text-dark/30 hidden sm:inline">•</span>
-              <div>
-                <span className="text-dark/50 font-medium text-[11px]">Total Inflow (+): </span>
-                <span className="font-bold text-emerald-600">₹{Number(stats.todayRevenue || 0).toLocaleString('en-IN')}</span>
-              </div>
-              <span className="text-dark/30 hidden sm:inline">•</span>
-              <div>
-                <span className="text-dark/50 font-medium text-[11px]">Total Outflows (-): </span>
-                <span className="font-bold text-red-600">₹{Number(stats.todayExpenses || 0).toLocaleString('en-IN')}</span>
-              </div>
-              <span className="text-dark/30 hidden sm:inline">•</span>
-              <div>
-                <span className="text-dark/50 font-medium text-[11px]">Automated Closing Register: </span>
-                <span className="font-bold text-[#D4AF37] text-sm">₹{Number(stats.todayClosingBalance || 0).toLocaleString('en-IN')}</span>
-              </div>
+            <div className="mt-3 sm:mt-4">
+              <p className="text-[11px] sm:text-xs font-medium text-dark/50 flex items-center justify-between">
+                <span>Today's Revenue</span>
+                <span className="text-[10px] text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity">Details →</span>
+              </p>
+              <h3 className="font-display text-xl sm:text-2xl font-bold text-dark mt-0.5">
+                ₹{Number(stats.todayRevenue || 0).toLocaleString('en-IN')}
+              </h3>
             </div>
           </div>
-        </div>
-
-        <button className="px-4 py-2 rounded-full bg-[#D4AF37] text-white font-semibold text-xs hover:bg-[#C59F2E] transition-all shadow-xs shrink-0 self-end sm:self-auto">
-          Manage Register Balances →
-        </button>
-      </div>
-
-      {/* Top Cards Grid - 7 Uniform & Crystal-Clear Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-7 gap-3 sm:gap-4">
-        {/* Card 1: Today's Revenue */}
-        <div
-          onClick={() => setActiveModal('revenue')}
-          className="glass-card glass-card-hover p-4 sm:p-5 flex flex-col justify-between cursor-pointer group hover:border-[#D4AF37] transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <div className="p-2 sm:p-2.5 rounded-2xl bg-amber-50 text-[#D4AF37]">
-              <TrendingUp size={18} />
-            </div>
-            <span className="text-[10px] text-[#D4AF37] bg-[#F4F0E6] px-2 py-0.5 rounded-full font-bold border border-[#E8DFCF]">
-              View
-            </span>
-          </div>
-          <div className="mt-3 sm:mt-4">
-            <p className="text-[11px] sm:text-xs font-medium text-dark/50 flex items-center justify-between">
-              <span>Today's Revenue</span>
-              <span className="text-[10px] text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity">Details →</span>
-            </p>
-            <h3 className="font-display text-xl sm:text-2xl font-bold text-dark mt-0.5">
-              ₹{Number(stats.todayRevenue || 0).toLocaleString('en-IN')}
-            </h3>
-          </div>
-        </div>
+        )}
 
         {/* Card 2: Appointments Today */}
         <div
@@ -490,7 +513,7 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          {allModules.map((mod) => {
+          {visibleModules.map((mod) => {
             const IconComp = mod.icon;
             return (
               <button
@@ -511,43 +534,101 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Main Content Split: Revenue Trend & Today's Invoices */}
+      {/* Main Content Split: Revenue Trend (Admin) OR Today's Appointment Schedule (Staff) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Revenue Analytics Chart */}
-        <div className="lg:col-span-2 glass-card p-6 border border-[#E8DFCF] space-y-4">
-          <div className="flex items-center justify-between border-b border-[#E8DFCF] pb-4">
-            <div>
-              <h3 className="font-display text-lg font-bold text-dark">Monthly Revenue Trend</h3>
-              <p className="text-xs text-dark/50">Visual revenue performance chart across active months</p>
+        {isAdmin ? (
+          /* Left 2 Cols: Revenue Analytics Chart (ADMIN ONLY) */
+          <div className="lg:col-span-2 glass-card p-6 border border-[#E8DFCF] space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E8DFCF] pb-4">
+              <div>
+                <h3 className="font-display text-lg font-bold text-dark">Monthly Revenue Trend</h3>
+                <p className="text-xs text-dark/50">Visual revenue performance chart across active months</p>
+              </div>
+              <button
+                onClick={() => navigate('/reports')}
+                className="text-xs font-semibold text-[#D4AF37] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                Detailed Reports <ChevronRight size={14} />
+              </button>
             </div>
-            <button
-              onClick={() => navigate('/reports')}
-              className="text-xs font-semibold text-[#D4AF37] hover:underline flex items-center gap-1"
-            >
-              Detailed Reports <ChevronRight size={14} />
-            </button>
-          </div>
 
-          <div className="h-64 w-full pt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#D4AF37" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="month" stroke="#A09885" fontSize={11} tickLine={false} />
-                <YAxis stroke="#A09885" fontSize={11} tickLine={false} />
-                <Tooltip
-                  formatter={(val) => [`₹${Number(val).toLocaleString('en-IN')}`, 'Revenue']}
-                  contentStyle={{ backgroundColor: '#FFF', borderRadius: '12px', border: '1px solid #E8DFCF' }}
-                />
-                <Area type="monotone" dataKey="revenue" stroke="#D4AF37" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRev)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            <div className="h-64 w-full pt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#D4AF37" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="month" stroke="#A09885" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#A09885" fontSize={11} tickLine={false} />
+                  <Tooltip
+                    formatter={(val) => [`₹${Number(val).toLocaleString('en-IN')}`, 'Revenue']}
+                    contentStyle={{ backgroundColor: '#FFF', borderRadius: '12px', border: '1px solid #E8DFCF' }}
+                  />
+                  <Area type="monotone" dataKey="revenue" stroke="#D4AF37" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRev)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
+        ) : (
+          /* Left 2 Cols: Today's Appointment Schedule (STAFF WORKSTATION) */
+          <div className="lg:col-span-2 glass-card p-6 border border-[#E8DFCF] space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E8DFCF] pb-4">
+              <div>
+                <h3 className="font-display text-lg font-bold text-dark">Today's Appointment Schedule</h3>
+                <p className="text-xs text-dark/50">Client appointments booked for today</p>
+              </div>
+              <button
+                onClick={() => navigate('/appointments')}
+                className="text-xs font-semibold text-[#D4AF37] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                View All Appointments <ChevronRight size={14} />
+              </button>
+            </div>
+
+            {stats.todayAppointmentsList && stats.todayAppointmentsList.length > 0 ? (
+              <div className="space-y-2.5">
+                {stats.todayAppointmentsList.slice(0, 5).map((appt) => (
+                  <div
+                    key={appt.id}
+                    className="p-3.5 rounded-2xl bg-white border border-[#E8DFCF] flex items-center justify-between gap-3 hover:border-[#D4AF37] transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-xs shrink-0 border border-purple-100">
+                        <Clock size={16} />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-dark text-xs sm:text-sm">{appt.customer_name || 'Client'}</h4>
+                        <p className="text-[11px] text-dark/50">{appt.service_name || 'Salon Service'} • {appt.staff_name || 'Stylist'}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-bold text-dark font-mono block">{appt.appointment_time || '10:00 AM'}</span>
+                      <span className="inline-block mt-0.5 text-[9px] uppercase px-2 py-0.5 rounded-full font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                        {appt.status || 'scheduled'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center space-y-3">
+                <div className="h-12 w-12 rounded-2xl bg-[#F4F0E6] text-[#D4AF37] flex items-center justify-center mx-auto">
+                  <Calendar size={22} />
+                </div>
+                <p className="text-xs text-dark/50">No client appointments scheduled for today.</p>
+                <button
+                  onClick={() => navigate('/appointments')}
+                  className="px-4 py-2 rounded-full bg-[#D4AF37] text-white text-xs font-bold hover:bg-[#C59F2E] cursor-pointer"
+                >
+                  + Book First Appointment
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Right 1 Col: Quick Shortcuts & Actions */}
         <div className="space-y-6">

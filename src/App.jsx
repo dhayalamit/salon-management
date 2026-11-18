@@ -42,6 +42,15 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function AdminOnlyRoute({ children }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin' || user?.role === 'owner';
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+}
+
 export default function App() {
   const { user, loading } = useAuth();
 
@@ -59,11 +68,11 @@ export default function App() {
       >
         <Route path="/" element={<Dashboard />} />
         <Route path="/whatsapp-center" element={<WhatsAppCenter />} />
-        <Route path="/staff" element={<Staff />} />
-        <Route path="/staff/:id" element={<StaffProfile />} />
+        <Route path="/staff" element={<AdminOnlyRoute><Staff /></AdminOnlyRoute>} />
+        <Route path="/staff/:id" element={<AdminOnlyRoute><StaffProfile /></AdminOnlyRoute>} />
         <Route path="/attendance" element={<Attendance />} />
-        <Route path="/salary" element={<StaffSalary />} />
-        <Route path="/commissions" element={<StaffCommissions />} />
+        <Route path="/salary" element={<AdminOnlyRoute><StaffSalary /></AdminOnlyRoute>} />
+        <Route path="/commissions" element={<AdminOnlyRoute><StaffCommissions /></AdminOnlyRoute>} />
         <Route path="/staff-work" element={<StaffWorkRegister />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/customers/:id" element={<CustomerProfile />} />
@@ -76,9 +85,9 @@ export default function App() {
         <Route path="/visits/:id" element={<VisitDetailsView />} />
         <Route path="/billing" element={<Navigate to="/visits" replace />} />
         <Route path="/billing/:id" element={<Navigate to="/visits" replace />} />
-        <Route path="/expenses" element={<Expenses />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/expenses" element={<AdminOnlyRoute><Expenses /></AdminOnlyRoute>} />
+        <Route path="/reports" element={<AdminOnlyRoute><Reports /></AdminOnlyRoute>} />
+        <Route path="/settings" element={<AdminOnlyRoute><Settings /></AdminOnlyRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
