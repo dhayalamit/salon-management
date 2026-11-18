@@ -1,34 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { ArrowRight, Lock, Mail, MapPin, Sparkles, ShieldCheck, CheckCircle, AlertCircle, KeyRound, Loader2, UserPlus, Crown } from 'lucide-react';
+import {
+  ArrowRight,
+  Lock,
+  Mail,
+  MapPin,
+  Sparkles,
+  ShieldCheck,
+  CheckCircle,
+  AlertCircle,
+  KeyRound,
+  Loader2,
+  Crown,
+  Scissors,
+  User,
+} from 'lucide-react';
 import Modal from '../components/ui/Modal.jsx';
 import { getDb } from '../services/mockStorage.js';
 
 export default function Login() {
-  const { login, loginWithGoogle, registerOwnerAccount, sendPasswordResetEmail, loading: authLoading } = useAuth();
+  const { login, sendPasswordResetEmail, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Active Login Mode: 'admin' (Admin / Owner) or 'staff' (Staff Portal)
+  const [activeTab, setActiveTab] = useState('admin');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [formLoading, setFormLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // Google Account Picker Modal State
-  const [showGoogleModal, setShowGoogleModal] = useState(false);
-  const [authorizedAccounts, setAuthorizedAccounts] = useState([]);
-  const [customGoogleEmail, setCustomGoogleEmail] = useState('');
-  const [customGoogleName, setCustomGoogleName] = useState('');
-  const [isCustomGoogleAccount, setIsCustomGoogleAccount] = useState(false);
-
-  // Initial Salon Owner Setup Modal State (For Client Handover)
-  const [showOwnerRegisterModal, setShowOwnerRegisterModal] = useState(false);
-  const [ownerRegisterName, setOwnerRegisterName] = useState('');
-  const [ownerRegisterEmail, setOwnerRegisterEmail] = useState('');
-  const [ownerRegisterPassword, setOwnerRegisterPassword] = useState('');
-  const [ownerRegisterLoading, setOwnerRegisterLoading] = useState(false);
-  const [ownerRegisterError, setOwnerRegisterError] = useState('');
 
   // Forgot Password Modal State
   const [showForgotModal, setShowForgotModal] = useState(false);
@@ -38,30 +39,22 @@ export default function Login() {
   const [forgotErrorMsg, setForgotErrorMsg] = useState('');
 
   useEffect(() => {
+    // Clear on load
     setEmail('');
     setPassword('');
-  }, []);
-
-  useEffect(() => {
-    if (showGoogleModal) {
-      try {
-        const db = getDb();
-        setAuthorizedAccounts(db.authorized_users || []);
-      } catch (e) {
-        setAuthorizedAccounts([
-          { id: 'auth_owner', email: 'admin@salon.com', name: 'TRIO Salon Owner', role: 'owner' },
-          { id: 'auth_admin2', email: 'amitdhayal6138@gmail.com', name: 'Amit Dhayal', role: 'admin' },
-        ]);
-      }
-    }
-  }, [showGoogleModal]);
+    setError('');
+  }, [activeTab]);
 
   async function handleSubmit(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setError('');
 
-    if (!email || !email.includes('@')) {
-      return setError('Please enter a valid email address.');
+    if (!email) {
+      return setError(
+        activeTab === 'admin'
+          ? 'Please enter your Admin/Owner email address.'
+          : 'Please enter your Staff email or phone.'
+      );
     }
     if (!password) {
       return setError('Please enter your password.');
@@ -69,11 +62,11 @@ export default function Login() {
 
     try {
       setFormLoading(true);
-      const res = await login(email, password);
+      const res = await login(email, password, activeTab);
       if (res.ok) {
         navigate('/');
       } else {
-        setError(res.error || 'Invalid email or password.');
+        setError(res.error || 'Invalid credentials. Please try again.');
       }
     } catch (err) {
       setError(err.message || 'Authentication failed.');
@@ -82,56 +75,27 @@ export default function Login() {
     }
   }
 
-  async function executeGoogleSignIn(accEmail, accName) {
+  // 1-Click Quick Demo Login handler for GitHub reviewers & portfolio visitors
+  async function handleQuickDemo(type) {
     setError('');
+    const demoEmail = type === 'admin' ? 'admin@salon.com' : 'staff@salon.com';
+    const demoPass = type === 'admin' ? 'admin123' : 'staff123';
+    setActiveTab(type);
+    setEmail(demoEmail);
+    setPassword(demoPass);
+
     try {
-      setGoogleLoading(true);
-      setShowGoogleModal(false);
-      const res = await loginWithGoogle(accEmail, accName);
+      setFormLoading(true);
+      const res = await login(demoEmail, demoPass, type);
       if (res.ok) {
         navigate('/');
       } else {
-        setError(res.error || 'Google authentication was cancelled or failed.');
+        setError(res.error || 'Demo login failed.');
       }
     } catch (err) {
-      setError(err.message || 'Failed to connect to Google Authentication.');
+      setError(err.message || 'Authentication failed.');
     } finally {
-      setGoogleLoading(false);
-    }
-  }
-
-  async function handleCustomGoogleSubmit(e) {
-    e.preventDefault();
-    if (!customGoogleEmail || !customGoogleEmail.includes('@')) {
-      return setError('Please enter a valid Google email address.');
-    }
-    await executeGoogleSignIn(customGoogleEmail, customGoogleName);
-  }
-
-  async function handleOwnerRegisterSubmit(e) {
-    e.preventDefault();
-    setOwnerRegisterError('');
-
-    if (!ownerRegisterEmail || !ownerRegisterEmail.includes('@')) {
-      return setOwnerRegisterError('Please enter a valid Salon Owner Email Address.');
-    }
-    if (!ownerRegisterPassword || ownerRegisterPassword.length < 4) {
-      return setOwnerRegisterError('Password must be at least 4 characters long.');
-    }
-
-    try {
-      setOwnerRegisterLoading(true);
-      const res = await registerOwnerAccount(ownerRegisterName, ownerRegisterEmail, ownerRegisterPassword);
-      if (res.ok) {
-        setShowOwnerRegisterModal(false);
-        navigate('/');
-      } else {
-        setOwnerRegisterError(res.error || 'Failed to register Salon Owner.');
-      }
-    } catch (err) {
-      setOwnerRegisterError(err.message || 'An error occurred during registration.');
-    } finally {
-      setOwnerRegisterLoading(false);
+      setFormLoading(false);
     }
   }
 
@@ -140,7 +104,7 @@ export default function Login() {
     setForgotErrorMsg('');
     setForgotSuccessMsg('');
 
-    if (!forgotEmail || !forgotEmail.includes('@')) {
+    if (!forgotEmail) {
       return setForgotErrorMsg('Please enter a valid registered email address.');
     }
 
@@ -148,9 +112,9 @@ export default function Login() {
       setForgotLoading(true);
       const res = await sendPasswordResetEmail(forgotEmail);
       if (res.ok) {
-        setForgotSuccessMsg(res.message || 'Password reset link sent. Please check your email.');
+        setForgotSuccessMsg(res.message || 'Password reset link sent.');
       } else {
-        setForgotErrorMsg(res.error || 'Failed to send reset link. Please check your email address.');
+        setForgotErrorMsg(res.error || 'Failed to send reset link.');
       }
     } catch (err) {
       setForgotErrorMsg(err.message || 'An error occurred while sending the reset link.');
@@ -159,428 +123,316 @@ export default function Login() {
     }
   }
 
-  const isBusy = authLoading || formLoading || googleLoading;
+  const isBusy = authLoading || formLoading;
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-12 bg-[#090909] text-white font-sans overflow-hidden select-none">
-      {/* Ambient Floating Luxury Golden Orbs Background */}
+    <div className="min-h-screen bg-[#070707] text-white font-sans flex flex-col justify-between relative overflow-hidden select-none">
+      {/* Ambient Luxury Golden Glow Orbs */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[550px] h-[550px] rounded-full bg-gradient-to-br from-[#D4AF37]/20 via-[#A37E1F]/10 to-transparent blur-[130px] animate-pulse" />
-        <div className="absolute bottom-[-15%] right-[-10%] w-[650px] h-[650px] rounded-full bg-gradient-to-tl from-[#D4AF37]/15 via-[#A37E1F]/10 to-transparent blur-[150px]" />
-        <div className="absolute top-1/2 left-1/3 w-[350px] h-[350px] rounded-full bg-[#D4AF37]/5 blur-[110px]" />
+        <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#d4af37]/15 via-[#a37e1f]/8 to-transparent blur-[140px]" />
+        <div className="absolute -bottom-40 -right-32 w-[700px] h-[700px] rounded-full bg-gradient-to-tl from-[#d4af37]/12 via-[#a37e1f]/6 to-transparent blur-[160px]" />
+        <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] rounded-full bg-[#d4af37]/4 blur-[120px]" />
       </div>
 
-      {/* LEFT SECTION — Luxury Brand Showcase (col-span-7) */}
-      <div className="relative z-10 hidden lg:flex lg:col-span-7 flex-col justify-between p-12 lg:p-16 border-r border-[#D4AF37]/15 bg-[#0D0D0D]/70 backdrop-blur-md">
-        {/* Brand Header & Logo */}
-        <div className="flex items-center gap-5">
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] rounded-2xl blur-sm opacity-50 group-hover:opacity-80 transition duration-500" />
-            <img
-              src="/logo.png"
-              alt="TRIO Logo"
-              className="relative h-16 w-16 rounded-2xl object-contain bg-black p-2 ring-2 ring-[#D4AF37]/60 shadow-[0_0_30px_rgba(212,175,55,0.25)]"
-            />
-          </div>
-          <div>
-            <h1 className="font-display text-3xl font-bold tracking-wider text-white">
-              TRIO THE POSH
-            </h1>
-            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#D4AF37]">
-              Luxury Unisex Salon
-            </p>
-          </div>
-        </div>
-
-        {/* Brand Hero & Tagline */}
-        <div className="space-y-8 max-w-lg">
-          <div className="flex items-center gap-3">
-            <div className="h-0.5 w-12 bg-gradient-to-r from-[#D4AF37] to-transparent" />
-            <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#D4AF37]/80 flex items-center gap-1.5">
-              <Sparkles size={14} className="text-[#D4AF37]" /> Enterprise Management Command
-            </span>
-          </div>
-
-          <h2 className="font-display text-5xl sm:text-6xl font-extrabold leading-tight tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#FFF] via-[#F3E5AB] to-[#D4AF37]">
-            "Redefining Beauty & Elegance"
-          </h2>
-
-          {/* Address Badge */}
-          <div className="flex items-start gap-4 p-5 rounded-2xl bg-white/[0.04] border border-[#D4AF37]/25 backdrop-blur-xl shadow-2xl transition-all hover:border-[#D4AF37]/40">
-            <div className="p-3 rounded-xl bg-[#D4AF37]/15 text-[#D4AF37] shrink-0 border border-[#D4AF37]/30">
-              <MapPin size={20} />
+      {/* Main Grid Content */}
+      <div className="relative z-10 grid min-h-screen lg:grid-cols-12 flex-1">
+        {/* ================= LEFT SECTION — Brand Showcase (7 Cols) ================= */}
+        <div className="hidden lg:flex lg:col-span-7 flex-col justify-between p-12 lg:p-16 border-r border-[#d4af37]/10 bg-[#090909]/40 backdrop-blur-xs">
+          {/* Top Brand Logo */}
+          <div className="flex items-center gap-4">
+            <div className="relative group">
+              <div className="absolute -inset-1 rounded-2xl bg-[#d4af37]/30 blur-md group-hover:bg-[#d4af37]/50 transition duration-500" />
+              <div className="relative h-16 w-16 rounded-2xl bg-[#0d0d0d] p-2 ring-1 ring-[#d4af37]/60 shadow-[0_0_25px_rgba(212,175,55,0.25)] flex items-center justify-center">
+                <img
+                  src="/logo.png"
+                  alt="TRIO Logo"
+                  className="h-full w-full object-contain"
+                />
+              </div>
             </div>
             <div>
-              <p className="font-bold text-sm text-white font-display">TRIO The Posh Salon</p>
-              <p className="text-xs text-white/60 mt-0.5 font-light leading-relaxed">
-                Piprali Road, Near MBA Chai Wala, Sikar 332001
+              <h1 className="font-display text-2xl font-bold tracking-[0.08em] text-[#f7eedc]">
+                TRIO THE POSH
+              </h1>
+              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#d4af37] mt-0.5">
+                LUXURY UNISEX SALON
               </p>
             </div>
           </div>
-        </div>
 
-        {/* Footer Copyright */}
-        <div className="flex items-center justify-between text-xs text-white/40 pt-6 border-t border-white/10">
-          <p>© {new Date().getFullYear()} TRIO THE POSH. All rights reserved.</p>
-          <div className="flex items-center gap-1.5 text-[#D4AF37]/80 font-medium">
-            <ShieldCheck size={14} /> Enterprise Security Enforced
+          {/* Hero Tagline & Address */}
+          <div className="space-y-8 max-w-xl my-auto py-12">
+            <div className="flex items-center gap-2.5">
+              <div className="h-[1.5px] w-8 bg-[#d4af37]" />
+              <Sparkles size={13} className="text-[#d4af37]" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#d4af37]">
+                ENTERPRISE MANAGEMENT COMMAND
+              </span>
+            </div>
+
+            <h2 className="font-display text-5xl sm:text-6xl font-medium leading-[1.12] tracking-tight text-[#f3e7ce]">
+              &ldquo;Redefining Beauty<br />&amp; Elegance&rdquo;
+            </h2>
+
+            {/* Location Pill Card */}
+            <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#121214]/80 border border-zinc-800/80 backdrop-blur-xl max-w-md shadow-2xl">
+              <div className="h-11 w-11 rounded-xl bg-[#211b10] border border-[#d4af37]/35 flex items-center justify-center text-[#d4af37] shrink-0">
+                <MapPin size={20} />
+              </div>
+              <div className="min-w-0">
+                <p className="font-semibold text-sm text-[#f5eedb] tracking-wide">
+                  TRIO The Posh Salon
+                </p>
+                <p className="text-xs text-zinc-400 mt-0.5 truncate font-normal">
+                  Piprali Road, Near MBA Chai Wala, Sikar 332001
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Info */}
+          <div className="flex items-center justify-between text-xs text-zinc-500 pt-6 border-t border-zinc-800/60">
+            <p>&copy; 2026 TRIO THE POSH. All rights reserved.</p>
+            <div className="flex items-center gap-1.5 text-[#d4af37] font-medium">
+              <ShieldCheck size={14} />
+              <span>Enterprise Security Enforced</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* RIGHT SECTION — Perfectly Centered Luxury Glass Login Card (col-span-5) */}
-      <div className="relative z-10 lg:col-span-5 flex items-center justify-center p-6 sm:p-10 lg:p-12 min-h-screen">
-        {/* Floating Glassmorphism Login Card */}
-        <div className="w-full max-w-md rounded-[28px] bg-black/60 border border-[#D4AF37]/35 backdrop-blur-2xl p-8 sm:p-10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] relative overflow-hidden group">
-          {/* Subtle Golden Glow Line Top Border */}
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent opacity-80" />
-
+        {/* ================= RIGHT SECTION — Centered Luxury Login Card (5 Cols) ================= */}
+        <div className="relative z-10 lg:col-span-5 flex flex-col items-center justify-center p-6 sm:p-10 lg:p-12 min-h-screen">
           {/* Mobile Header Brand Display */}
           <div className="mb-8 flex items-center gap-3.5 lg:hidden">
-            <img
-              src="/logo.png"
-              alt="TRIO Logo"
-              className="h-12 w-12 rounded-xl object-contain bg-black p-1.5 ring-1 ring-[#D4AF37]/50 shadow-md"
-            />
+            <div className="h-12 w-12 rounded-xl bg-[#0d0d0d] p-1.5 ring-1 ring-[#d4af37]/60 shadow-md flex items-center justify-center">
+              <img src="/logo.png" alt="TRIO Logo" className="h-full w-full object-contain" />
+            </div>
             <div>
-              <h2 className="font-display text-xl font-bold text-white">TRIO THE POSH</h2>
-              <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-[#D4AF37]">
+              <h2 className="font-display text-xl font-bold text-white tracking-wide">
+                TRIO THE POSH
+              </h2>
+              <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-[#d4af37]">
                 Luxury Unisex Salon
               </p>
             </div>
           </div>
 
-          {/* Card Header */}
-          <div className="space-y-1">
+          {/* The Luxury Rounded Login Card */}
+          <div className="w-full max-w-[440px] rounded-[32px] bg-[#0f0f10]/95 border border-[#382d18] backdrop-blur-2xl p-7 sm:p-9 shadow-[0_25px_70px_rgba(0,0,0,0.85)] relative overflow-hidden">
+            {/* Subtle Top Gold Highlight */}
+            <div className="absolute top-0 left-8 right-8 h-[1px] bg-gradient-to-r from-transparent via-[#d4af37]/60 to-transparent" />
+
+            {/* Segmented Toggle Control: Admin / Owner vs Staff Portal */}
+            <div className="rounded-full bg-[#18181a] p-1 border border-zinc-800 flex items-center mb-6">
+              <button
+                type="button"
+                onClick={() => setActiveTab('admin')}
+                className={`flex-1 py-2.5 px-3 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  activeTab === 'admin'
+                    ? 'bg-gradient-to-r from-[#edd391] via-[#d4af37] to-[#c59f2e] text-black font-bold shadow-md'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Crown size={14} className={activeTab === 'admin' ? 'text-black' : 'text-zinc-400'} />
+                <span>Admin / Owner</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('staff')}
+                className={`flex-1 py-2.5 px-3 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  activeTab === 'staff'
+                    ? 'bg-gradient-to-r from-[#edd391] via-[#d4af37] to-[#c59f2e] text-black font-bold shadow-md'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Scissors size={14} className={activeTab === 'staff' ? 'text-black' : 'text-zinc-400'} />
+                <span>Staff Portal</span>
+              </button>
+            </div>
+
+            {/* Role Header Badge */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2a2211] border border-[#d4af37]/40 text-[#edd391] text-[10px] font-bold tracking-widest uppercase mb-2">
+              {activeTab === 'admin' ? (
+                <>
+                  <Crown size={12} className="text-[#d4af37]" />
+                  <span>EXECUTIVE MANAGEMENT</span>
+                </>
+              ) : (
+                <>
+                  <Scissors size={12} className="text-[#d4af37]" />
+                  <span>STAFF PORTAL ACCESS</span>
+                </>
+              )}
+            </div>
+
+            {/* Form Title & Subtitle */}
             <h2 className="font-display text-3xl font-bold text-white tracking-tight">
-              Login
+              {activeTab === 'admin' ? 'Admin / Owner Login' : 'Staff Portal Login'}
             </h2>
-            <p className="text-xs text-white/50">
-              Sign in to access your salon management portal.
+            <p className="text-xs text-zinc-400 mt-1 mb-6 leading-relaxed">
+              {activeTab === 'admin'
+                ? 'Full command: staff salary, commission, salon expenses, reports, settings & financial analytics.'
+                : 'Access work register, attendance, service history, clients & personal commissions.'}
             </p>
-          </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="mt-5 p-3.5 rounded-2xl bg-red-950/70 border border-red-500/40 text-xs text-red-200 flex items-start gap-2.5 animate-shake">
-              <AlertCircle size={16} className="text-red-400 shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* 1. GOOGLE AUTHENTICATION BUTTON */}
-          <div className="mt-8">
-            <button
-              type="button"
-              onClick={() => {
-                setIsCustomGoogleAccount(false);
-                setShowGoogleModal(true);
-              }}
-              disabled={isBusy}
-              className="w-full py-3.5 px-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold text-sm transition-all flex items-center justify-center gap-3 cursor-pointer hover:border-[#D4AF37]/50 disabled:opacity-50"
-            >
-              {googleLoading ? (
-                <Loader2 size={18} className="animate-spin text-[#D4AF37]" />
-              ) : (
-                <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.15C3.26 21.3 7.31 24 12 24z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.28 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.39l3.99-3.15z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.61l3.99 3.15c.95-2.85 3.6-4.96 6.72-4.96z"
-                  />
-                </svg>
-              )}
-              <span>{googleLoading ? 'Connecting to Google...' : 'Continue with Google'}</span>
-            </button>
-          </div>
-
-          {/* DIVIDER: ---------------- OR ---------------- */}
-          <div className="relative my-6 flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/15" />
-            </div>
-            <div className="relative bg-[#090909] px-4 text-[11px] uppercase font-bold tracking-widest text-white/40">
-              OR
-            </div>
-          </div>
-
-          {/* 2. EMAIL + PASSWORD LOGIN FORM */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email Field */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-white/70">Email</label>
-              <div className="relative group/input">
-                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within/input:text-[#D4AF37] transition-colors" />
-                <input
-                  type="email"
-                  required
-                  disabled={isBusy}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/[0.05] border border-white/15 text-sm text-white placeholder:text-white/30 focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/30 focus:bg-black/70 focus:outline-none transition-all shadow-inner disabled:opacity-50"
-                />
+            {/* Error Message */}
+            {error && (
+              <div className="mb-5 p-3.5 rounded-2xl bg-red-950/70 border border-red-500/40 text-xs text-red-200 flex items-start gap-2.5 animate-shake">
+                <AlertCircle size={16} className="text-red-400 shrink-0 mt-0.5" />
+                <span>{error}</span>
               </div>
-            </div>
+            )}
 
-            {/* Password Field */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-white/70">Password</label>
-              <div className="relative group/input">
-                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within/input:text-[#D4AF37] transition-colors" />
-                <input
-                  type="password"
-                  required
-                  disabled={isBusy}
-                  autoComplete="off"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/[0.05] border border-white/15 text-sm text-white placeholder:text-white/30 focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/30 focus:bg-black/70 focus:outline-none transition-all shadow-inner disabled:opacity-50"
-                />
-              </div>
-            </div>
-
-            {/* 3. LOGIN BUTTON */}
-            <button
-              type="submit"
-              disabled={isBusy}
-              className="w-full mt-2 py-4 px-6 rounded-full bg-gradient-to-r from-[#D4AF37] via-[#F3E5AB] to-[#C59F2E] text-black font-bold text-sm tracking-wide hover:brightness-110 active:scale-[0.99] transition-all shadow-[0_10px_30px_rgba(212,175,55,0.35)] hover:shadow-[0_15px_40px_rgba(212,175,55,0.5)] flex items-center justify-center gap-2 group/btn cursor-pointer disabled:opacity-50"
-            >
-              {formLoading ? (
-                <>
-                  <Loader2 size={18} className="animate-spin text-black" />
-                  <span>Authenticating...</span>
-                </>
-              ) : (
-                <>
-                  <span>Login</span>
-                  <ArrowRight size={18} className="group-hover/btn:translate-x-1.5 transition-transform duration-300" />
-                </>
-              )}
-            </button>
-
-            {/* 4. FORGOT PASSWORD LINK */}
-            <div className="pt-2 text-center text-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  setForgotEmail(email || 'admin@salon.com');
-                  setForgotSuccessMsg('');
-                  setForgotErrorMsg('');
-                  setShowForgotModal(true);
-                }}
-                className="text-[#D4AF37] hover:text-[#F3E5AB] hover:underline font-medium transition-colors cursor-pointer"
-              >
-                Forgot Password?
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      {/* ======================= GOOGLE ACCOUNT PICKER MODAL ======================= */}
-      <Modal isOpen={showGoogleModal} onClose={() => setShowGoogleModal(false)} title="Sign in with Google">
-        <div className="space-y-4 text-xs">
-          <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-[#E8DFCF] shadow-xs">
-            <svg className="h-6 w-6 shrink-0" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
-              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.15C3.26 21.3 7.31 24 12 24z" />
-              <path fill="#FBBC05" d="M5.28 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.39l3.99-3.15z" />
-              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.61l3.99 3.15c.95-2.85 3.6-4.96 6.72-4.96z" />
-            </svg>
-            <div>
-              <h4 className="font-bold text-dark text-sm">Choose a Google Account</h4>
-              <p className="text-[11px] text-dark/50">to continue to TRIO The Posh Salon</p>
-            </div>
-          </div>
-
-          {!isCustomGoogleAccount ? (
-            <div className="space-y-2">
-              {authorizedAccounts.map((acc) => {
-                const isOwnerRole = acc.role === 'owner' || acc.email.toLowerCase() === 'admin@salon.com';
-                const roleBadgeText = isOwnerRole ? 'Owner' : 'Admin';
-                const roleBadgeStyle = isOwnerRole
-                  ? 'bg-amber-100 text-amber-900 border-amber-300 font-extrabold'
-                  : 'bg-blue-100 text-blue-800 border-blue-300 font-bold';
-
-                return (
-                  <button
-                    key={acc.id || acc.email}
-                    type="button"
-                    onClick={() => executeGoogleSignIn(acc.email, acc.name)}
-                    className="w-full p-3 rounded-2xl bg-[#F4F0E6] hover:bg-white border border-[#E8DFCF] text-left transition-all flex items-center justify-between group cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`h-9 w-9 rounded-full font-bold flex items-center justify-center text-sm text-white shadow-xs ${
-                          isOwnerRole ? 'bg-[#D4AF37]' : 'bg-blue-600'
-                        }`}
-                      >
-                        {acc.name ? acc.name.charAt(0).toUpperCase() : 'G'}
-                      </div>
-                      <div>
-                        <p className="font-bold text-dark text-xs group-hover:text-[#D4AF37] transition-colors">{acc.name}</p>
-                        <p className="text-[11px] text-dark/50">{acc.email}</p>
-                      </div>
-                    </div>
-                    <span className={`text-[10px] uppercase px-2.5 py-0.5 rounded-full border ${roleBadgeStyle}`}>
-                      {roleBadgeText}
-                    </span>
-                  </button>
-                );
-              })}
-
-              {/* Account: Enter another Google Email */}
-              <button
-                type="button"
-                onClick={() => setIsCustomGoogleAccount(true)}
-                className="w-full p-3 rounded-2xl bg-white hover:bg-[#F4F0E6] border border-[#E8DFCF] text-left transition-all flex items-center gap-3 text-dark font-semibold text-xs cursor-pointer"
-              >
-                <div className="h-9 w-9 rounded-full bg-slate-100 text-dark/60 font-bold flex items-center justify-center border border-slate-300">
-                  <UserPlus size={16} />
+            {/* Login Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Field 1: Email / Identifier */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-zinc-300">
+                  {activeTab === 'admin' ? 'Admin / Owner Email' : 'Staff Email or Phone'}
+                </label>
+                <div className="relative group/input">
+                  {activeTab === 'admin' ? (
+                    <Mail
+                      size={17}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-[#d4af37] transition-colors"
+                    />
+                  ) : (
+                    <User
+                      size={17}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-[#d4af37] transition-colors"
+                    />
+                  )}
+                  <input
+                    type={activeTab === 'admin' ? 'email' : 'text'}
+                    required
+                    disabled={isBusy}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={
+                      activeTab === 'admin'
+                        ? 'Enter admin email address'
+                        : 'Enter staff email or mobile number'
+                    }
+                    className="w-full pl-11 pr-4 py-3 bg-[#151517] border border-zinc-800 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/40 transition-all shadow-inner disabled:opacity-50"
+                  />
                 </div>
-                <span>Use another Google Account...</span>
+              </div>
+
+              {/* Field 2: Password */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-zinc-300">
+                  Password
+                </label>
+                <div className="relative group/input">
+                  <Lock
+                    size={17}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-[#d4af37] transition-colors"
+                  />
+                  <input
+                    type="password"
+                    required
+                    disabled={isBusy}
+                    autoComplete="off"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full pl-11 pr-4 py-3 bg-[#151517] border border-zinc-800 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/40 transition-all shadow-inner disabled:opacity-50"
+                  />
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isBusy}
+                className="w-full mt-3 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#e7be65] via-[#d4af37] to-[#ba9230] text-black font-bold text-sm tracking-wide shadow-[0_8px_25px_rgba(212,175,55,0.3)] hover:shadow-[0_12px_35px_rgba(212,175,55,0.45)] hover:brightness-105 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 group/btn"
+              >
+                {formLoading ? (
+                  <>
+                    <Loader2 size={17} className="animate-spin text-black" />
+                    <span>Signing in...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>
+                      {activeTab === 'admin'
+                        ? 'Login as Admin & Owner'
+                        : 'Login to Staff Portal'}
+                    </span>
+                    <ArrowRight
+                      size={17}
+                      className="group-hover/btn:translate-x-1 transition-transform duration-200"
+                    />
+                  </>
+                )}
               </button>
-            </div>
-          ) : (
-            <form onSubmit={handleCustomGoogleSubmit} className="space-y-3 pt-1">
-              <div>
-                <label className="block font-bold text-dark/70 mb-1">Google Email Address *</label>
-                <input
-                  type="email"
-                  required
-                  value={customGoogleEmail}
-                  onChange={(e) => setCustomGoogleEmail(e.target.value)}
-                  placeholder="e.g. yourname@gmail.com"
-                  className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark text-xs font-medium focus:outline-none focus:border-[#D4AF37]"
-                />
-              </div>
 
-              <div>
-                <label className="block font-bold text-dark/70 mb-1">Display Name (Optional)</label>
-                <input
-                  type="text"
-                  value={customGoogleName}
-                  onChange={(e) => setCustomGoogleName(e.target.value)}
-                  placeholder="e.g. John Doe"
-                  className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark text-xs font-medium focus:outline-none focus:border-[#D4AF37]"
-                />
-              </div>
-
-              <div className="flex justify-between items-center pt-2 border-t border-[#E8DFCF]">
+              {/* Forgot Password Link */}
+              <div className="pt-2 text-center">
                 <button
                   type="button"
-                  onClick={() => setIsCustomGoogleAccount(false)}
-                  className="text-xs text-dark/60 hover:text-dark font-medium underline"
+                  onClick={() => {
+                    setForgotEmail(email || 'admin@salon.com');
+                    setForgotSuccessMsg('');
+                    setForgotErrorMsg('');
+                    setShowForgotModal(true);
+                  }}
+                  className="text-xs text-[#d4af37] hover:text-[#edd391] hover:underline transition-colors cursor-pointer"
                 >
-                  ← Back to account list
-                </button>
-
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-full bg-[#D4AF37] text-white font-bold hover:bg-[#C59F2E] flex items-center gap-1.5"
-                >
-                  <span>Sign In with Google</span>
+                  Forgot Password?
                 </button>
               </div>
             </form>
-          )}
-        </div>
-      </Modal>
 
-      {/* ======================= REGISTER MASTER SALON OWNER MODAL (CLIENT HANDOVER) ======================= */}
-      <Modal isOpen={showOwnerRegisterModal} onClose={() => setShowOwnerRegisterModal(false)} title="Register Master Salon Owner Account">
-        <form onSubmit={handleOwnerRegisterSubmit} className="space-y-4 text-xs">
-          <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900">
-            <Crown size={22} className="text-[#D4AF37] shrink-0" />
-            <p className="text-xs leading-relaxed font-medium">
-              Register the official Salon Owner Account. This email address will receive Master Owner privileges to control access for staff members in Settings.
-            </p>
-          </div>
+            {/* Quick 1-Click Demo Login Bar (For Evaluators, Recruiters & GitHub Visitors) */}
+            <div className="mt-6 pt-5 border-t border-zinc-800/80">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-1.5">
+                  <Sparkles size={12} className="text-[#d4af37]" /> Quick Demo Access (1-Click)
+                </span>
+                <span className="text-[10px] text-zinc-500 font-mono">Instant Entry</span>
+              </div>
 
-          {ownerRegisterError && (
-            <div className="p-3.5 rounded-2xl bg-red-50 border border-red-300 text-xs text-red-800 font-medium flex items-start gap-2">
-              <AlertCircle size={16} className="text-red-600 shrink-0 mt-0.5" />
-              <span>{ownerRegisterError}</span>
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() => handleQuickDemo('admin')}
+                  className="py-2.5 px-3 rounded-xl bg-white/[0.04] hover:bg-[#d4af37]/15 border border-[#d4af37]/25 hover:border-[#d4af37] text-left transition-all cursor-pointer group disabled:opacity-50"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white group-hover:text-[#d4af37] flex items-center gap-1">
+                      👑 Admin Demo
+                    </span>
+                    <ArrowRight size={12} className="text-[#d4af37] opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <p className="text-[10px] text-zinc-400 mt-0.5 truncate font-mono">admin@salon.com</p>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() => handleQuickDemo('staff')}
+                  className="py-2.5 px-3 rounded-xl bg-white/[0.04] hover:bg-[#d4af37]/15 border border-[#d4af37]/25 hover:border-[#d4af37] text-left transition-all cursor-pointer group disabled:opacity-50"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white group-hover:text-[#d4af37] flex items-center gap-1">
+                      ✂️ Staff Demo
+                    </span>
+                    <ArrowRight size={12} className="text-[#d4af37] opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <p className="text-[10px] text-zinc-400 mt-0.5 truncate font-mono">staff@salon.com</p>
+                </button>
+              </div>
+
+              <p className="text-[10px] text-center text-zinc-500 mt-2 font-mono">
+                Credentials: <span className="text-zinc-400">admin@salon.com</span> / <span className="text-zinc-400">admin123</span>
+              </p>
             </div>
-          )}
-
-          <div>
-            <label className="block font-bold text-dark/70 mb-1">Salon Owner Full Name *</label>
-            <input
-              type="text"
-              required
-              disabled={ownerRegisterLoading}
-              value={ownerRegisterName}
-              onChange={(e) => setOwnerRegisterName(e.target.value)}
-              placeholder="e.g. Ramesh Sharma"
-              className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark text-sm focus:outline-none focus:border-[#D4AF37]"
-            />
           </div>
-
-          <div>
-            <label className="block font-bold text-dark/70 mb-1">Owner Official Email Address *</label>
-            <input
-              type="email"
-              required
-              disabled={ownerRegisterLoading}
-              value={ownerRegisterEmail}
-              onChange={(e) => setOwnerRegisterEmail(e.target.value)}
-              placeholder="e.g. owner@triotheposh.com"
-              className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark text-sm focus:outline-none focus:border-[#D4AF37]"
-            />
-          </div>
-
-          <div>
-            <label className="block font-bold text-dark/70 mb-1">Set Account Password *</label>
-            <input
-              type="password"
-              required
-              disabled={ownerRegisterLoading}
-              value={ownerRegisterPassword}
-              onChange={(e) => setOwnerRegisterPassword(e.target.value)}
-              placeholder="At least 4 characters..."
-              className="w-full px-3.5 py-2.5 bg-white border border-[#E8DFCF] rounded-xl text-dark text-sm focus:outline-none focus:border-[#D4AF37]"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2 border-t border-[#E8DFCF]">
-            <button
-              type="button"
-              onClick={() => setShowOwnerRegisterModal(false)}
-              className="px-4 py-2 rounded-full border border-[#E8DFCF] text-dark/70 font-semibold hover:bg-[#F4F0E6]"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={ownerRegisterLoading}
-              className="px-5 py-2 rounded-full bg-[#D4AF37] text-white font-bold hover:bg-[#C59F2E] flex items-center gap-1.5 disabled:opacity-50 shadow-sm"
-            >
-              {ownerRegisterLoading ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" />
-                  <span>Registering...</span>
-                </>
-              ) : (
-                <span>Register & Grant Owner Access</span>
-              )}
-            </button>
-          </div>
-        </form>
-      </Modal>
+        </div>
+      </div>
 
       {/* ======================= FORGOT PASSWORD MODAL ======================= */}
       <Modal isOpen={showForgotModal} onClose={() => setShowForgotModal(false)} title="Reset Password">

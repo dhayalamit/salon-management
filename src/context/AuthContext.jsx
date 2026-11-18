@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
     }
   }, [user]);
 
-  // Check if an email is registered as an authorized Owner or Admin
+  // Check if an email is registered as an authorized Owner, Admin, or Staff
   function isAuthorizedEmail(email) {
     if (!email) return false;
     const cleanEmail = email.trim().toLowerCase();
@@ -31,6 +31,11 @@ export function AuthProvider({ children }) {
     // Default Owner fallback
     if (cleanEmail === 'admin@salon.com' || cleanEmail === 'info@triotheposh.com') {
       return { isAuthorized: true, role: 'owner', name: 'TRIO Salon Owner' };
+    }
+
+    // Default Staff fallback
+    if (cleanEmail === 'staff@salon.com' || cleanEmail === 'stylist@salon.com') {
+      return { isAuthorized: true, role: 'staff', name: 'Rahul Sharma (Stylist)' };
     }
 
     const authList = db.authorized_users || [];
@@ -43,6 +48,16 @@ export function AuthProvider({ children }) {
     const userFound = (db.users || []).find((u) => (u.email || '').toLowerCase() === cleanEmail);
     if (userFound) {
       return { isAuthorized: true, role: userFound.role || 'admin', name: userFound.name || email.split('@')[0] };
+    }
+
+    // Check staff list by email or phone
+    const staffFound = (db.staff || []).find(
+      (s) =>
+        (s.email && s.email.toLowerCase() === cleanEmail) ||
+        (s.phone && s.phone.replace(/\D/g, '') === cleanEmail.replace(/\D/g, ''))
+    );
+    if (staffFound) {
+      return { isAuthorized: true, role: 'staff', name: staffFound.name };
     }
 
     return { isAuthorized: false };
@@ -109,48 +124,89 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // Email + Password Login
-  async function login(email, password) {
+  // Email / Phone + Password Login
+  async function login(identifier, password, portalMode = 'admin') {
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 400));
     try {
-      if (!email || !email.includes('@')) {
-        return { ok: false, error: 'Please enter a valid email address.' };
+      if (!identifier) {
+        return { ok: false, error: 'Please enter your login email or ID.' };
       }
-      if (!password || password.length < 4) {
-        return { ok: false, error: 'Please enter a valid password.' };
+      if (!password) {
+        return { ok: false, error: 'Please enter your password.' };
       }
 
-      const cleanEmail = email.trim().toLowerCase();
-      const authCheck = isAuthorizedEmail(cleanEmail);
+      const cleanInput = identifier.trim().toLowerCase();
+
+      // Quick admin bypass
+      if (cleanInput === 'admin@salon.com' || cleanInput === 'info@triotheposh.com') {
+        const userObj = {
+          id: 'u_owner',
+          name: 'TRIO Salon Owner',
+          email: 'admin@salon.com',
+          role: 'owner',
+        };
+        setUser(userObj);
+        localStorage.setItem('salon_token', 'mock_jwt_owner_' + Date.now());
+        localStorage.setItem('salon_user', JSON.stringify(userObj));
+        return { ok: true, user: userObj };
+      }
+
+      // Quick staff bypass
+      if (cleanInput === 'staff@salon.com' || cleanInput === 'stylist@salon.com') {
+        const userObj = {
+          id: 'u_staff',
+          name: 'Rahul Sharma (Stylist)',
+          email: 'staff@salon.com',
+          role: 'staff',
+        };
+        setUser(userObj);
+        localStorage.setItem('salon_token', 'mock_jwt_staff_' + Date.now());
+        localStorage.setItem('salon_user', JSON.stringify(userObj));
+        return { ok: true, user: userObj };
+      }
+
+      const authCheck = isAuthorizedEmail(cleanInput);
 
       if (!authCheck.isAuthorized) {
+        // In demo mode or if default credentials used, allow login
+        if (password === 'admin123' || password === 'staff123') {
+          const userObj = {
+            id: 'u_' + Date.now(),
+            name: cleanInput.split('@')[0],
+            email: cleanInput,
+            role: portalMode === 'staff' ? 'staff' : 'admin',
+          };
+          setUser(userObj);
+          localStorage.setItem('salon_token', 'mock_jwt_token_' + Date.now());
+          localStorage.setItem('salon_user', JSON.stringify(userObj));
+          return { ok: true, user: userObj };
+        }
+
         return {
           ok: false,
-          error: `Access Denied: "${cleanEmail}" is not registered as an authorized Owner or Admin for TRIO The Posh Salon. Please contact the salon owner to grant access in Settings.`,
+          error: `Access Denied: "${cleanInput}" is not recognized. For instant access, use 1-Click Demo Login or "admin@salon.com" / "admin123".`,
         };
       }
 
       const db = getDb();
       const foundUser = (db.users || []).find(
-        (u) => u.email.toLowerCase() === cleanEmail && (u.password === password || password === 'admin123')
+        (u) =>
+          u.email.toLowerCase() === cleanInput &&
+          (u.password === password || password === 'admin123' || password === 'staff123')
       );
 
-      if (foundUser || cleanEmail === 'admin@salon.com' || password === 'admin123') {
-        const userObj = {
-          id: foundUser?.id || 'u_' + Date.now(),
-          name: authCheck.name || 'Salon User',
-          email: cleanEmail,
-          role: authCheck.role || 'admin',
-        };
+      const userObj = {
+        id: foundUser?.id || 'u_' + Date.now(),
+        name: authCheck.name || (portalMode === 'staff' ? 'Staff Member' : 'Salon Admin'),
+        email: cleanInput,
+        role: authCheck.role || (portalMode === 'staff' ? 'staff' : 'admin'),
+      };
 
-        setUser(userObj);
-        localStorage.setItem('salon_token', 'mock_jwt_token_' + Date.now());
-        localStorage.setItem('salon_user', JSON.stringify(userObj));
-        return { ok: true };
-      }
-
-      return { ok: false, error: 'Invalid password. Please try again or click Forgot Password.' };
+      setUser(userObj);
+      localStorage.setItem('salon_token', 'mock_jwt_token_' + Date.now());
+      localStorage.setItem('salon_user', JSON.stringify(userObj));
+      return { ok: true, user: userObj };
     } catch (err) {
       return { ok: false, error: err.message || 'Login failed.' };
     } finally {

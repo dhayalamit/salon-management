@@ -11,9 +11,17 @@ const defaultSeedData = {
       password: 'admin123',
       role: 'owner',
     },
+    {
+      id: 'u2',
+      name: 'Rahul Sharma',
+      email: 'staff@salon.com',
+      password: 'staff123',
+      role: 'staff',
+    },
   ],
   authorized_users: [
     { id: 'auth_owner', email: 'admin@salon.com', name: 'TRIO Salon Owner', role: 'owner', added_at: new Date().toISOString() },
+    { id: 'auth_staff', email: 'staff@salon.com', name: 'Rahul Sharma (Senior Stylist)', role: 'staff', added_at: new Date().toISOString() },
     { id: 'auth_admin2', email: 'amitdhayal6138@gmail.com', name: 'Amit Dhayal', role: 'admin', added_at: new Date().toISOString() },
   ],
   services: [
@@ -36,17 +44,273 @@ const defaultSeedData = {
     { id: 'p7', name: 'Face Wash', category: 'Skin Care', purchase_price: 120, selling_price: 280, stock_quantity: 20, low_stock_threshold: 5 },
     { id: 'p8', name: 'Beard Oil', category: 'Grooming', purchase_price: 180, selling_price: 400, stock_quantity: 15, low_stock_threshold: 5 },
   ],
-  staff: [],
-  customers: [],
-  advance_transactions: [],
-  appointments: [],
+  staff: [
+    {
+      id: 'st_1',
+      name: 'Rahul Sharma',
+      phone: '9876543211',
+      email: 'rahul@salon.com',
+      role: 'Senior Stylist',
+      base_salary: 28000,
+      commission_percent: 15,
+      joining_date: '2024-01-10',
+      status: 'active',
+      address: 'Piprali Road, Sikar',
+    },
+    {
+      id: 'st_2',
+      name: 'Priya Sen',
+      phone: '9876543212',
+      email: 'priya@salon.com',
+      role: 'Makeup & Skin Expert',
+      base_salary: 24000,
+      commission_percent: 12,
+      joining_date: '2024-02-01',
+      status: 'active',
+      address: 'Station Road, Sikar',
+    },
+    {
+      id: 'st_3',
+      name: 'Amit Verma',
+      phone: '9876543213',
+      email: 'amit@salon.com',
+      role: 'Grooming & Beard Specialist',
+      base_salary: 20000,
+      commission_percent: 10,
+      joining_date: '2024-03-15',
+      status: 'active',
+      address: 'Fatehpur Road, Sikar',
+    },
+    {
+      id: 'st_4',
+      name: 'Sneha Patel',
+      phone: '9876543214',
+      email: 'sneha@salon.com',
+      role: 'Hair Color & Spa Artist',
+      base_salary: 22000,
+      commission_percent: 12,
+      joining_date: '2024-04-01',
+      status: 'active',
+      address: 'Court Road, Sikar',
+    },
+  ],
+  customers: [
+    {
+      id: 'c_1',
+      name: 'Vikram Rathore',
+      phone: '9829012345',
+      email: 'vikram.rathore@gmail.com',
+      gender: 'Male',
+      dob: '1992-06-15',
+      is_permanent: true,
+      advance_balance: 4500,
+      total_spent: 24800,
+      total_visits: 14,
+      notes: 'VIP Client — Prefers Keratin & Beard styling',
+      created_at: new Date(Date.now() - 90 * 86400000).toISOString(),
+    },
+    {
+      id: 'c_2',
+      name: 'Ananya Sharma',
+      phone: '9829054321',
+      email: 'ananya.sharma@gmail.com',
+      gender: 'Female',
+      dob: '1996-09-22',
+      is_permanent: true,
+      advance_balance: 2800,
+      total_spent: 18200,
+      total_visits: 9,
+      notes: 'Prefers Organic Hair Spa & Facial treatments',
+      created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+    },
+    {
+      id: 'c_3',
+      name: 'Rajesh Choudhary',
+      phone: '9829098765',
+      email: 'rajesh.c@gmail.com',
+      gender: 'Male',
+      dob: '1988-12-05',
+      is_permanent: false,
+      advance_balance: 0,
+      total_spent: 6500,
+      total_visits: 6,
+      created_at: new Date(Date.now() - 45 * 86400000).toISOString(),
+    },
+    {
+      id: 'c_4',
+      name: 'Pooja Meena',
+      phone: '9829033344',
+      email: 'pooja.meena@gmail.com',
+      gender: 'Female',
+      dob: '1998-03-18',
+      is_permanent: false,
+      advance_balance: 0,
+      total_spent: 9400,
+      total_visits: 4,
+      created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
+    },
+    {
+      id: 'c_5',
+      name: 'Karan Singhania',
+      phone: '9829077788',
+      email: 'karan.s@gmail.com',
+      gender: 'Male',
+      dob: '1994-11-10',
+      is_permanent: true,
+      advance_balance: 1500,
+      total_spent: 12600,
+      total_visits: 8,
+      created_at: new Date(Date.now() - 20 * 86400000).toISOString(),
+    },
+  ],
+  advance_transactions: [
+    {
+      id: 'adv_1',
+      customer_id: 'c_1',
+      customer_name: 'Vikram Rathore',
+      type: 'deposit',
+      amount: 5000,
+      payment_source: 'UPI',
+      notes: 'VIP wallet deposit',
+      created_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+    },
+    {
+      id: 'adv_2',
+      customer_id: 'c_2',
+      customer_name: 'Ananya Sharma',
+      type: 'deposit',
+      amount: 3000,
+      payment_source: 'UPI',
+      notes: 'Advance wallet recharge',
+      created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+    },
+  ],
+  appointments: [
+    {
+      id: 'apt_1',
+      customer_id: 'c_1',
+      customer_name: 'Vikram Rathore',
+      customer_phone: '9829012345',
+      service_id: 's1',
+      service_name: 'Hair Cut & Beard Trim',
+      staff_id: 'st_1',
+      staff_name: 'Rahul Sharma',
+      appointment_date: new Date().toISOString().split('T')[0],
+      appointment_time: '11:00',
+      status: 'scheduled',
+      notes: 'VIP regular appointment',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'apt_2',
+      customer_id: 'c_2',
+      customer_name: 'Ananya Sharma',
+      customer_phone: '9829054321',
+      service_id: 's4',
+      service_name: 'Hair Spa & Facial',
+      staff_id: 'st_2',
+      staff_name: 'Priya Sen',
+      appointment_date: new Date().toISOString().split('T')[0],
+      appointment_time: '13:30',
+      status: 'scheduled',
+      notes: 'Special relaxation session',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'apt_3',
+      customer_id: 'c_3',
+      customer_name: 'Rajesh Choudhary',
+      customer_phone: '9829098765',
+      service_id: 's2',
+      service_name: 'Beard Trim & Cleanup',
+      staff_id: 'st_3',
+      staff_name: 'Amit Verma',
+      appointment_date: new Date().toISOString().split('T')[0],
+      appointment_time: '16:00',
+      status: 'scheduled',
+      notes: '',
+      created_at: new Date().toISOString(),
+    },
+  ],
   notifications: [],
-  visits: [],
-  attendance: [],
+  visits: [
+    {
+      id: 'v_1',
+      customer_id: 'c_1',
+      customer_name: 'Vikram Rathore',
+      customer_phone: '9829012345',
+      date: new Date().toISOString().split('T')[0],
+      created_at: new Date().toISOString(),
+      staff_id: 'st_1',
+      staff_name: 'Rahul Sharma',
+      items: [
+        { id: 's1', name: 'Hair Cut', price: 300, quantity: 1, staffId: 'st_1', staff_name: 'Rahul Sharma', commission_percent: 20 },
+        { id: 's2', name: 'Beard Trim', price: 150, quantity: 1, staffId: 'st_1', staff_name: 'Rahul Sharma', commission_percent: 20 },
+        { id: 'p2', name: 'Hair Serum', price: 450, quantity: 1, staffId: 'st_1', staff_name: 'Rahul Sharma' },
+      ],
+      subtotal: 900,
+      discount: 0,
+      tax: 0,
+      total_amount: 900,
+      final_amount: 900,
+      payment_method: 'Cash',
+      payment_status: 'paid',
+      amount_paid: 900,
+    },
+    {
+      id: 'v_2',
+      customer_id: 'c_4',
+      customer_name: 'Pooja Meena',
+      customer_phone: '9829033344',
+      date: new Date().toISOString().split('T')[0],
+      created_at: new Date().toISOString(),
+      staff_id: 'st_2',
+      staff_name: 'Priya Sen',
+      items: [
+        { id: 's3', name: 'Facial', price: 800, quantity: 1, staffId: 'st_2', staff_name: 'Priya Sen', commission_percent: 15 },
+        { id: 's8', name: 'Cleanup', price: 500, quantity: 1, staffId: 'st_2', staff_name: 'Priya Sen', commission_percent: 15 },
+      ],
+      subtotal: 1300,
+      discount: 0,
+      tax: 0,
+      total_amount: 1300,
+      final_amount: 1300,
+      payment_method: 'UPI',
+      payment_status: 'paid',
+      amount_paid: 1300,
+    },
+  ],
+  attendance: [
+    { id: 'att_1', staff_id: 'st_1', staff_name: 'Rahul Sharma', date: new Date().toISOString().split('T')[0], status: 'present', check_in: '09:15' },
+    { id: 'att_2', staff_id: 'st_2', staff_name: 'Priya Sen', date: new Date().toISOString().split('T')[0], status: 'present', check_in: '09:25' },
+    { id: 'att_3', staff_id: 'st_3', staff_name: 'Amit Verma', date: new Date().toISOString().split('T')[0], status: 'present', check_in: '09:30' },
+    { id: 'att_4', staff_id: 'st_4', staff_name: 'Sneha Patel', date: new Date().toISOString().split('T')[0], status: 'present', check_in: '09:40' },
+  ],
   commissions: [],
   salary_advances: [],
   salary_payments: [],
-  expenses: [],
+  expenses: [
+    {
+      id: 'exp_1',
+      title: 'Salon Electricity & Air Conditioning',
+      amount: 1200,
+      category: 'Electricity',
+      payment_method: 'Cash',
+      date: new Date().toISOString().split('T')[0],
+      created_at: new Date().toISOString(),
+      notes: 'Daily power consumption',
+    },
+    {
+      id: 'exp_2',
+      title: 'Staff Refreshments & Tea',
+      amount: 250,
+      category: 'Staff Tea/Snacks',
+      payment_method: 'Cash',
+      date: new Date().toISOString().split('T')[0],
+      created_at: new Date().toISOString(),
+      notes: 'Morning staff tea',
+    },
+  ],
   expense_categories: ['Electricity', 'Rent', 'Water Bill', 'Internet', 'Staff Tea/Snacks', 'Cleaning', 'Stationery', 'Miscellaneous', 'Product Supplies', 'Staff Advance', 'Other'],
   whatsapp: {
     dashboard: {
@@ -315,25 +579,23 @@ export function getDb() {
     }
   }
 
-  // Ensure all collections are defined
-  if (!db.users) db.users = [];
+  // Ensure all collections are defined and seeded
+  if (!db.users || db.users.length === 0) db.users = [...defaultSeedData.users];
   if (!db.authorized_users || db.authorized_users.length === 0) {
-    db.authorized_users = [
-      { id: 'auth_owner', email: 'admin@salon.com', name: 'TRIO Salon Owner', role: 'owner', added_at: new Date().toISOString() },
-      { id: 'auth_admin2', email: 'amitdhayal6138@gmail.com', name: 'Amit Dhayal', role: 'admin', added_at: new Date().toISOString() },
-    ];
+    db.authorized_users = [...defaultSeedData.authorized_users];
   }
-  if (!db.services) db.services = [];
-  if (!db.products) db.products = [];
-  if (!db.staff) db.staff = [];
-  if (!db.customers) db.customers = [];
-  if (!db.visits) db.visits = [];
-  if (!db.appointments) db.appointments = [];
-  if (!db.attendance) db.attendance = [];
+  if (!db.services || db.services.length === 0) db.services = [...defaultSeedData.services];
+  if (!db.products || db.products.length === 0) db.products = [...defaultSeedData.products];
+  if (!db.staff || db.staff.length === 0) db.staff = [...defaultSeedData.staff];
+  if (!db.customers || db.customers.length === 0) db.customers = [...defaultSeedData.customers];
+  if (!db.advance_transactions || db.advance_transactions.length === 0) db.advance_transactions = [...defaultSeedData.advance_transactions];
+  if (!db.visits || db.visits.length === 0) db.visits = [...defaultSeedData.visits];
+  if (!db.appointments || db.appointments.length === 0) db.appointments = [...defaultSeedData.appointments];
+  if (!db.attendance || db.attendance.length === 0) db.attendance = [...defaultSeedData.attendance];
   if (!db.commissions) db.commissions = [];
   if (!db.salary_advances) db.salary_advances = [];
   if (!db.salary_payments) db.salary_payments = [];
-  if (!db.expenses) db.expenses = [];
+  if (!db.expenses || db.expenses.length === 0) db.expenses = [...defaultSeedData.expenses];
   if (!db.expense_categories) db.expense_categories = ['Rent', 'Utilities', 'Inventory', 'Salary', 'Marketing', 'Maintenance'];
 
   checkAndGenerateNotifications(db);

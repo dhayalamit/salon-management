@@ -1,152 +1,120 @@
-# TRIO The Posh — Salon Management System
+# 👑 TRIO THE POSH — Luxury Salon Management System
 
-A full-stack salon management system: dashboard, staff & attendance, customers,
-services, appointments, billing with automatic commission calculation, product
-inventory, expenses, and reports. Built with React + Tailwind on the frontend
-and Node/Express + PostgreSQL on the backend, secured with JWT auth and
-Admin/Staff roles.
+[![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![React](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-Ready-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+[![Vercel](https://img.shields.io/badge/Vercel-Deployed-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 
-## Stack
+An enterprise-grade, luxury salon and spa management platform designed for high-end unisex salons. Features a glassmorphism dark aesthetic, dual-role access (Admin / Owner & Staff Portal), 1-click live demo logins, client billing, staff commissions, VIP permanent customer deposit wallets, WhatsApp automated notifications, inventory, expenses, and financial analytics.
 
-- **Frontend:** React 18, Vite, Tailwind CSS, React Router, Recharts, Axios
-- **Backend:** Node.js, Express, PostgreSQL (`pg`), JWT, bcrypt
-- **Auth:** JWT bearer tokens, Admin and Staff roles
+---
 
-## Project structure
+## ⚡ Instant Live Demo & Login Credentials
 
-```
-salon-management-system/
-  backend/
-    schema.sql          # full Postgres schema
-    src/
-      index.js          # Express app entry
-      db.js              # pg connection pool
-      seed.js            # creates admin login + sample data
-      middleware/auth.js  # JWT auth + admin guard
-      routes/            # auth, dashboard, staff, attendance, customers,
-                          # services, products, appointments, billing,
-                          # salary, expenses, reports, settings
-  frontend/
-    src/
-      pages/             # one file per screen (Dashboard, Staff, Billing, ...)
-      components/        # Sidebar, Topbar, Modal, StatCard, Badge
-      context/AuthContext.jsx
-      api/client.js       # axios instance with JWT interceptor
-```
+Anyone visiting the deployed app or evaluating the repository can log in instantly using the built-in **1-Click Quick Demo** buttons on the login screen, or with the demo credentials below:
 
-## 1. Prerequisites
+| Portal | Email / ID | Password | Access Level |
+| :--- | :--- | :--- | :--- |
+| 👑 **Admin / Owner** | `admin@salon.com` | `admin123` | Full Master Access (Finances, Staff, Reports, Settings, WhatsApp) |
+| ✂️ **Staff Portal** | `staff@salon.com` | `staff123` | Staff Workspace (Work Register, Attendance, Services, Commissions) |
 
-- Node.js 18+
-- A running PostgreSQL instance (local install, Docker, or a hosted service
-  like Supabase/Neon/Railway)
+> 💡 **Zero Setup Required for Demo:** The app includes a persistent offline mock database pre-populated with realistic staff, clients, appointments, and financial records. It operates seamlessly in the browser out-of-the-box, or connects to your Supabase backend when environment variables are supplied.
 
-## 2. Set up the database
+---
 
-Create a database and load the schema:
+## ✨ Key Features
 
+### 👑 Executive Dashboard & Financial Command
+- Real-time revenue tracking categorized by payment mode (**Cash**, **UPI / Online**, **Advance Wallet**).
+- Automated daily cash register (opening balance, daily collection, cash expenses, closing balance).
+- Visual charts for monthly revenue trends, top performing services, and stylist productivity.
+
+### 📅 Appointments & Smart Booking
+- Interactive appointment calendar with status filters (Scheduled, In-Progress, Completed, Cancelled).
+- Automatic slot conflict detection and staff availability tracking.
+- Pre-appointment automated WhatsApp notifications (24h reminder & 30m urgent reminder).
+
+### 💳 Customer Visits & Instant Invoicing
+- Fast checkout with multiple service and product line items.
+- Line-item staff assignment for accurate commission calculation.
+- Flexible payment methods: Cash, Card, UPI, Partial / Split, and VIP Advance Wallet.
+
+### 💎 VIP Permanent Customers & Advance Deposit Wallets
+- Dedicated permanent customer profiles with prepaid wallet deposits.
+- Deposit history and automated balance deductions upon checkout.
+- Detailed visit history, customer preferences, and total lifetime spend metrics.
+
+### 👥 Staff Management, Work Register & Attendance
+- Complete stylist roster with commission rates and base salary configurations.
+- Daily digital attendance register (Present, Absent, Half-Day).
+- Detailed **Staff Work Register** tracking daily service count and total work value generated by each staff member.
+- Automated monthly salary calculation factoring in attendance, advances, and earned commissions.
+
+### 💬 Automated WhatsApp Marketing & Notification Center
+- Built-in WhatsApp automation engine for customer lifecycle engagement.
+- Automated triggers: **Instant Booking Confirmations**, **Birthday Specials**, **24h & 30m Appointment Reminders**, and **Post-Visit Thank You / Review requests**.
+- Template customizer with dynamic variables (`{{customer_name}}`, `{{service_name}}`, `{{appointment_time}}`, `{{amount}}`).
+
+### 📦 Product Inventory & Low-Stock Alerts
+- Product catalog tracking purchase price, selling price, and stock levels.
+- Automated notification badges for low-stock and out-of-stock items.
+
+### 💸 Salon Expense Tracking & Category Reports
+- Categorized expense logging (Rent, Electricity, Supplies, Staff Tea/Snacks, Marketing).
+- Cash vs. Bank expense segregation for accurate net profit computation.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework:** [React 18](https://react.dev/) + [Vite 5](https://vitejs.dev/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/) with custom luxury glassmorphism design system
+- **Icons:** [Lucide React](https://lucide.dev/)
+- **Charts:** [Recharts](https://recharts.org/)
+- **Database / Backend:** [Supabase](https://supabase.com/) client with built-in client-side mock storage fallback
+- **Routing:** [React Router DOM v6](https://reactrouter.com/)
+
+---
+
+## 🚀 Quick Start (Local Setup)
+
+### 1. Clone the repository
 ```bash
-createdb salon_db
-psql -d salon_db -f backend/schema.sql
+git clone https://github.com/dhayalamit/salon-management.git
+cd salon-management
 ```
 
-(If you're on a hosted Postgres provider, just run the `schema.sql` contents
-against your connection string using their SQL console or `psql "<connection-string>" -f backend/schema.sql`.)
-
-## 3. Backend setup
-
+### 2. Install dependencies
 ```bash
-cd backend
-cp .env.example .env
-# edit .env — set DATABASE_URL to your Postgres connection string
-# and set JWT_SECRET to a long random string
-
 npm install
-npm run seed     # creates admin@salon.com / admin123 + sample services/products/staff
-npm run dev       # starts the API on http://localhost:5001
 ```
 
-Health check: `curl http://localhost:5001/api/health`
-
-## 4. Frontend setup
-
-In a second terminal:
-
+### 3. Run development server
 ```bash
-cd frontend
-npm install
-npm run dev       # starts the app on http://localhost:5173
+npm run dev
 ```
 
-Open `http://localhost:5173` and log in with:
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-```
-Email:    admin@salon.com
-Password: admin123
-```
+---
 
-If your backend runs somewhere other than `http://localhost:5001/api`, create
-`frontend/.env` with:
+## 🌐 Deploy to Vercel (1-Click Deployment)
 
-```
-VITE_API_URL=https://your-api-host/api
-```
+This repository includes a preconfigured `vercel.json` configured for SPA routing.
 
-## 5. How billing/commission works
+1. Push your repository to GitHub.
+2. Go to [Vercel](https://vercel.com/) and click **Add New Project**.
+3. Import the `salon-management` repository.
+4. Leave the Build Command as `npm run build` and Output Directory as `dist`.
+5. *(Optional)* Add your Supabase environment variables in Vercel Project Settings:
+   ```env
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-key
+   ```
+6. Click **Deploy**. Your salon management system is live!
 
-When you create an invoice in **Billing → New Invoice**:
+---
 
-1. Add one or more services and/or products as line items.
-2. Each **service** line item carries the service's commission % (editable on
-   the Services page) — the backend computes `commission_amount` per item and
-   sums it onto the invoice.
-3. Each **product** line item automatically decrements that product's stock
-   inside the same database transaction — if stock is insufficient, the whole
-   invoice is rejected (nothing is double-booked).
-4. The invoice, its line items, and the resulting commission are all stored,
-   so Staff Profiles, the Commission report, and the Dashboard stay in sync
-   automatically.
-
-## 6. Roles
-
-- **Admin** — full access: staff, services, products, salary, expenses,
-  settings.
-- **Staff** — can log attendance, manage customers/appointments/billing, but
-  cannot add/edit/delete staff, services, products, salary entries, expenses,
-  or settings (enforced both in the UI and on the backend with `requireAdmin`).
-
-Create additional logins via `POST /api/auth/register` (admin-only endpoint) —
-there's no self-registration screen by design, since salons control who gets
-an account.
-
-## 7. Backup & restore
-
-```bash
-# Backup
-pg_dump salon_db > backup.sql
-
-# Restore
-psql salon_db < backup.sql
-```
-
-## 8. Reports
-
-The Reports page covers daily/monthly sales, commission by staff, staff
-performance, best-selling products, inventory status, and customer lifetime
-spend — each exportable to CSV (opens directly in Excel) via the **Export
-CSV** button, or to PDF via **Print / Save PDF** (browser print dialog).
-
-## Notes / next steps
-
-This is a complete, working core of the spec. A few areas are intentionally
-left as extension points rather than fully built out, so you can adapt them
-to how your salon actually operates:
-
-- **Photo uploads** (staff/product images, salon logo) — the schema has
-  `photo_url` / `logo_url` columns; wiring up actual file upload (e.g. to S3
-  or local disk via `multer`, which is already a backend dependency) is a
-  small follow-up.
-- **Salary slips as PDF** — salary payments are fully tracked; a formatted
-  PDF slip generator (e.g. with `pdfkit`) can be added on top.
-- **Dark mode** — the design system uses CSS-variable-friendly Tailwind
-  tokens, so a dark palette can be layered in without restructuring
-  components.
+## 📄 License
+This project is proprietary software developed for **TRIO THE POSH Salon**. All rights reserved.
