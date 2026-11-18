@@ -3,10 +3,10 @@
 [![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Supabase](https://img.shields.io/badge/Supabase-Ready-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
-[![Vercel](https://img.shields.io/badge/Vercel-Deployed-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
+[![Architecture](https://img.shields.io/badge/Architecture-100%25%20Pure%20Frontend%20SPA-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://react.dev/)
+[![Vercel](https://img.shields.io/badge/Vercel-Deploy%20Ready-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 
-An enterprise-grade, luxury salon and spa management platform designed for high-end unisex salons. Features a glassmorphism dark aesthetic, dual-role access (Admin / Owner & Staff Portal), 1-click live demo logins, client billing, staff commissions, VIP permanent customer deposit wallets, WhatsApp automated notifications, inventory, expenses, and financial analytics.
+An enterprise-grade, luxury salon and spa management platform designed for high-end unisex salons. Built as a **100% pure client-side Single Page Application (SPA)** with zero backend server dependencies, persistent browser storage, dual-role access (Admin / Owner & Staff Portal), 1-click live demo logins, client billing, staff commissions, VIP permanent customer deposit wallets, WhatsApp automated notifications, inventory, expenses, and financial analytics.
 
 ---
 
@@ -19,7 +19,7 @@ Anyone visiting the deployed app or evaluating the repository can log in instant
 | 👑 **Admin / Owner** | `admin@salon.com` | `admin123` | Full Master Access (Finances, Staff, Reports, Settings, WhatsApp) |
 | ✂️ **Staff Portal** | `staff@salon.com` | `staff123` | Staff Workspace (Work Register, Attendance, Services, Commissions) |
 
-> 💡 **Zero Setup Required for Demo:** The app includes a persistent offline mock database pre-populated with realistic staff, clients, appointments, and financial records. It operates seamlessly in the browser out-of-the-box, or connects to your Supabase backend when environment variables are supplied.
+> 💡 **100% Frontend — Zero Backend / Database Setup Needed:** The app includes a persistent offline mock database pre-populated with realistic staff, clients, appointments, and financial records. Everything works natively inside the browser with localStorage persistence across refreshes.
 
 ---
 
@@ -72,7 +72,7 @@ Anyone visiting the deployed app or evaluating the repository can log in instant
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/) with custom luxury glassmorphism design system
 - **Icons:** [Lucide React](https://lucide.dev/)
 - **Charts:** [Recharts](https://recharts.org/)
-- **Database / Backend:** [Supabase](https://supabase.com/) client with built-in client-side mock storage fallback
+- **Database / Storage:** Persistent Browser `localStorage` with automated state synchronization & preloaded seed data
 - **Routing:** [React Router DOM v6](https://reactrouter.com/)
 
 ---
@@ -101,18 +101,13 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ## 🌐 Deploy to Vercel (1-Click Deployment)
 
-This repository includes a preconfigured `vercel.json` configured for SPA routing.
+This repository includes a preconfigured `vercel.json` for SPA routing. No backend server, database, or environment variables are needed!
 
 1. Push your repository to GitHub.
 2. Go to [Vercel](https://vercel.com/) and click **Add New Project**.
 3. Import the `salon-management` repository.
-4. Leave the Build Command as `npm run build` and Output Directory as `dist`.
-5. *(Optional)* Add your Supabase environment variables in Vercel Project Settings:
-   ```env
-   VITE_SUPABASE_URL=https://your-project.supabase.co
-   VITE_SUPABASE_ANON_KEY=your-anon-key
-   ```
-6. Click **Deploy**. Your salon management system is live!
+4. Leave the default settings (Build Command: `npm run build`, Output Directory: `dist`).
+5. Click **Deploy**. Your salon management system is live!
 
 ---
 
