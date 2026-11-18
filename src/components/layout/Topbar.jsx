@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Bell, CheckCheck, AlertTriangle, Info, AlertCircle } from 'lucide-react';
+import { Menu, Bell, CheckCheck, AlertTriangle, Info, AlertCircle, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useNotifications } from '../../context/NotificationContext.jsx';
 
 export default function Topbar({ onMenuClick }) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 
@@ -66,20 +66,21 @@ export default function Topbar({ onMenuClick }) {
         </div>
       </div>
 
-      {/* Right Tools: Notification Bell Button & Dropdown */}
-      <div ref={notifRef} className="relative shrink-0">
-        <button
-          onClick={() => setIsNotifOpen(!isNotifOpen)}
-          className="p-2.5 sm:p-2.5 rounded-full sm:rounded-full bg-white border border-[#E8DFCF] text-dark hover:border-[#D4AF37] transition-all relative shadow-xs flex items-center justify-center"
-          title="Notifications"
-        >
-          <Bell size={18} />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center animate-pulse">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </button>
+      {/* Right Tools: Notification Bell Button & Sign Out */}
+      <div className="flex items-center gap-2">
+        <div ref={notifRef} className="relative shrink-0">
+          <button
+            onClick={() => setIsNotifOpen(!isNotifOpen)}
+            className="p-2.5 sm:p-2.5 rounded-full bg-white border border-[#E8DFCF] text-dark hover:border-[#D4AF37] transition-all relative shadow-xs flex items-center justify-center cursor-pointer"
+            title="Notifications"
+          >
+            <Bell size={18} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center animate-pulse">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
 
         {/* Notification Dropdown Modal */}
         {isNotifOpen && (
@@ -142,6 +143,17 @@ export default function Topbar({ onMenuClick }) {
           </div>
         )}
       </div>
-    </header>
-  );
+
+      {/* Quick Sign Out Button */}
+      <button
+        onClick={logout}
+        className="p-2 sm:px-3 sm:py-2 rounded-full bg-white border border-[#E8DFCF] text-dark/70 hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer text-xs font-semibold shrink-0"
+        title="Sign Out"
+      >
+        <LogOut size={15} />
+        <span className="hidden sm:inline">Sign Out</span>
+      </button>
+    </div>
+  </header>
+);
 }

@@ -6,11 +6,16 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
+      const token = localStorage.getItem('salon_token');
       const stored = localStorage.getItem('salon_user');
-      return stored && stored !== 'undefined' && stored !== 'null' ? JSON.parse(stored) : null;
+      if (!token || !stored || stored === 'undefined' || stored === 'null') {
+        return null;
+      }
+      return JSON.parse(stored);
     } catch (e) {
       console.warn('Failed to parse salon_user from localStorage, resetting:', e);
       localStorage.removeItem('salon_user');
+      localStorage.removeItem('salon_token');
       return null;
     }
   });
