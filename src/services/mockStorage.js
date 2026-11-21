@@ -6,7 +6,7 @@ const defaultSeedData = {
   users: [
     {
       id: 'u1',
-      name: 'TRIO Admin',
+      name: 'TRIO Salon Owner',
       email: 'admin@salon.com',
       password: 'admin123',
       role: 'owner',
@@ -21,8 +21,8 @@ const defaultSeedData = {
   ],
   authorized_users: [
     { id: 'auth_owner', email: 'admin@salon.com', name: 'TRIO Salon Owner', role: 'owner', added_at: new Date().toISOString() },
+    { id: 'auth_owner2', email: 'owner@salon.com', name: 'TRIO Salon Owner', role: 'owner', added_at: new Date().toISOString() },
     { id: 'auth_staff', email: 'staff@salon.com', name: 'Rahul Sharma (Senior Stylist)', role: 'staff', added_at: new Date().toISOString() },
-    { id: 'auth_admin2', email: 'amitdhayal6138@gmail.com', name: 'Amit Dhayal', role: 'admin', added_at: new Date().toISOString() },
   ],
   services: [
     { id: 's1', name: 'Hair Cut', price: 300, duration_minutes: 30, commission_percent: 20 },
@@ -563,56 +563,221 @@ export function checkAndGenerateNotifications(db) {
   return db.notifications;
 }
 
-// Initialize DB if empty
+// Retrieve the currently active logged-in user from localStorage
+export function getActiveUser() {
+  try {
+    const raw = localStorage.getItem('salon_user');
+    if (!raw || raw === 'undefined' || raw === 'null') return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+// Compute the isolated storage key for the current salon tenant
+export function getActiveStorageKey() {
+  const user = getActiveUser();
+  if (!user || !user.email) {
+    return 'salon_db_v2';
+  }
+  const email = (user.email || '').trim().toLowerCase();
+  // Built-in demo accounts always route to the pre-seeded TRIO demo database
+  if (email === 'admin@salon.com' || email === 'owner@salon.com' || email === 'staff@salon.com') {
+    return 'salon_db_v2';
+  }
+  // For registered owners or staff, route to their isolated salon database
+  const tenantId = (user.salon_id || user.email || '').trim().toLowerCase();
+  return 'salon_db_tenant_' + encodeURIComponent(tenantId);
+}
+
+// Create a completely clean, isolated database for a newly registered Salon Owner
+export function createCleanTenantDb(user) {
+  const ownerName = user?.name?.trim() || 'Salon Owner';
+  const ownerEmail = (user?.email || '').trim().toLowerCase();
+  const salonName = user?.salon_name?.trim() || `${ownerName}'s Salon`;
+  const ownerPhone = user?.phone?.trim() || '';
+
+  return {
+    users: [
+      {
+        id: user?.id || 'u_' + Date.now(),
+        name: ownerName,
+        email: ownerEmail,
+        password: user?.password || 'admin123',
+        role: 'owner',
+        salon_id: ownerEmail,
+        salon_name: salonName,
+        phone: ownerPhone,
+      },
+    ],
+    authorized_users: [
+      {
+        id: 'auth_' + Date.now(),
+        name: ownerName,
+        email: ownerEmail,
+        role: 'owner',
+        added_at: new Date().toISOString(),
+      },
+    ],
+    settings: {
+      salon_name: salonName,
+      phone: ownerPhone || '+91 98765 00000',
+      email: ownerEmail,
+      address: user?.address || 'Main Market, Salon Premises',
+      currency: '₹',
+      tax_percent: 18,
+      opening_time: '09:00',
+      closing_time: '21:00',
+    },
+    staff: [], // 100% EMPTY: Clean list ready for the new owner to onboard their own team
+    customers: [], // 100% EMPTY: Zero foreign client records
+    permanent_customers: [],
+    advance_transactions: [],
+    appointments: [], // 100% EMPTY: 0 bookings
+    visits: [], // 100% EMPTY: 0 visits
+    attendance: [], // 100% EMPTY
+    commissions: [],
+    salary_advances: [],
+    salary_payments: [],
+    expenses: [], // 100% EMPTY: 0 expenses
+    expense_categories: [
+      'Rent',
+      'Electricity',
+      'Staff Tea/Snacks',
+      'Product Supplies',
+      'Cleaning',
+      'Internet',
+      'Marketing',
+      'Maintenance',
+      'Other',
+    ],
+    services: [
+      { id: 's1', name: 'Hair Cut (Classic)', price: 250, duration_minutes: 30, commission_percent: 20 },
+      { id: 's2', name: 'Beard Styling & Trim', price: 150, duration_minutes: 20, commission_percent: 20 },
+      { id: 's3', name: 'Facial & Clean Up', price: 650, duration_minutes: 45, commission_percent: 15 },
+      { id: 's4', name: 'Hair Spa & Nourish', price: 800, duration_minutes: 60, commission_percent: 15 },
+      { id: 's5', name: 'Hair Color (Global)', price: 1500, duration_minutes: 60, commission_percent: 10 },
+      { id: 's6', name: 'Head Massage', price: 200, duration_minutes: 20, commission_percent: 20 },
+    ],
+    products: [
+      { id: 'p1', name: 'Styling Wax', category: 'Styling', purchase_price: 120, selling_price: 250, stock_quantity: 10, low_stock_threshold: 3 },
+      { id: 'p2', name: 'Hair Serum', category: 'Hair Care', purchase_price: 180, selling_price: 380, stock_quantity: 8, low_stock_threshold: 2 },
+    ],
+    whatsapp: JSON.parse(JSON.stringify(defaultSeedData.whatsapp)),
+    daily_balance: {
+      opening_balance: 0,
+      closing_balance: 0,
+      date: new Date().toISOString().split('T')[0],
+    },
+    daily_balances: {},
+    notifications: [],
+  };
+}
+
+// Initialize and retrieve current salon DB
 export function getDb() {
-  const raw = localStorage.getItem(STORAGE_KEY);
+  const key = getActiveStorageKey();
+  const raw = localStorage.getItem(key);
   let db;
+
   if (!raw) {
-    db = defaultSeedData;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    if (key === 'salon_db_v2') {
+      db = JSON.parse(JSON.stringify(defaultSeedData));
+    } else {
+      const activeUser = getActiveUser();
+      db = createCleanTenantDb(activeUser);
+    }
+    localStorage.setItem(key, JSON.stringify(db));
   } else {
     try {
       db = JSON.parse(raw);
     } catch (e) {
-      db = defaultSeedData;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      if (key === 'salon_db_v2') {
+        db = JSON.parse(JSON.stringify(defaultSeedData));
+      } else {
+        const activeUser = getActiveUser();
+        db = createCleanTenantDb(activeUser);
+      }
+      localStorage.setItem(key, JSON.stringify(db));
     }
   }
 
-  // Ensure all collections are defined and seeded
-  if (!db.users || db.users.length === 0) db.users = [...defaultSeedData.users];
-  if (!db.authorized_users || db.authorized_users.length === 0) {
-    db.authorized_users = [...defaultSeedData.authorized_users];
+  // ONLY seed demo database if empty; NEVER overwrite new owner's empty arrays!
+  if (key === 'salon_db_v2') {
+    if (!db.users || db.users.length === 0) db.users = [...defaultSeedData.users];
+    if (!db.authorized_users || db.authorized_users.length === 0) {
+      db.authorized_users = [...defaultSeedData.authorized_users];
+    }
+    if (!db.services || db.services.length === 0) db.services = [...defaultSeedData.services];
+    if (!db.products || db.products.length === 0) db.products = [...defaultSeedData.products];
+    if (!db.staff || db.staff.length === 0) db.staff = [...defaultSeedData.staff];
+    if (!db.customers || db.customers.length === 0) db.customers = [...defaultSeedData.customers];
+    if (!db.advance_transactions || db.advance_transactions.length === 0) db.advance_transactions = [...defaultSeedData.advance_transactions];
+    if (!db.visits || db.visits.length === 0) db.visits = [...defaultSeedData.visits];
+    if (!db.appointments || db.appointments.length === 0) db.appointments = [...defaultSeedData.appointments];
+    if (!db.attendance || db.attendance.length === 0) db.attendance = [...defaultSeedData.attendance];
+    if (!db.expenses || db.expenses.length === 0) db.expenses = [...defaultSeedData.expenses];
+    if (!db.settings) db.settings = { ...defaultSeedData.settings };
+  } else {
+    // For tenant databases, ensure collections exist as empty arrays without copying demo records
+    if (!db.users) db.users = [];
+    if (!db.authorized_users) db.authorized_users = [];
+    if (!db.services) db.services = [];
+    if (!db.products) db.products = [];
+    if (!db.staff) db.staff = [];
+    if (!db.customers) db.customers = [];
+    if (!db.advance_transactions) db.advance_transactions = [];
+    if (!db.visits) db.visits = [];
+    if (!db.appointments) db.appointments = [];
+    if (!db.attendance) db.attendance = [];
+    if (!db.expenses) db.expenses = [];
+    if (!db.settings) {
+      const activeUser = getActiveUser();
+      db.settings = {
+        salon_name: activeUser?.salon_name || 'My Salon',
+        phone: activeUser?.phone || '',
+        email: activeUser?.email || '',
+        address: 'Salon Address',
+        currency: '₹',
+        tax_percent: 18,
+        opening_time: '09:00',
+        closing_time: '21:00',
+      };
+    }
   }
-  if (!db.services || db.services.length === 0) db.services = [...defaultSeedData.services];
-  if (!db.products || db.products.length === 0) db.products = [...defaultSeedData.products];
-  if (!db.staff || db.staff.length === 0) db.staff = [...defaultSeedData.staff];
-  if (!db.customers || db.customers.length === 0) db.customers = [...defaultSeedData.customers];
-  if (!db.advance_transactions || db.advance_transactions.length === 0) db.advance_transactions = [...defaultSeedData.advance_transactions];
-  if (!db.visits || db.visits.length === 0) db.visits = [...defaultSeedData.visits];
-  if (!db.appointments || db.appointments.length === 0) db.appointments = [...defaultSeedData.appointments];
-  if (!db.attendance || db.attendance.length === 0) db.attendance = [...defaultSeedData.attendance];
+
   if (!db.commissions) db.commissions = [];
   if (!db.salary_advances) db.salary_advances = [];
   if (!db.salary_payments) db.salary_payments = [];
-  if (!db.expenses || db.expenses.length === 0) db.expenses = [...defaultSeedData.expenses];
-  if (!db.expense_categories) db.expense_categories = ['Rent', 'Utilities', 'Inventory', 'Salary', 'Marketing', 'Maintenance'];
-  if (!db.settings) db.settings = { ...defaultSeedData.settings };
+  if (!db.expense_categories) {
+    db.expense_categories = ['Rent', 'Utilities', 'Inventory', 'Salary', 'Marketing', 'Maintenance'];
+  }
   if (!db.whatsapp) db.whatsapp = JSON.parse(JSON.stringify(defaultSeedData.whatsapp));
-  if (!db.daily_balance) db.daily_balance = { ...defaultSeedData.daily_balance };
+  if (!db.daily_balance) {
+    db.daily_balance = { opening_balance: 0, closing_balance: 0, date: new Date().toISOString().split('T')[0] };
+  }
   if (!db.daily_balances) db.daily_balances = {};
+  if (!db.notifications) db.notifications = [];
 
   checkAndGenerateNotifications(db);
   return db;
 }
 
 export function saveDb(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  const key = getActiveStorageKey();
+  localStorage.setItem(key, JSON.stringify(data));
 }
 
 export function resetDb() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultSeedData));
-  const db = defaultSeedData;
+  const key = getActiveStorageKey();
+  let db;
+  if (key === 'salon_db_v2') {
+    db = JSON.parse(JSON.stringify(defaultSeedData));
+  } else {
+    const activeUser = getActiveUser();
+    db = createCleanTenantDb(activeUser);
+  }
+  localStorage.setItem(key, JSON.stringify(db));
   checkAndGenerateNotifications(db);
   return db;
 }

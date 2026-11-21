@@ -16,26 +16,28 @@ import {
   Scissors,
   User,
   Phone,
+  Building2,
   UserPlus,
   LogIn,
 } from 'lucide-react';
 import Modal from '../components/ui/Modal.jsx';
 
 export default function Login() {
-  const { login, signup, sendPasswordResetEmail, loading: authLoading } = useAuth();
+  const { login, signupOwner, sendPasswordResetEmail, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   // Mode: 'signin' or 'signup'
   const [authMode, setAuthMode] = useState('signin');
 
-  // Role Tab: 'admin' (Admin / Owner) or 'staff' (Staff Portal)
-  const [activeTab, setActiveTab] = useState('admin');
+  // Active Sign In Role: 'owner' (Salon Owner) or 'staff' (Staff Portal)
+  const [activeTab, setActiveTab] = useState('owner');
 
   // Sign In State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Sign Up State
+  // Sign Up State (Exclusively for Salon Owner)
+  const [signupSalonName, setSignupSalonName] = useState('');
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPhone, setSignupPhone] = useState('');
@@ -54,7 +56,7 @@ export default function Login() {
   const [forgotErrorMsg, setForgotErrorMsg] = useState('');
 
   useEffect(() => {
-    // Clear inputs and notices on mode or role change
+    // Clear inputs and error notices on mode or role change
     setError('');
     setSuccessMsg('');
   }, [authMode, activeTab]);
@@ -66,8 +68,8 @@ export default function Login() {
 
     if (!email.trim()) {
       return setError(
-        activeTab === 'admin'
-          ? 'Please enter your Admin/Owner email address.'
+        activeTab === 'owner'
+          ? 'Please enter your Salon Owner email address.'
           : 'Please enter your Staff email or phone.'
       );
     }
@@ -95,6 +97,9 @@ export default function Login() {
     setError('');
     setSuccessMsg('');
 
+    if (!signupSalonName.trim()) {
+      return setError('Please enter your Salon Name.');
+    }
     if (!signupName.trim()) {
       return setError('Please enter your full name.');
     }
@@ -108,21 +113,21 @@ export default function Login() {
       return setError('Password must be at least 4 characters long.');
     }
     if (signupPassword !== signupConfirmPassword) {
-      return setError('Passwords do not match. Please re-enter confirm password.');
+      return setError('Passwords do not match. Please verify confirm password.');
     }
 
     try {
       setFormLoading(true);
-      const res = await signup({
+      const res = await signupOwner({
+        salonName: signupSalonName,
         name: signupName,
         email: signupEmail,
         phone: signupPhone,
         password: signupPassword,
-        role: activeTab === 'staff' ? 'staff' : 'owner',
       });
 
       if (res.ok) {
-        setSuccessMsg('Account registered successfully! Logging you in...');
+        setSuccessMsg(`Welcome, ${res.user.name}! Your salon workspace is ready. Redirecting...`);
         setTimeout(() => {
           navigate('/');
         }, 600);
@@ -140,8 +145,8 @@ export default function Login() {
   async function handleQuickDemo(type) {
     setError('');
     setSuccessMsg('');
-    const demoEmail = type === 'admin' ? 'admin@salon.com' : 'staff@salon.com';
-    const demoPass = type === 'admin' ? 'admin123' : 'staff123';
+    const demoEmail = type === 'owner' ? 'admin@salon.com' : 'staff@salon.com';
+    const demoPass = type === 'owner' ? 'admin123' : 'staff123';
     setAuthMode('signin');
     setActiveTab(type);
     setEmail(demoEmail);
@@ -263,7 +268,7 @@ export default function Login() {
           </div>
         </div>
 
-        {/* ================= RIGHT SECTION — Centered Luxury Login Card (5 Cols) ================= */}
+        {/* ================= RIGHT SECTION — Centered Luxury Card (5 Cols) ================= */}
         <div className="relative z-10 lg:col-span-5 flex flex-col items-center justify-center p-6 sm:p-10 lg:p-12 min-h-screen">
           {/* Mobile Header Brand Display */}
           <div className="mb-8 flex items-center gap-3.5 lg:hidden">
@@ -285,7 +290,7 @@ export default function Login() {
             {/* Subtle Top Gold Highlight */}
             <div className="absolute top-0 left-8 right-8 h-[1px] bg-gradient-to-r from-transparent via-[#d4af37]/60 to-transparent" />
 
-            {/* TOP AUTH SWITCHER: Sign In vs Sign Up */}
+            {/* TOP AUTH SWITCHER: Sign In vs Register Salon */}
             <div className="flex items-center justify-between pb-4 mb-5 border-b border-zinc-800/80">
               <div className="flex items-center gap-4">
                 <button
@@ -321,8 +326,8 @@ export default function Login() {
                       : 'text-zinc-500 hover:text-zinc-300'
                   }`}
                 >
-                  <UserPlus size={13} className={authMode === 'signup' ? 'text-[#d4af37]' : 'text-zinc-500'} />
-                  <span>Create Account</span>
+                  <Crown size={13} className={authMode === 'signup' ? 'text-[#d4af37]' : 'text-zinc-500'} />
+                  <span>Register Salon</span>
                   {authMode === 'signup' && (
                     <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#d4af37] to-[#edd391] rounded-full" />
                   )}
@@ -330,50 +335,57 @@ export default function Login() {
               </div>
 
               <span className="text-[10px] uppercase font-bold tracking-wider text-[#d4af37] bg-[#2a2211] px-2.5 py-0.5 rounded-full border border-[#d4af37]/30">
-                {authMode === 'signin' ? 'Portal Access' : 'New Registration'}
+                {authMode === 'signin' ? 'Portal Access' : 'Owner Only'}
               </span>
             </div>
 
-            {/* Segmented Toggle Control: Admin / Owner vs Staff Portal */}
-            <div className="rounded-full bg-[#18181a] p-1 border border-zinc-800 flex items-center mb-5">
-              <button
-                type="button"
-                onClick={() => setActiveTab('admin')}
-                className={`flex-1 py-2 px-3 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  activeTab === 'admin'
-                    ? 'bg-gradient-to-r from-[#edd391] via-[#d4af37] to-[#c59f2e] text-black font-bold shadow-md'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                <Crown size={14} className={activeTab === 'admin' ? 'text-black' : 'text-zinc-400'} />
-                <span>Admin / Owner</span>
-              </button>
+            {/* In SIGN IN mode: Segmented Toggle between Salon Owner and Staff Portal */}
+            {authMode === 'signin' && (
+              <div className="rounded-full bg-[#18181a] p-1 border border-zinc-800 flex items-center mb-5">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('owner')}
+                  className={`flex-1 py-2 px-3 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    activeTab === 'owner'
+                      ? 'bg-gradient-to-r from-[#edd391] via-[#d4af37] to-[#c59f2e] text-black font-bold shadow-md'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <Crown size={14} className={activeTab === 'owner' ? 'text-black' : 'text-zinc-400'} />
+                  <span>Salon Owner</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setActiveTab('staff')}
-                className={`flex-1 py-2 px-3 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  activeTab === 'staff'
-                    ? 'bg-gradient-to-r from-[#edd391] via-[#d4af37] to-[#c59f2e] text-black font-bold shadow-md'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                <Scissors size={14} className={activeTab === 'staff' ? 'text-black' : 'text-zinc-400'} />
-                <span>Staff Portal</span>
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('staff')}
+                  className={`flex-1 py-2 px-3 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    activeTab === 'staff'
+                      ? 'bg-gradient-to-r from-[#edd391] via-[#d4af37] to-[#c59f2e] text-black font-bold shadow-md'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <Scissors size={14} className={activeTab === 'staff' ? 'text-black' : 'text-zinc-400'} />
+                  <span>Staff Portal</span>
+                </button>
+              </div>
+            )}
 
             {/* Role Header Badge */}
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2a2211] border border-[#d4af37]/40 text-[#edd391] text-[10px] font-bold tracking-widest uppercase mb-2">
-              {activeTab === 'admin' ? (
+              {authMode === 'signup' ? (
                 <>
                   <Crown size={12} className="text-[#d4af37]" />
-                  <span>{authMode === 'signin' ? 'EXECUTIVE MANAGEMENT' : 'OWNER ACCOUNT'}</span>
+                  <span>NEW SALON REGISTRATION</span>
+                </>
+              ) : activeTab === 'owner' ? (
+                <>
+                  <Crown size={12} className="text-[#d4af37]" />
+                  <span>SALON OWNER COMMAND</span>
                 </>
               ) : (
                 <>
                   <Scissors size={12} className="text-[#d4af37]" />
-                  <span>{authMode === 'signin' ? 'STAFF PORTAL ACCESS' : 'STAFF REGISTRATION'}</span>
+                  <span>STAFF PORTAL ACCESS</span>
                 </>
               )}
             </div>
@@ -381,21 +393,17 @@ export default function Login() {
             {/* Form Title & Subtitle */}
             <h2 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
               {authMode === 'signin'
-                ? activeTab === 'admin'
-                  ? 'Admin / Owner Login'
+                ? activeTab === 'owner'
+                  ? 'Salon Owner Login'
                   : 'Staff Portal Login'
-                : activeTab === 'admin'
-                ? 'Register Owner Account'
-                : 'Register Staff Account'}
+                : 'Register Your Salon'}
             </h2>
             <p className="text-xs text-zinc-400 mt-1 mb-5 leading-relaxed">
               {authMode === 'signin'
-                ? activeTab === 'admin'
-                  ? 'Full command: staff salary, commission, salon expenses, reports, settings & financial analytics.'
+                ? activeTab === 'owner'
+                  ? 'Complete financial command: revenue, staff salaries, expenses & analytics.'
                   : 'Access work register, attendance, service history, clients & personal commissions.'
-                : activeTab === 'admin'
-                ? 'Create a master salon administrator profile with executive analytics & settings access.'
-                : 'Create a stylist profile to record appointments, log work entries, and track commissions.'}
+                : 'Create your master salon owner profile to manage your own salon, staff, and revenue.'}
             </p>
 
             {/* Error Message Alert */}
@@ -420,10 +428,10 @@ export default function Login() {
                 {/* Field 1: Email / Identifier */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-zinc-300">
-                    {activeTab === 'admin' ? 'Admin / Owner Email' : 'Staff Email or Phone'}
+                    {activeTab === 'owner' ? 'Salon Owner Email' : 'Staff Email or Phone'}
                   </label>
                   <div className="relative group/input">
-                    {activeTab === 'admin' ? (
+                    {activeTab === 'owner' ? (
                       <Mail
                         size={17}
                         className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-[#d4af37] transition-colors"
@@ -435,14 +443,14 @@ export default function Login() {
                       />
                     )}
                     <input
-                      type={activeTab === 'admin' ? 'email' : 'text'}
+                      type={activeTab === 'owner' ? 'email' : 'text'}
                       required
                       disabled={isBusy}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder={
-                        activeTab === 'admin'
-                          ? 'Enter admin email address'
+                        activeTab === 'owner'
+                          ? 'Enter salon owner email'
                           : 'Enter staff email or mobile number'
                       }
                       className="w-full pl-11 pr-4 py-3 bg-[#151517] border border-zinc-800 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/40 transition-all shadow-inner disabled:opacity-50"
@@ -487,8 +495,8 @@ export default function Login() {
                   ) : (
                     <>
                       <span>
-                        {activeTab === 'admin'
-                          ? 'Login as Admin & Owner'
+                        {activeTab === 'owner'
+                          ? 'Login as Salon Owner'
                           : 'Login to Staff Portal'}
                       </span>
                       <ArrowRight
@@ -499,7 +507,7 @@ export default function Login() {
                   )}
                 </button>
 
-                {/* Switch to Sign Up & Forgot Password */}
+                {/* Switch to Register & Forgot Password */}
                 <div className="flex items-center justify-between pt-2 text-xs">
                   <button
                     type="button"
@@ -509,7 +517,7 @@ export default function Login() {
                     }}
                     className="text-zinc-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
                   >
-                    Don't have an account? <span className="text-[#d4af37] font-semibold hover:underline">Sign Up</span>
+                    New salon owner? <span className="text-[#d4af37] font-semibold hover:underline">Register Salon</span>
                   </button>
 
                   <button
@@ -528,13 +536,35 @@ export default function Login() {
               </form>
             )}
 
-            {/* ================= MODE 2: SIGN UP / REGISTER ================= */}
+            {/* ================= MODE 2: REGISTER SALON (OWNER ONLY) ================= */}
             {authMode === 'signup' && (
-              <form onSubmit={handleSignUp} className="space-y-3.5">
-                {/* Field 1: Full Name */}
+              <form onSubmit={handleSignUp} className="space-y-3">
+                {/* Field 1: Salon Name */}
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-zinc-300">
-                    Full Name *
+                    Salon Name *
+                  </label>
+                  <div className="relative group/input">
+                    <Building2
+                      size={16}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-[#d4af37] transition-colors"
+                    />
+                    <input
+                      type="text"
+                      required
+                      disabled={isBusy}
+                      value={signupSalonName}
+                      onChange={(e) => setSignupSalonName(e.target.value)}
+                      placeholder="e.g. Royal Glow Unisex Salon"
+                      className="w-full pl-10 pr-4 py-2.5 bg-[#151517] border border-zinc-800 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/40 transition-all shadow-inner disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+
+                {/* Field 2: Owner Full Name */}
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-zinc-300">
+                    Owner Full Name *
                   </label>
                   <div className="relative group/input">
                     <User
@@ -547,16 +577,16 @@ export default function Login() {
                       disabled={isBusy}
                       value={signupName}
                       onChange={(e) => setSignupName(e.target.value)}
-                      placeholder={activeTab === 'admin' ? 'e.g. Amit Dhayal' : 'e.g. Rahul Sharma'}
+                      placeholder="e.g. Vikram Singh"
                       className="w-full pl-10 pr-4 py-2.5 bg-[#151517] border border-zinc-800 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/40 transition-all shadow-inner disabled:opacity-50"
                     />
                   </div>
                 </div>
 
-                {/* Field 2: Email */}
+                {/* Field 3: Email Address */}
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-zinc-300">
-                    Email Address *
+                    Owner Email Address *
                   </label>
                   <div className="relative group/input">
                     <Mail
@@ -569,13 +599,13 @@ export default function Login() {
                       disabled={isBusy}
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
-                      placeholder="e.g. newuser@salon.com"
+                      placeholder="e.g. owner@royalglow.com"
                       className="w-full pl-10 pr-4 py-2.5 bg-[#151517] border border-zinc-800 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/40 transition-all shadow-inner disabled:opacity-50"
                     />
                   </div>
                 </div>
 
-                {/* Field 3: Phone */}
+                {/* Field 4: Mobile Phone */}
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-zinc-300">
                     Mobile Phone (Optional)
@@ -590,13 +620,13 @@ export default function Login() {
                       disabled={isBusy}
                       value={signupPhone}
                       onChange={(e) => setSignupPhone(e.target.value)}
-                      placeholder="e.g. 9876543210"
+                      placeholder="e.g. 9829012345"
                       className="w-full pl-10 pr-4 py-2.5 bg-[#151517] border border-zinc-800 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/40 transition-all shadow-inner disabled:opacity-50"
                     />
                   </div>
                 </div>
 
-                {/* Field 4: Password & Confirm Password (2 Cols) */}
+                {/* Field 5: Password & Confirm Password (2 Cols) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="block text-xs font-semibold text-zinc-300">
@@ -641,6 +671,14 @@ export default function Login() {
                   </div>
                 </div>
 
+                {/* Staff Exclusion Notice */}
+                <div className="p-2.5 rounded-xl bg-[#1e1b13] border border-[#d4af37]/25 text-[11px] text-[#edd391]/90 flex items-start gap-2">
+                  <ShieldCheck size={14} className="text-[#d4af37] shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Staff Notice:</strong> Staff accounts cannot register publicly. Only you (the Salon Owner) can onboard staff stylists from inside your salon portal.
+                  </span>
+                </div>
+
                 {/* Submit Sign Up Button */}
                 <button
                   type="submit"
@@ -650,14 +688,12 @@ export default function Login() {
                   {formLoading ? (
                     <>
                       <Loader2 size={17} className="animate-spin text-black" />
-                      <span>Creating Account...</span>
+                      <span>Creating Your Salon...</span>
                     </>
                   ) : (
                     <>
-                      <UserPlus size={16} />
-                      <span>
-                        Create {activeTab === 'admin' ? 'Owner / Admin' : 'Staff'} Account
-                      </span>
+                      <Crown size={16} />
+                      <span>Register Salon & Open Portal</span>
                       <ArrowRight
                         size={16}
                         className="group-hover/btn:translate-x-1 transition-transform duration-200"
@@ -696,12 +732,12 @@ export default function Login() {
                 <button
                   type="button"
                   disabled={isBusy}
-                  onClick={() => handleQuickDemo('admin')}
+                  onClick={() => handleQuickDemo('owner')}
                   className="py-2.5 px-3 rounded-xl bg-white/[0.04] hover:bg-[#d4af37]/15 border border-[#d4af37]/25 hover:border-[#d4af37] text-left transition-all cursor-pointer group disabled:opacity-50"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-white group-hover:text-[#d4af37] flex items-center gap-1">
-                      👑 Admin Demo
+                      👑 Owner Demo
                     </span>
                     <ArrowRight size={12} className="text-[#d4af37] opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>

@@ -244,16 +244,16 @@ export default function Dashboard() {
             <div className="flex items-center gap-2 mb-1">
               <span className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-widest ${
                 isAdmin
-                  ? 'bg-[#D4AF37] text-white'
+                  ? 'bg-[#D4AF37] text-white flex items-center gap-1'
                   : 'bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1'
               }`}>
-                {isAdmin ? 'Executive View' : <><Scissors size={11} /> Staff Workstation</>}
+                {isAdmin ? '👑 Salon Owner' : <><Scissors size={11} /> Staff Workstation</>}
               </span>
-              <span className="text-xs text-dark/40 font-medium">TRIO The Posh</span>
+              <span className="text-xs text-dark/40 font-medium">{user?.salon_name || 'TRIO The Posh'}</span>
             </div>
             <h1 className="font-display text-xl sm:text-3xl font-bold text-dark tracking-tight">
               {isAdmin
-                ? 'Salon Command Center'
+                ? (user?.salon_name ? `${user.salon_name} Command` : 'Salon Command Center')
                 : `Welcome, ${user?.name ? user.name.split(' ')[0].toLowerCase() : 'staff'}`}
             </h1>
             <p className="text-xs text-dark/50 mt-0.5">

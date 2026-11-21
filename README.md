@@ -21,10 +21,13 @@ Anyone visiting the deployed app or evaluating the repository can log in instant
 
 | Portal | Email / ID | Password | Access Level & Scope |
 | :--- | :--- | :--- | :--- |
-| 👑 **Admin / Owner** | `admin@salon.com` | `admin123` | **Full Executive Command:** Total Revenue, Daily Balances, Expenses, Reports, Staff Salaries & Settings |
+| 👑 **Salon Owner** | `admin@salon.com` | `admin123` | **Full Executive Command:** Total Revenue, Daily Balances, Expenses, Reports, Staff Salaries & Settings |
 | ✂️ **Staff Portal** | `staff@salon.com` | `staff123` | **Staff Workstation:** Daily Appointments, Customer Visits, Attendance, Clients & Work Register *(Financials & Reports strictly restricted)* |
 
-> 💡 **Cloud-Powered with Demo Sandbox:** The application is architected to connect directly to your centralized Cloud Database & Storage API. For instant public evaluation and testing, it also includes a pre-populated demo sandbox with realistic records so anyone can explore all features with zero configuration.
+> 💡 **Multi-Tenant Workspace & Demo Sandbox:**
+> - Anyone can register a new salon using **Register Salon** on the login page. Each registered Salon Owner receives their own clean, isolated salon workspace (own salon name, own staff roster, own clients, and 0 initial transactions).
+> - Staff accounts cannot self-register; they are created and authorized directly by the Salon Owner from within their portal.
+> - Built-in 1-Click Demo accounts (`admin@salon.com` / `staff@salon.com`) provide pre-populated records for instant evaluation.
 
 ---
 
@@ -32,7 +35,7 @@ Anyone visiting the deployed app or evaluating the repository can log in instant
 
 The application enforces strict visual and route-level segregation between **Salon Owners** and **Staff Members**:
 
-| Feature / Workspace | 👑 Executive Admin / Owner | ✂️ Staff Workstation |
+| Feature / Workspace | 👑 Salon Owner | ✂️ Staff Workstation |
 | :--- | :---: | :---: |
 | **Today's Appointments & Booking** | ✅ Full Access | ✅ Full Access |
 | **Customer Visits & Checkout** | ✅ Full Access | ✅ Full Access |

@@ -131,11 +131,11 @@ export default function Sidebar({ open, onClose }) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="h-9 w-9 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] flex items-center justify-center font-bold text-xs shrink-0">
-                  {user?.name?.[0]?.toUpperCase() || 'A'}
+                  {user?.name?.[0]?.toUpperCase() || (isAdmin ? 'O' : 'S')}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-xs text-dark truncate">{user?.name || 'TRIO Admin'}</p>
-                  <p className="text-[10px] text-dark/40 truncate">{user?.email || 'admin@salon.com'}</p>
+                  <p className="font-semibold text-xs text-dark truncate">{user?.name || (isAdmin ? 'Salon Owner' : 'Staff Member')}</p>
+                  <p className="text-[10px] text-dark/40 truncate">{user?.email || (isAdmin ? 'owner@salon.com' : 'staff@salon.com')}</p>
                 </div>
               </div>
               <button

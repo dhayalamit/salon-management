@@ -42,10 +42,10 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-function AdminOnlyRoute({ children }) {
+function OwnerOnlyRoute({ children }) {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin' || user?.role === 'owner';
-  if (!isAdmin) {
+  const isOwner = user?.role === 'owner' || user?.role === 'admin';
+  if (!isOwner) {
     return <Navigate to="/" replace />;
   }
   return children;
@@ -68,11 +68,11 @@ export default function App() {
       >
         <Route path="/" element={<Dashboard />} />
         <Route path="/whatsapp-center" element={<WhatsAppCenter />} />
-        <Route path="/staff" element={<AdminOnlyRoute><Staff /></AdminOnlyRoute>} />
-        <Route path="/staff/:id" element={<AdminOnlyRoute><StaffProfile /></AdminOnlyRoute>} />
+        <Route path="/staff" element={<OwnerOnlyRoute><Staff /></OwnerOnlyRoute>} />
+        <Route path="/staff/:id" element={<OwnerOnlyRoute><StaffProfile /></OwnerOnlyRoute>} />
         <Route path="/attendance" element={<Attendance />} />
-        <Route path="/salary" element={<AdminOnlyRoute><StaffSalary /></AdminOnlyRoute>} />
-        <Route path="/commissions" element={<AdminOnlyRoute><StaffCommissions /></AdminOnlyRoute>} />
+        <Route path="/salary" element={<OwnerOnlyRoute><StaffSalary /></OwnerOnlyRoute>} />
+        <Route path="/commissions" element={<OwnerOnlyRoute><StaffCommissions /></OwnerOnlyRoute>} />
         <Route path="/staff-work" element={<StaffWorkRegister />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/customers/:id" element={<CustomerProfile />} />
@@ -85,9 +85,9 @@ export default function App() {
         <Route path="/visits/:id" element={<VisitDetailsView />} />
         <Route path="/billing" element={<Navigate to="/visits" replace />} />
         <Route path="/billing/:id" element={<Navigate to="/visits" replace />} />
-        <Route path="/expenses" element={<AdminOnlyRoute><Expenses /></AdminOnlyRoute>} />
-        <Route path="/reports" element={<AdminOnlyRoute><Reports /></AdminOnlyRoute>} />
-        <Route path="/settings" element={<AdminOnlyRoute><Settings /></AdminOnlyRoute>} />
+        <Route path="/expenses" element={<OwnerOnlyRoute><Expenses /></OwnerOnlyRoute>} />
+        <Route path="/reports" element={<OwnerOnlyRoute><Reports /></OwnerOnlyRoute>} />
+        <Route path="/settings" element={<OwnerOnlyRoute><Settings /></OwnerOnlyRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -60,7 +60,7 @@ export default function Topbar({ onMenuClick }) {
 
         <div className="min-w-0">
           <h2 className="font-display text-lg sm:text-2xl font-bold tracking-tight text-dark truncate">
-            {greeting}, <span className="gold-text-gradient">{user?.name && user.name !== 'Salon Admin' && user.name !== 'Salon' ? user.name.split(' ')[0] : 'TRIO'}</span>
+            {greeting}, <span className="gold-text-gradient">{user?.name ? user.name.split(' ')[0] : 'Owner'}</span>
           </h2>
           <p className="text-[10px] sm:text-xs font-medium text-dark/50 truncate">{formattedDate}</p>
         </div>
