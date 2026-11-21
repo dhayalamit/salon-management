@@ -3,14 +3,15 @@
 [![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Architecture](https://img.shields.io/badge/Architecture-100%25%20Pure%20Frontend%20SPA-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://react.dev/)
+[![Database](https://img.shields.io/badge/Storage-Cloud%20Database-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 [![Vercel](https://img.shields.io/badge/Vercel-Deploy%20Ready-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 
-An enterprise-grade, luxury salon and spa management platform designed for high-end unisex salons. Built as a **100% pure client-side Single Page Application (SPA)** with zero backend server dependencies, persistent browser storage, dual-tier role access (Executive Admin/Owner & Staff Workstation), 1-click live demo logins, client billing, VIP permanent customer deposit wallets, WhatsApp automated notifications, inventory, expenses, and financial analytics.
+An enterprise-grade, luxury salon and spa management platform designed for high-end unisex salons. Backed by a centralized **Cloud Database** for real-time synchronization across multiple devices (reception front-desk computers, salon owner smartphones, and staff workstations), featuring a luxury glassmorphism dark aesthetic, dual-tier role access (Executive Admin/Owner & Staff Workstation), 1-click live demo logins, client billing, VIP permanent customer deposit wallets, WhatsApp automated notifications *(in progress)*, inventory, expenses, and financial analytics.
 
 > [!NOTE]
 > **Active Production Pilot & Working Demo Notice:**
-> This web application is **currently in active daily use at TRIO The Posh Salon** (Piprali Road, Sikar) for managing live appointments, client checkout, and stylist work registers. This public deployment serves as an interactive **working client-side demonstration prototype**. Because it is an actively evolving production testbed, you may encounter minor edge-case bugs or ongoing UI refinements. We welcome your feedback!
+> This web application is **currently in active daily use at TRIO The Posh Salon** (Piprali Road, Sikar) for managing live appointments, client checkout, and stylist work registers. Its underlying production data is **hosted on the Cloud** for multi-device real-time sync across reception and staff phones.
+> This public deployment serves as an interactive **working demonstration prototype** with an integrated offline sandbox fallback. Because it is an actively evolving production testbed, you may encounter minor edge-case quirks or ongoing UI refinements. We welcome your feedback!
 
 ---
 
@@ -23,7 +24,7 @@ Anyone visiting the deployed app or evaluating the repository can log in instant
 | 👑 **Admin / Owner** | `admin@salon.com` | `admin123` | **Full Executive Command:** Total Revenue, Daily Balances, Expenses, Reports, Staff Salaries & Settings |
 | ✂️ **Staff Portal** | `staff@salon.com` | `staff123` | **Staff Workstation:** Daily Appointments, Customer Visits, Attendance, Clients & Work Register *(Financials & Reports strictly restricted)* |
 
-> 💡 **100% Frontend — Zero Backend / Database Setup Needed:** The app includes a persistent offline mock database pre-populated with realistic staff, clients, appointments, and financial records. Everything works natively inside the browser with localStorage persistence across refreshes.
+> 💡 **Cloud-Powered with Demo Sandbox:** The application is architected to connect directly to your centralized Cloud Database (Supabase / Cloud DB). For instant public evaluation and testing, it also includes a pre-populated demo sandbox with realistic records so anyone can explore all features with zero configuration.
 
 ---
 
@@ -39,7 +40,7 @@ The application enforces strict visual and route-level segregation between **Sal
 | **Daily Attendance Register** | ✅ Full Access | ✅ Mark Attendance |
 | **Staff Work Register** | ✅ Full Access | ✅ Log Work Entries |
 | **Products & Inventory** | ✅ Full Access | ✅ View Stock |
-| **WhatsApp Center & Automations** | ✅ Full Access | ✅ View Automations |
+| **WhatsApp Center & Automations** | 🚧 *In Progress (WIP)* | 🚧 *In Progress (WIP)* |
 | **Today's Salon Revenue & Cash Inflow** | ✅ Visible | 🔒 **Restricted (Hidden)** |
 | **Daily Multi-Method Register Balances** | ✅ Visible | 🔒 **Restricted (Hidden)** |
 | **Monthly Revenue Trend Analytics Chart** | ✅ Visible | 🔒 **Restricted (Replaced by Appointments Schedule)** |
@@ -78,9 +79,10 @@ The application enforces strict visual and route-level segregation between **Sal
 - Detailed **Staff Work Register** tracking daily service count and total work value generated by each staff member.
 - Automated monthly salary calculation factoring in attendance, advances, and earned commissions.
 
-### 💬 Automated WhatsApp Marketing & Notification Center
-- Built-in WhatsApp automation engine for customer lifecycle engagement.
-- Automated triggers: **Instant Booking Confirmations**, **Birthday Specials**, **24h & 30m Appointment Reminders**, and **Post-Visit Thank You / Review requests**.
+### 💬 WhatsApp Marketing & Notification Center `(🚧 In Active Progress — Not Completed)`
+> ⚠️ **Status:** The WhatsApp automation engine and Meta Cloud API integration are currently **under active development and not yet finalized**. While message template builders, scheduled trigger rules, and UI previews are functional, live background message dispatch is being finalized.
+- Built-in WhatsApp automation workflow builder for customer lifecycle engagement.
+- Automated trigger design: **Instant Booking Confirmations**, **Birthday Specials**, **24h & 30m Appointment Reminders**, and **Post-Visit Thank You / Review requests**.
 - Template customizer with dynamic variables (`{{customer_name}}`, `{{service_name}}`, `{{appointment_time}}`, `{{amount}}`).
 
 ### 📦 Product Inventory & Low-Stock Alerts
@@ -99,7 +101,7 @@ The application enforces strict visual and route-level segregation between **Sal
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/) with custom luxury glassmorphism design system
 - **Icons:** [Lucide React](https://lucide.dev/)
 - **Charts:** [Recharts](https://recharts.org/)
-- **Database / Storage:** Persistent Browser `localStorage` with automated state synchronization & preloaded seed data
+- **Database / Cloud Storage:** [Supabase](https://supabase.com/) Cloud Database with automated multi-device sync & offline demo fallback
 - **Routing:** [React Router DOM v6](https://reactrouter.com/)
 
 ---
@@ -117,7 +119,14 @@ cd salon-management
 npm install
 ```
 
-### 3. Run development server
+### 3. (Optional) Set up Cloud Database credentials
+Copy `.env.example` to `.env` and fill in your Supabase project credentials:
+```bash
+cp .env.example .env
+```
+*(If omitted, the app will automatically run using the pre-loaded offline demo sandbox!)*
+
+### 4. Run development server
 ```bash
 npm run dev
 ```
@@ -128,12 +137,14 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ## 🌐 Deploy to Vercel (1-Click Deployment)
 
-This repository includes a preconfigured `vercel.json` for SPA routing. No backend server, database, or environment variables are needed!
+This repository includes a preconfigured `vercel.json` for SPA routing.
 
 1. Push your repository to GitHub.
 2. Go to [Vercel](https://vercel.com/) and click **Add New Project**.
 3. Import the `salon-management` repository.
-4. Leave the default settings (Build Command: `npm run build`, Output Directory: `dist`).
+4. *(Optional)* In **Environment Variables**, add your Cloud DB keys:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
 5. Click **Deploy**. Your salon management system is live!
 
 ---
