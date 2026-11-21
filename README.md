@@ -6,7 +6,7 @@
 [![Database](https://img.shields.io/badge/Storage-Cloud%20Database-3B82F6?style=for-the-badge&logo=icloud&logoColor=white)](#)
 [![Vercel](https://img.shields.io/badge/Vercel-Deploy%20Ready-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 
-An enterprise-grade, luxury salon and spa management platform designed for high-end unisex salons. Backed by a centralized **Cloud Database** for real-time synchronization across multiple devices (reception front-desk computers, salon owner smartphones, and staff workstations), featuring a luxury glassmorphism dark aesthetic, dual-tier role access (Executive Admin/Owner & Staff Workstation), 1-click live demo logins, client billing, VIP permanent customer deposit wallets, WhatsApp automated notifications *(in progress)*, inventory, expenses, and financial analytics.
+An enterprise-grade, luxury salon and spa management platform designed for high-end unisex salons. Backed by a centralized **Cloud Database** for real-time synchronization across multiple devices (reception front-desk computers, salon owner smartphones, and staff workstations), featuring a luxury glassmorphism dark aesthetic, dual-tier role access (Salon Owner Command & Staff Workstation), 1-click live demo logins, multi-tenant workspace isolation for new salon owners, client billing, VIP permanent customer deposit wallets, WhatsApp automated notifications *(in progress)*, inventory, expenses, and financial analytics.
 
 > [!NOTE]
 > **Active Production Pilot & Working Demo Notice:**
