@@ -3,7 +3,7 @@
 [![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Database](https://img.shields.io/badge/Storage-Cloud%20Database-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+[![Database](https://img.shields.io/badge/Storage-Cloud%20Database-3B82F6?style=for-the-badge&logo=icloud&logoColor=white)](#)
 [![Vercel](https://img.shields.io/badge/Vercel-Deploy%20Ready-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 
 An enterprise-grade, luxury salon and spa management platform designed for high-end unisex salons. Backed by a centralized **Cloud Database** for real-time synchronization across multiple devices (reception front-desk computers, salon owner smartphones, and staff workstations), featuring a luxury glassmorphism dark aesthetic, dual-tier role access (Executive Admin/Owner & Staff Workstation), 1-click live demo logins, client billing, VIP permanent customer deposit wallets, WhatsApp automated notifications *(in progress)*, inventory, expenses, and financial analytics.
@@ -24,7 +24,7 @@ Anyone visiting the deployed app or evaluating the repository can log in instant
 | 👑 **Admin / Owner** | `admin@salon.com` | `admin123` | **Full Executive Command:** Total Revenue, Daily Balances, Expenses, Reports, Staff Salaries & Settings |
 | ✂️ **Staff Portal** | `staff@salon.com` | `staff123` | **Staff Workstation:** Daily Appointments, Customer Visits, Attendance, Clients & Work Register *(Financials & Reports strictly restricted)* |
 
-> 💡 **Cloud-Powered with Demo Sandbox:** The application is architected to connect directly to your centralized Cloud Database (Supabase / Cloud DB). For instant public evaluation and testing, it also includes a pre-populated demo sandbox with realistic records so anyone can explore all features with zero configuration.
+> 💡 **Cloud-Powered with Demo Sandbox:** The application is architected to connect directly to your centralized Cloud Database & Storage API. For instant public evaluation and testing, it also includes a pre-populated demo sandbox with realistic records so anyone can explore all features with zero configuration.
 
 ---
 
@@ -101,7 +101,7 @@ The application enforces strict visual and route-level segregation between **Sal
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/) with custom luxury glassmorphism design system
 - **Icons:** [Lucide React](https://lucide.dev/)
 - **Charts:** [Recharts](https://recharts.org/)
-- **Database / Cloud Storage:** [Supabase](https://supabase.com/) Cloud Database with automated multi-device sync & offline demo fallback
+- **Database / Cloud Storage:** Centralized Cloud Database & Cloud Storage API with real-time multi-device sync & offline demo fallback
 - **Routing:** [React Router DOM v6](https://reactrouter.com/)
 
 ---
@@ -120,7 +120,7 @@ npm install
 ```
 
 ### 3. (Optional) Set up Cloud Database credentials
-Copy `.env.example` to `.env` and fill in your Supabase project credentials:
+Copy `.env.example` to `.env` and fill in your Cloud Database API credentials:
 ```bash
 cp .env.example .env
 ```
@@ -142,9 +142,9 @@ This repository includes a preconfigured `vercel.json` for SPA routing.
 1. Push your repository to GitHub.
 2. Go to [Vercel](https://vercel.com/) and click **Add New Project**.
 3. Import the `salon-management` repository.
-4. *(Optional)* In **Environment Variables**, add your Cloud DB keys:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
+4. *(Optional)* In **Environment Variables**, add your Cloud Database keys:
+   - `VITE_API_URL`
+   - `VITE_CLOUD_STORAGE_KEY`
 5. Click **Deploy**. Your salon management system is live!
 
 ---
