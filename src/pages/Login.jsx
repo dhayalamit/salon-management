@@ -15,21 +15,36 @@ import {
   Crown,
   Scissors,
   User,
+  Phone,
+  UserPlus,
+  LogIn,
 } from 'lucide-react';
 import Modal from '../components/ui/Modal.jsx';
-import { getDb } from '../services/mockStorage.js';
 
 export default function Login() {
-  const { login, sendPasswordResetEmail, loading: authLoading } = useAuth();
+  const { login, signup, sendPasswordResetEmail, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  // Active Login Mode: 'admin' (Admin / Owner) or 'staff' (Staff Portal)
+  // Mode: 'signin' or 'signup'
+  const [authMode, setAuthMode] = useState('signin');
+
+  // Role Tab: 'admin' (Admin / Owner) or 'staff' (Staff Portal)
   const [activeTab, setActiveTab] = useState('admin');
 
+  // Sign In State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // Sign Up State
+  const [signupName, setSignupName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPhone, setSignupPhone] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
+
   const [formLoading, setFormLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   // Forgot Password Modal State
   const [showForgotModal, setShowForgotModal] = useState(false);
@@ -39,17 +54,17 @@ export default function Login() {
   const [forgotErrorMsg, setForgotErrorMsg] = useState('');
 
   useEffect(() => {
-    // Clear on load
-    setEmail('');
-    setPassword('');
+    // Clear inputs and notices on mode or role change
     setError('');
-  }, [activeTab]);
+    setSuccessMsg('');
+  }, [authMode, activeTab]);
 
-  async function handleSubmit(e) {
+  async function handleSignIn(e) {
     if (e) e.preventDefault();
     setError('');
+    setSuccessMsg('');
 
-    if (!email) {
+    if (!email.trim()) {
       return setError(
         activeTab === 'admin'
           ? 'Please enter your Admin/Owner email address.'
@@ -75,11 +90,59 @@ export default function Login() {
     }
   }
 
+  async function handleSignUp(e) {
+    if (e) e.preventDefault();
+    setError('');
+    setSuccessMsg('');
+
+    if (!signupName.trim()) {
+      return setError('Please enter your full name.');
+    }
+    if (!signupEmail.trim() || !signupEmail.includes('@')) {
+      return setError('Please enter a valid email address.');
+    }
+    if (!signupPassword) {
+      return setError('Please enter a password.');
+    }
+    if (signupPassword.length < 4) {
+      return setError('Password must be at least 4 characters long.');
+    }
+    if (signupPassword !== signupConfirmPassword) {
+      return setError('Passwords do not match. Please re-enter confirm password.');
+    }
+
+    try {
+      setFormLoading(true);
+      const res = await signup({
+        name: signupName,
+        email: signupEmail,
+        phone: signupPhone,
+        password: signupPassword,
+        role: activeTab === 'staff' ? 'staff' : 'owner',
+      });
+
+      if (res.ok) {
+        setSuccessMsg('Account registered successfully! Logging you in...');
+        setTimeout(() => {
+          navigate('/');
+        }, 600);
+      } else {
+        setError(res.error || 'Registration failed.');
+      }
+    } catch (err) {
+      setError(err.message || 'Registration failed.');
+    } finally {
+      setFormLoading(false);
+    }
+  }
+
   // 1-Click Quick Demo Login handler for GitHub reviewers & portfolio visitors
   async function handleQuickDemo(type) {
     setError('');
+    setSuccessMsg('');
     const demoEmail = type === 'admin' ? 'admin@salon.com' : 'staff@salon.com';
     const demoPass = type === 'admin' ? 'admin123' : 'staff123';
+    setAuthMode('signin');
     setActiveTab(type);
     setEmail(demoEmail);
     setPassword(demoPass);
@@ -217,17 +280,66 @@ export default function Login() {
             </div>
           </div>
 
-          {/* The Luxury Rounded Login Card */}
-          <div className="w-full max-w-[440px] rounded-[32px] bg-[#0f0f10]/95 border border-[#382d18] backdrop-blur-2xl p-7 sm:p-9 shadow-[0_25px_70px_rgba(0,0,0,0.85)] relative overflow-hidden">
+          {/* The Luxury Rounded Card */}
+          <div className="w-full max-w-[460px] rounded-[32px] bg-[#0f0f10]/95 border border-[#382d18] backdrop-blur-2xl p-7 sm:p-9 shadow-[0_25px_70px_rgba(0,0,0,0.85)] relative overflow-hidden">
             {/* Subtle Top Gold Highlight */}
             <div className="absolute top-0 left-8 right-8 h-[1px] bg-gradient-to-r from-transparent via-[#d4af37]/60 to-transparent" />
 
+            {/* TOP AUTH SWITCHER: Sign In vs Sign Up */}
+            <div className="flex items-center justify-between pb-4 mb-5 border-b border-zinc-800/80">
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('signin');
+                    setError('');
+                    setSuccessMsg('');
+                  }}
+                  className={`text-xs font-bold uppercase tracking-wider transition-all relative pb-1.5 cursor-pointer flex items-center gap-1.5 ${
+                    authMode === 'signin'
+                      ? 'text-[#f5eedb]'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  <LogIn size={13} className={authMode === 'signin' ? 'text-[#d4af37]' : 'text-zinc-500'} />
+                  <span>Sign In</span>
+                  {authMode === 'signin' && (
+                    <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#d4af37] to-[#edd391] rounded-full" />
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('signup');
+                    setError('');
+                    setSuccessMsg('');
+                  }}
+                  className={`text-xs font-bold uppercase tracking-wider transition-all relative pb-1.5 cursor-pointer flex items-center gap-1.5 ${
+                    authMode === 'signup'
+                      ? 'text-[#f5eedb]'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  <UserPlus size={13} className={authMode === 'signup' ? 'text-[#d4af37]' : 'text-zinc-500'} />
+                  <span>Create Account</span>
+                  {authMode === 'signup' && (
+                    <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#d4af37] to-[#edd391] rounded-full" />
+                  )}
+                </button>
+              </div>
+
+              <span className="text-[10px] uppercase font-bold tracking-wider text-[#d4af37] bg-[#2a2211] px-2.5 py-0.5 rounded-full border border-[#d4af37]/30">
+                {authMode === 'signin' ? 'Portal Access' : 'New Registration'}
+              </span>
+            </div>
+
             {/* Segmented Toggle Control: Admin / Owner vs Staff Portal */}
-            <div className="rounded-full bg-[#18181a] p-1 border border-zinc-800 flex items-center mb-6">
+            <div className="rounded-full bg-[#18181a] p-1 border border-zinc-800 flex items-center mb-5">
               <button
                 type="button"
                 onClick={() => setActiveTab('admin')}
-                className={`flex-1 py-2.5 px-3 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`flex-1 py-2 px-3 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   activeTab === 'admin'
                     ? 'bg-gradient-to-r from-[#edd391] via-[#d4af37] to-[#c59f2e] text-black font-bold shadow-md'
                     : 'text-zinc-400 hover:text-white'
@@ -240,7 +352,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => setActiveTab('staff')}
-                className={`flex-1 py-2.5 px-3 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`flex-1 py-2 px-3 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   activeTab === 'staff'
                     ? 'bg-gradient-to-r from-[#edd391] via-[#d4af37] to-[#c59f2e] text-black font-bold shadow-md'
                     : 'text-zinc-400 hover:text-white'
@@ -256,138 +368,324 @@ export default function Login() {
               {activeTab === 'admin' ? (
                 <>
                   <Crown size={12} className="text-[#d4af37]" />
-                  <span>EXECUTIVE MANAGEMENT</span>
+                  <span>{authMode === 'signin' ? 'EXECUTIVE MANAGEMENT' : 'OWNER ACCOUNT'}</span>
                 </>
               ) : (
                 <>
                   <Scissors size={12} className="text-[#d4af37]" />
-                  <span>STAFF PORTAL ACCESS</span>
+                  <span>{authMode === 'signin' ? 'STAFF PORTAL ACCESS' : 'STAFF REGISTRATION'}</span>
                 </>
               )}
             </div>
 
             {/* Form Title & Subtitle */}
-            <h2 className="font-display text-3xl font-bold text-white tracking-tight">
-              {activeTab === 'admin' ? 'Admin / Owner Login' : 'Staff Portal Login'}
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              {authMode === 'signin'
+                ? activeTab === 'admin'
+                  ? 'Admin / Owner Login'
+                  : 'Staff Portal Login'
+                : activeTab === 'admin'
+                ? 'Register Owner Account'
+                : 'Register Staff Account'}
             </h2>
-            <p className="text-xs text-zinc-400 mt-1 mb-6 leading-relaxed">
-              {activeTab === 'admin'
-                ? 'Full command: staff salary, commission, salon expenses, reports, settings & financial analytics.'
-                : 'Access work register, attendance, service history, clients & personal commissions.'}
+            <p className="text-xs text-zinc-400 mt-1 mb-5 leading-relaxed">
+              {authMode === 'signin'
+                ? activeTab === 'admin'
+                  ? 'Full command: staff salary, commission, salon expenses, reports, settings & financial analytics.'
+                  : 'Access work register, attendance, service history, clients & personal commissions.'
+                : activeTab === 'admin'
+                ? 'Create a master salon administrator profile with executive analytics & settings access.'
+                : 'Create a stylist profile to record appointments, log work entries, and track commissions.'}
             </p>
 
-            {/* Error Message */}
+            {/* Error Message Alert */}
             {error && (
-              <div className="mb-5 p-3.5 rounded-2xl bg-red-950/70 border border-red-500/40 text-xs text-red-200 flex items-start gap-2.5 animate-shake">
+              <div className="mb-4 p-3 rounded-2xl bg-red-950/70 border border-red-500/40 text-xs text-red-200 flex items-start gap-2.5 animate-shake">
                 <AlertCircle size={16} className="text-red-400 shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
             )}
 
-            {/* Login Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Field 1: Email / Identifier */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-300">
-                  {activeTab === 'admin' ? 'Admin / Owner Email' : 'Staff Email or Phone'}
-                </label>
-                <div className="relative group/input">
-                  {activeTab === 'admin' ? (
-                    <Mail
+            {/* Success Message Alert */}
+            {successMsg && (
+              <div className="mb-4 p-3 rounded-2xl bg-emerald-950/70 border border-emerald-500/40 text-xs text-emerald-200 flex items-start gap-2.5">
+                <CheckCircle size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+                <span>{successMsg}</span>
+              </div>
+            )}
+
+            {/* ================= MODE 1: SIGN IN ================= */}
+            {authMode === 'signin' && (
+              <form onSubmit={handleSignIn} className="space-y-4">
+                {/* Field 1: Email / Identifier */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-zinc-300">
+                    {activeTab === 'admin' ? 'Admin / Owner Email' : 'Staff Email or Phone'}
+                  </label>
+                  <div className="relative group/input">
+                    {activeTab === 'admin' ? (
+                      <Mail
+                        size={17}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-[#d4af37] transition-colors"
+                      />
+                    ) : (
+                      <User
+                        size={17}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-[#d4af37] transition-colors"
+                      />
+                    )}
+                    <input
+                      type={activeTab === 'admin' ? 'email' : 'text'}
+                      required
+                      disabled={isBusy}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder={
+                        activeTab === 'admin'
+                          ? 'Enter admin email address'
+                          : 'Enter staff email or mobile number'
+                      }
+                      className="w-full pl-11 pr-4 py-3 bg-[#151517] border border-zinc-800 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/40 transition-all shadow-inner disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+
+                {/* Field 2: Password */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-zinc-300">
+                    Password
+                  </label>
+                  <div className="relative group/input">
+                    <Lock
                       size={17}
                       className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-[#d4af37] transition-colors"
                     />
-                  ) : (
-                    <User
-                      size={17}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-[#d4af37] transition-colors"
+                    <input
+                      type="password"
+                      required
+                      disabled={isBusy}
+                      autoComplete="off"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      className="w-full pl-11 pr-4 py-3 bg-[#151517] border border-zinc-800 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/40 transition-all shadow-inner disabled:opacity-50"
                     />
-                  )}
-                  <input
-                    type={activeTab === 'admin' ? 'email' : 'text'}
-                    required
-                    disabled={isBusy}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={
-                      activeTab === 'admin'
-                        ? 'Enter admin email address'
-                        : 'Enter staff email or mobile number'
-                    }
-                    className="w-full pl-11 pr-4 py-3 bg-[#151517] border border-zinc-800 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/40 transition-all shadow-inner disabled:opacity-50"
-                  />
+                  </div>
                 </div>
-              </div>
 
-              {/* Field 2: Password */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-300">
-                  Password
-                </label>
-                <div className="relative group/input">
-                  <Lock
-                    size={17}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-[#d4af37] transition-colors"
-                  />
-                  <input
-                    type="password"
-                    required
-                    disabled={isBusy}
-                    autoComplete="off"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    className="w-full pl-11 pr-4 py-3 bg-[#151517] border border-zinc-800 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/40 transition-all shadow-inner disabled:opacity-50"
-                  />
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isBusy}
-                className="w-full mt-3 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#e7be65] via-[#d4af37] to-[#ba9230] text-black font-bold text-sm tracking-wide shadow-[0_8px_25px_rgba(212,175,55,0.3)] hover:shadow-[0_12px_35px_rgba(212,175,55,0.45)] hover:brightness-105 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 group/btn"
-              >
-                {formLoading ? (
-                  <>
-                    <Loader2 size={17} className="animate-spin text-black" />
-                    <span>Signing in...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>
-                      {activeTab === 'admin'
-                        ? 'Login as Admin & Owner'
-                        : 'Login to Staff Portal'}
-                    </span>
-                    <ArrowRight
-                      size={17}
-                      className="group-hover/btn:translate-x-1 transition-transform duration-200"
-                    />
-                  </>
-                )}
-              </button>
-
-              {/* Forgot Password Link */}
-              <div className="pt-2 text-center">
+                {/* Submit Sign In Button */}
                 <button
-                  type="button"
-                  onClick={() => {
-                    setForgotEmail(email || 'admin@salon.com');
-                    setForgotSuccessMsg('');
-                    setForgotErrorMsg('');
-                    setShowForgotModal(true);
-                  }}
-                  className="text-xs text-[#d4af37] hover:text-[#edd391] hover:underline transition-colors cursor-pointer"
+                  type="submit"
+                  disabled={isBusy}
+                  className="w-full mt-2 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#e7be65] via-[#d4af37] to-[#ba9230] text-black font-bold text-sm tracking-wide shadow-[0_8px_25px_rgba(212,175,55,0.3)] hover:shadow-[0_12px_35px_rgba(212,175,55,0.45)] hover:brightness-105 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 group/btn"
                 >
-                  Forgot Password?
+                  {formLoading ? (
+                    <>
+                      <Loader2 size={17} className="animate-spin text-black" />
+                      <span>Signing in...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>
+                        {activeTab === 'admin'
+                          ? 'Login as Admin & Owner'
+                          : 'Login to Staff Portal'}
+                      </span>
+                      <ArrowRight
+                        size={17}
+                        className="group-hover/btn:translate-x-1 transition-transform duration-200"
+                      />
+                    </>
+                  )}
                 </button>
-              </div>
-            </form>
 
-            {/* Quick 1-Click Demo Login Bar (For Evaluators, Recruiters & GitHub Visitors) */}
-            <div className="mt-6 pt-5 border-t border-zinc-800/80">
-              <div className="flex items-center justify-between mb-2.5">
+                {/* Switch to Sign Up & Forgot Password */}
+                <div className="flex items-center justify-between pt-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('signup');
+                      setError('');
+                    }}
+                    className="text-zinc-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    Don't have an account? <span className="text-[#d4af37] font-semibold hover:underline">Sign Up</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotEmail(email || 'admin@salon.com');
+                      setForgotSuccessMsg('');
+                      setForgotErrorMsg('');
+                      setShowForgotModal(true);
+                    }}
+                    className="text-[#d4af37] hover:text-[#edd391] hover:underline transition-colors cursor-pointer"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* ================= MODE 2: SIGN UP / REGISTER ================= */}
+            {authMode === 'signup' && (
+              <form onSubmit={handleSignUp} className="space-y-3.5">
+                {/* Field 1: Full Name */}
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-zinc-300">
+                    Full Name *
+                  </label>
+                  <div className="relative group/input">
+                    <User
+                      size={16}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-[#d4af37] transition-colors"
+                    />
+                    <input
+                      type="text"
+                      required
+                      disabled={isBusy}
+                      value={signupName}
+                      onChange={(e) => setSignupName(e.target.value)}
+                      placeholder={activeTab === 'admin' ? 'e.g. Amit Dhayal' : 'e.g. Rahul Sharma'}
+                      className="w-full pl-10 pr-4 py-2.5 bg-[#151517] border border-zinc-800 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/40 transition-all shadow-inner disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+
+                {/* Field 2: Email */}
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-zinc-300">
+                    Email Address *
+                  </label>
+                  <div className="relative group/input">
+                    <Mail
+                      size={16}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-[#d4af37] transition-colors"
+                    />
+                    <input
+                      type="email"
+                      required
+                      disabled={isBusy}
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      placeholder="e.g. newuser@salon.com"
+                      className="w-full pl-10 pr-4 py-2.5 bg-[#151517] border border-zinc-800 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/40 transition-all shadow-inner disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+
+                {/* Field 3: Phone */}
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-zinc-300">
+                    Mobile Phone (Optional)
+                  </label>
+                  <div className="relative group/input">
+                    <Phone
+                      size={16}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-[#d4af37] transition-colors"
+                    />
+                    <input
+                      type="tel"
+                      disabled={isBusy}
+                      value={signupPhone}
+                      onChange={(e) => setSignupPhone(e.target.value)}
+                      placeholder="e.g. 9876543210"
+                      className="w-full pl-10 pr-4 py-2.5 bg-[#151517] border border-zinc-800 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/40 transition-all shadow-inner disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+
+                {/* Field 4: Password & Confirm Password (2 Cols) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-zinc-300">
+                      Password *
+                    </label>
+                    <div className="relative group/input">
+                      <Lock
+                        size={16}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-[#d4af37] transition-colors"
+                      />
+                      <input
+                        type="password"
+                        required
+                        disabled={isBusy}
+                        value={signupPassword}
+                        onChange={(e) => setSignupPassword(e.target.value)}
+                        placeholder="Min 4 chars"
+                        className="w-full pl-10 pr-3 py-2.5 bg-[#151517] border border-zinc-800 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/40 transition-all shadow-inner disabled:opacity-50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-zinc-300">
+                      Confirm Password *
+                    </label>
+                    <div className="relative group/input">
+                      <Lock
+                        size={16}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within/input:text-[#d4af37] transition-colors"
+                      />
+                      <input
+                        type="password"
+                        required
+                        disabled={isBusy}
+                        value={signupConfirmPassword}
+                        onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                        placeholder="Repeat password"
+                        className="w-full pl-10 pr-3 py-2.5 bg-[#151517] border border-zinc-800 rounded-xl text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/40 transition-all shadow-inner disabled:opacity-50"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submit Sign Up Button */}
+                <button
+                  type="submit"
+                  disabled={isBusy}
+                  className="w-full mt-2 py-3 px-6 rounded-2xl bg-gradient-to-r from-[#e7be65] via-[#d4af37] to-[#ba9230] text-black font-bold text-sm tracking-wide shadow-[0_8px_25px_rgba(212,175,55,0.3)] hover:shadow-[0_12px_35px_rgba(212,175,55,0.45)] hover:brightness-105 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 group/btn"
+                >
+                  {formLoading ? (
+                    <>
+                      <Loader2 size={17} className="animate-spin text-black" />
+                      <span>Creating Account...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus size={16} />
+                      <span>
+                        Create {activeTab === 'admin' ? 'Owner / Admin' : 'Staff'} Account
+                      </span>
+                      <ArrowRight
+                        size={16}
+                        className="group-hover/btn:translate-x-1 transition-transform duration-200"
+                      />
+                    </>
+                  )}
+                </button>
+
+                {/* Switch back to Sign In */}
+                <div className="pt-2 text-center text-xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('signin');
+                      setError('');
+                    }}
+                    className="text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    Already have an account?{' '}
+                    <span className="text-[#d4af37] font-semibold hover:underline">Sign In</span>
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Quick 1-Click Demo Login Bar (Always Available For Fast Review) */}
+            <div className="mt-5 pt-4 border-t border-zinc-800/80">
+              <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-1.5">
                   <Sparkles size={12} className="text-[#d4af37]" /> Quick Demo Access (1-Click)
                 </span>

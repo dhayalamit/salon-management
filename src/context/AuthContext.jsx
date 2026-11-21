@@ -74,6 +74,84 @@ export function AuthProvider({ children }) {
     return { isAuthorized: false };
   }
 
+  // Register / Sign Up new Account (Admin / Owner or Staff)
+  async function signup({ name, email, password, role = 'admin', phone = '' }) {
+    setLoading(true);
+    await new Promise((r) => setTimeout(r, 450));
+    try {
+      const cleanName = (name || '').trim();
+      const cleanEmail = (email || '').trim().toLowerCase();
+      const cleanPhone = (phone || '').trim();
+
+      if (!cleanName) {
+        return { ok: false, error: 'Please enter your Full Name.' };
+      }
+      if (!cleanEmail || !cleanEmail.includes('@')) {
+        return { ok: false, error: 'Please enter a valid email address.' };
+      }
+      if (!password || password.length < 4) {
+        return { ok: false, error: 'Password must be at least 4 characters long.' };
+      }
+
+      const db = getDb();
+      db.users = db.users || [];
+      db.authorized_users = db.authorized_users || [];
+      db.staff = db.staff || [];
+
+      // Check if user already exists
+      const existingUser = db.users.find((u) => (u.email || '').toLowerCase() === cleanEmail);
+      if (existingUser) {
+        return { ok: false, error: `An account with "${cleanEmail}" is already registered. Please Sign In.` };
+      }
+
+      const assignedRole = role === 'staff' ? 'staff' : (role === 'owner' ? 'owner' : 'admin');
+      const newUser = {
+        id: 'u_' + Date.now(),
+        name: cleanName,
+        email: cleanEmail,
+        phone: cleanPhone,
+        password: password,
+        role: assignedRole,
+      };
+
+      db.users.push(newUser);
+      db.authorized_users.push({
+        id: 'auth_' + Date.now(),
+        name: cleanName,
+        email: cleanEmail,
+        role: assignedRole,
+        added_at: new Date().toISOString(),
+      });
+
+      if (assignedRole === 'staff') {
+        db.staff.push({
+          id: 'st_' + Date.now(),
+          name: cleanName,
+          phone: cleanPhone || '9876543200',
+          email: cleanEmail,
+          role: 'Stylist',
+          base_salary: 22000,
+          commission_percent: 15,
+          joining_date: new Date().toISOString().split('T')[0],
+          status: 'active',
+          address: 'Sikar',
+        });
+      }
+
+      saveDb(db);
+
+      setUser(newUser);
+      localStorage.setItem('salon_token', 'jwt_' + assignedRole + '_' + Date.now());
+      localStorage.setItem('salon_user', JSON.stringify(newUser));
+
+      return { ok: true, user: newUser };
+    } catch (err) {
+      return { ok: false, error: err.message || 'Failed to register account.' };
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // Register Master Salon Owner Account for Client Handover
   async function registerOwnerAccount(name, email, password) {
     setLoading(true);
@@ -332,6 +410,7 @@ export function AuthProvider({ children }) {
       value={{
         user,
         login,
+        signup,
         loginWithGoogle,
         registerOwnerAccount,
         sendPasswordResetEmail,
