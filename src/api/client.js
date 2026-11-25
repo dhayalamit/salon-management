@@ -1098,6 +1098,15 @@ function computeVisitStaffSummary(v) {
         normMethod = 'Pending';
       }
 
+      const netTotal = Number(payload.total || payload.final_amount || 0);
+      const paidAmt = normMethod === 'Pending'
+        ? 0
+        : (payload.amountPaid !== undefined && payload.amountPaid !== null && payload.amountPaid !== ''
+          ? Number(payload.amountPaid)
+          : netTotal);
+      const remainingAmt = Math.max(0, netTotal - paidAmt);
+      const payStatus = remainingAmt === 0 ? 'Paid' : (paidAmt === 0 ? 'Pending' : 'Partial');
+
       const newVisit = {
         id: generateId('v'),
         visit_code: visitCode,
@@ -1107,13 +1116,14 @@ function computeVisitStaffSummary(v) {
         phone: custObj ? custObj.phone : (payload.phone || ''),
         staff_id: staffId === 'counter' ? null : staffId,
         staff_name: staffId === 'counter' ? 'Counter Sale' : (staffObj ? staffObj.name : 'Walk-in'),
-        payment_method: normMethod,
-        paymentMethod: normMethod,
-        payment_status: payload.amountPaid >= (payload.total || payload.final_amount || 0) ? 'Paid' : 'Partial',
-        created_at: new Date().toISOString(),
         ...payload,
         payment_method: normMethod,
         paymentMethod: normMethod,
+        amount_paid: paidAmt,
+        amountPaid: paidAmt,
+        remaining_amount: remainingAmt,
+        payment_status: payStatus,
+        created_at: new Date().toISOString(),
       };
       db.visits.unshift(newVisit);
 
@@ -1368,6 +1378,33 @@ function computeVisitStaffSummary(v) {
         item.status = payload.status || item.status;
         saveDb(db);
         return { data: item };
+      }
+    }
+
+    // Customer Visit Payment Settle / Clear
+    if (cleanUrl.startsWith('/visits/') && cleanUrl.endsWith('/payment')) {
+      const id = cleanUrl.split('/')[2];
+      const idx = db.visits.findIndex((v) => String(v.id) === String(id));
+      if (idx !== -1) {
+        const v = db.visits[idx];
+        const netTotal = Number(v.final_amount || v.total || v.total_amount || 0);
+        const prevPaid = Number(v.amount_paid !== undefined ? v.amount_paid : (v.amountPaid !== undefined ? v.amountPaid : 0));
+        const newPaidNow = Number(payload.amountPaid !== undefined ? payload.amountPaid : netTotal);
+        const totalPaid = Math.min(netTotal, prevPaid + newPaidNow);
+        const remaining = Math.max(0, netTotal - totalPaid);
+        const normMethod = (payload.paymentMethod || v.payment_method || 'Cash').toString();
+
+        db.visits[idx] = {
+          ...v,
+          payment_method: normMethod,
+          paymentMethod: normMethod,
+          amount_paid: totalPaid,
+          amountPaid: totalPaid,
+          remaining_amount: remaining,
+          payment_status: remaining === 0 ? 'Paid' : 'Partial',
+        };
+        saveDb(db);
+        return { data: db.visits[idx] };
       }
     }
 

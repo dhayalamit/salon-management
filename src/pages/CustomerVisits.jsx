@@ -262,13 +262,25 @@ export default function CustomerVisits() {
   const netTotal = Math.round((taxableAmount + gstAmount) * 100) / 100;
 
   const actualAmountPaid =
-    amountPaidInput !== undefined && amountPaidInput !== null && amountPaidInput !== ''
-      ? Number(amountPaidInput)
-      : paymentMethod === 'pending'
+    paymentMethod === 'pending'
       ? 0
+      : amountPaidInput !== undefined && amountPaidInput !== null && amountPaidInput !== ''
+      ? Number(amountPaidInput)
       : netTotal;
 
   const remainingBalance = Math.max(0, netTotal - (paymentMethod === 'pending' ? 0 : actualAmountPaid));
+
+  const handleSelectPaymentMethod = (pmId) => {
+    setPaymentMethod(pmId);
+    if (pmId === 'pending') {
+      setAmountPaidInput(0);
+    } else {
+      // When switching back from 'pending' or if amountPaidInput was 0 / '0', reset it so full netTotal is assumed
+      if (paymentMethod === 'pending' || amountPaidInput === 0 || amountPaidInput === '0') {
+        setAmountPaidInput('');
+      }
+    }
+  };
 
   const handleSaveVisit = async (e) => {
     e.preventDefault();
@@ -436,14 +448,16 @@ export default function CustomerVisits() {
             <span className="font-mono text-xs font-bold text-dark">{row.visit_number || row.visit_code || 'V-101'}</span>
             <span
               className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                row.payment_status === 'Paid'
+                (row.payment_status === 'Paid' || (Number(row.remaining_amount || 0) === 0 && (row.payment_method || '').toLowerCase() !== 'pending'))
                   ? 'bg-emerald-100 text-emerald-800'
                   : row.payment_status === 'Partial'
                   ? 'bg-amber-100 text-amber-800'
                   : 'bg-red-100 text-red-800'
               }`}
             >
-              {row.payment_status || (row.payment_method === 'pending' ? 'Pending' : 'Paid')}
+              {Number(row.remaining_amount || 0) === 0 && (row.payment_method || '').toLowerCase() !== 'pending'
+                ? 'Paid'
+                : row.payment_status || ((row.payment_method || '').toLowerCase() === 'pending' ? 'Pending' : 'Paid')}
             </span>
           </div>
           <span className="text-[11px] text-dark/40 block mt-0.5">
@@ -981,8 +995,8 @@ export default function CustomerVisits() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => setPaymentMethod('advance')}
-                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-[10px]"
+                        onClick={() => handleSelectPaymentMethod('advance')}
+                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-[10px] cursor-pointer"
                       >
                         Use Advance
                       </button>
@@ -1011,18 +1025,15 @@ export default function CustomerVisits() {
                       <button
                         key={pm.id}
                         type="button"
-                        onClick={() => {
-                          setPaymentMethod(pm.id);
-                          if (pm.id === 'pending') setAmountPaidInput(0);
-                        }}
-                        className={`py-2 rounded-xl font-bold uppercase text-[11px] transition-all ${
+                        onClick={() => handleSelectPaymentMethod(pm.id)}
+                        className={`py-2 rounded-xl font-bold uppercase text-[11px] transition-all cursor-pointer ${
                           paymentMethod === pm.id
                             ? pm.id === 'pending'
                               ? 'bg-red-600 text-white shadow-md'
                               : pm.id === 'advance'
                               ? 'bg-emerald-600 text-white shadow-md'
                               : 'bg-[#D4AF37] text-white shadow-md'
-                            : 'bg-white text-dark/70 border border-[#E8DFCF]'
+                            : 'bg-white text-dark/70 border border-[#E8DFCF] hover:border-[#D4AF37]'
                         }`}
                       >
                         {pm.label}
@@ -1034,7 +1045,16 @@ export default function CustomerVisits() {
 
               {paymentMethod !== 'pending' && (
                 <div>
-                  <label className="block font-bold text-dark/70 mb-1">Amount Paid (₹)</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold text-dark/70">Amount Paid (₹)</label>
+                    <button
+                      type="button"
+                      onClick={() => setAmountPaidInput('')}
+                      className="text-[10px] text-[#D4AF37] hover:underline font-semibold cursor-pointer"
+                    >
+                      Pay Full (₹{netTotal.toLocaleString('en-IN')})
+                    </button>
+                  </div>
                   <input
                     type="number"
                     step="0.01"
