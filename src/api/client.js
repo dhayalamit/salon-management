@@ -338,21 +338,127 @@ const client = {
 
     // Customers
     if (cleanUrl === '/customers') {
-      return { data: db.customers };
+      const enriched = (db.customers || []).map((c) => {
+        const custVisits = (db.visits || []).filter((v) => String(v.customer_id || v.customerId) === String(c.id));
+        const totalSpent = custVisits.reduce((sum, v) => sum + Number(v.final_amount || v.total || v.total_amount || 0), 0);
+        const totalVisits = custVisits.length;
+        const sortedVisits = [...custVisits].sort((a, b) => new Date(b.created_at || b.date || 0) - new Date(a.created_at || a.date || 0));
+        const lastVisitDate = sortedVisits.length > 0 ? (sortedVisits[0].created_at || sortedVisits[0].date || '') : null;
+        return {
+          ...c,
+          total_spent: totalSpent,
+          total_visits: totalVisits,
+          visit_count: totalVisits,
+          last_visit_date: lastVisitDate,
+        };
+      });
+      return { data: enriched };
     }
     if (cleanUrl.startsWith('/customers/')) {
       const id = cleanUrl.split('/')[2];
       const customer = db.customers.find((c) => c.id === id);
       if (!customer) throw { response: { status: 404, data: { error: 'Customer not found' } } };
-      const visits = db.visits.filter((v) => v.customer_id === id);
-      const advances = db.advance_transactions.filter((a) => a.customer_id === id);
-      return { data: { ...customer, visits, advanceHistory: advances } };
+      const visits = (db.visits || []).filter((v) => String(v.customer_id || v.customerId) === String(id));
+      const advances = (db.advance_transactions || []).filter((a) => String(a.customer_id) === String(id));
+      const totalSpent = visits.reduce((sum, v) => sum + Number(v.final_amount || v.total || v.total_amount || 0), 0);
+      const sortedVisits = [...visits].sort((a, b) => new Date(b.created_at || b.date || 0) - new Date(a.created_at || a.date || 0));
+      const lastVisitDate = sortedVisits.length > 0 ? (sortedVisits[0].created_at || sortedVisits[0].date || '') : null;
+
+      // Format visits with visit_number and staff_name for display
+      const formattedVisits = visits.map((v) => {
+        const staffSummary = computeVisitStaffSummary(v);
+        return {
+          ...v,
+          visit_number: v.visit_number || v.visit_code || `V-${v.id}`,
+          staff_name: staffSummary,
+          total: Number(v.total || v.final_amount || v.total_amount || 0),
+          payment_method: v.payment_method || v.paymentMethod || 'Cash',
+          payment_status: v.payment_status || 'Paid',
+        };
+      });
+
+      return {
+        data: {
+          ...customer,
+          visits: formattedVisits,
+          history: formattedVisits,
+          advanceHistory: advances,
+          ledger: advances,
+          visitCount: visits.length,
+          total_visits: visits.length,
+          lifetimeSpend: totalSpent,
+          total_spent: totalSpent,
+          last_visit_date: lastVisitDate,
+        },
+      };
     }
 
     // Permanent Customers
     if (cleanUrl === '/permanent-customers') {
-      const list = db.customers.filter((c) => c.is_permanent === 1);
+      const list = (db.customers || []).filter((c) => c.is_permanent === 1).map((c) => {
+        const custVisits = (db.visits || []).filter((v) => String(v.customer_id || v.customerId) === String(c.id));
+        const totalSpent = custVisits.reduce((sum, v) => sum + Number(v.final_amount || v.total || v.total_amount || 0), 0);
+        const totalVisits = custVisits.length;
+        const sortedVisits = [...custVisits].sort((a, b) => new Date(b.created_at || b.date || 0) - new Date(a.created_at || a.date || 0));
+        const lastVisitDate = sortedVisits.length > 0 ? (sortedVisits[0].created_at || sortedVisits[0].date || '') : null;
+        return {
+          ...c,
+          total_spent: totalSpent,
+          total_visits: totalVisits,
+          visit_count: totalVisits,
+          last_visit_date: lastVisitDate,
+        };
+      });
       return { data: list };
+    }
+
+    // Permanent Customer Profile (GET /permanent-customers/:id)
+    if (cleanUrl.match(/^\/permanent-customers\/[^/]+$/)) {
+      const id = cleanUrl.split('/')[2];
+      const customer = (db.customers || []).find((c) => String(c.id) === String(id));
+      if (!customer) throw { response: { status: 404, data: { error: 'Permanent customer not found' } } };
+      const visits = (db.visits || []).filter((v) => String(v.customer_id || v.customerId) === String(id));
+      const advances = (db.advance_transactions || []).filter((a) => String(a.customer_id) === String(id));
+      const totalSpent = visits.reduce((sum, v) => sum + Number(v.final_amount || v.total || v.total_amount || 0), 0);
+      const sortedVisits = [...visits].sort((a, b) => new Date(b.created_at || b.date || 0) - new Date(a.created_at || a.date || 0));
+      const lastVisitDate = sortedVisits.length > 0 ? (sortedVisits[0].created_at || sortedVisits[0].date || '') : null;
+
+      const totalAdvanceDeposited = advances.filter((a) => a.type === 'deposit').reduce((sum, a) => sum + Number(a.amount || 0), 0);
+      const totalAdvanceUsed = advances.filter((a) => a.type === 'usage' || a.type === 'deduction').reduce((sum, a) => sum + Number(a.amount || 0), 0);
+
+      // Format visits for display
+      const formattedVisits = visits.map((v) => {
+        const staffSummary = computeVisitStaffSummary(v);
+        return {
+          ...v,
+          visit_number: v.visit_number || v.visit_code || `V-${v.id}`,
+          staff_name: staffSummary,
+          total: Number(v.total || v.final_amount || v.total_amount || 0),
+          payment_method: v.payment_method || v.paymentMethod || 'Cash',
+          payment_status: v.payment_status || 'Paid',
+        };
+      });
+
+      return {
+        data: {
+          ...customer,
+          visits: formattedVisits,
+          history: formattedVisits,
+          transactions: advances,
+          ledger: advances,
+          advanceHistory: advances,
+          visitCount: visits.length,
+          total_visits: visits.length,
+          visit_count: visits.length,
+          lifetimeSpend: totalSpent,
+          total_spent: totalSpent,
+          last_visit_date: lastVisitDate,
+          lastVisitDate: lastVisitDate,
+          advance_balance: customer.advance_balance || 0,
+          total_advance_deposited: totalAdvanceDeposited || customer.total_advance_deposited || 0,
+          total_advance_used: totalAdvanceUsed || customer.total_advance_used || 0,
+        },
+      };
     }
 
     // Services
@@ -969,25 +1075,26 @@ function computeVisitStaffSummary(v) {
 
     // Permanent Customers Register
     if (cleanUrl === '/permanent-customers') {
+      const initialAdvance = parseFloat(payload.initial_advance || payload.initialDeposit || 0);
       const newCustomer = {
         id: generateId('c'),
         is_permanent: 1,
-        advance_balance: parseFloat(payload.initial_advance || 0),
-        total_advance_deposited: parseFloat(payload.initial_advance || 0),
+        advance_balance: initialAdvance,
+        total_advance_deposited: initialAdvance,
         total_advance_used: 0,
         created_at: new Date().toISOString(),
         ...payload,
       };
       db.customers.push(newCustomer);
-      if (payload.initial_advance > 0) {
+      if (initialAdvance > 0) {
         db.advance_transactions.push({
           id: generateId('tx'),
           customer_id: newCustomer.id,
           customer_name: newCustomer.name,
           type: 'deposit',
-          amount: parseFloat(payload.initial_advance),
-          balance_after: parseFloat(payload.initial_advance),
-          payment_method: payload.payment_method || 'Cash',
+          amount: initialAdvance,
+          balance_after: initialAdvance,
+          payment_method: payload.paymentMethod || payload.payment_method || 'Cash',
           notes: 'Initial Permanent Customer Deposit',
           created_at: new Date().toISOString(),
         });
@@ -1012,7 +1119,7 @@ function computeVisitStaffSummary(v) {
           type: 'deposit',
           amount: amt,
           balance_after: customer.advance_balance,
-          payment_method: payload.payment_method || 'Cash',
+          payment_method: payload.paymentMethod || payload.payment_method || 'Cash',
           notes: payload.notes || 'Advance Deposit',
           created_at: new Date().toISOString(),
         });
